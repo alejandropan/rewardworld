@@ -1,15 +1,26 @@
 """ @alejandro 2019  - Alex extractor functions for Reward choice world, 
 fork from ibllib will be complicated for this, requires  the rewardworld.extractors module
 a modified alf """
-
+import logging
 from pathlib import Path
 import traceback
-import sys
-sys.path.append("~\Documents\python\ibllib") #insert ibllib path
-from rewardworld.extractors import (biased_rewards_trials, biased_rewards_wheel)
-from ibllib.alf.extractors import (training_trials, training_wheel, biased_trials, biased_wheel) 
+from rewardworld.extractors import (biased_Reward_trials, biased_Reward_wheel)
 from ibllib.io import raw_data_loaders as raw
 import ibllib.io.flags as flags
+
+logger_ = logging.getLogger('ibllib')
+
+def log2sessionfile(func):
+    def func_wrapper(sessionpath, *args, **kwargs):
+        fh = logging.FileHandler(Path(sessionpath).joinpath('extract_register.log'))
+        str_format = '%(asctime)s,%(msecs)d %(levelname)-8s [%(filename)s:%(lineno)d] %(message)s'
+        fh.setFormatter(logging.Formatter(str_format))
+        logger_.addHandler(fh)
+        f = func(sessionpath, *args, **kwargs)
+        fh.close()
+        logger_.removeHandler(fh)
+        return f
+    return func_wrapper
 
 def extractors_exist(session_path):
     settings = raw.load_settings(session_path)
@@ -34,7 +45,6 @@ def is_extracted(session_path):
     else:
         return False
 
-
 @log2sessionfile
 def from_path(session_path, force=False, save=True):
     """
@@ -57,10 +67,10 @@ def from_path(session_path, force=False, save=True):
         biased_trials.extract_all(session_path, data=data, save=save)
         biased_wheel.extract_all(session_path, bp_data=data, save=save)
         logger_.info('session extracted \n')  # timing info in log
-    if extractor_type == 'biased_rewards':
+    if extractor_type == 'Reward':
         data = raw.load_data(session_path)
-        biased_rewards_trials.extract_all(session_path, data=data, save=save)
-        biased_rewards_wheel.extract_all(session_path, bp_data=data, save=save)
+        biased_Reward_trials.extract_all(session_path, data=data, save=save)
+        biased_Reward_wheel.extract_all(session_path, bp_data=data, save=save)
         logger_.info('session extracted \n')  # timing info in log
 
 
@@ -69,11 +79,10 @@ def bulk(subjects_folder, dry=False):
     for p in ses_path:
         # @alejandro no need for flags until personal project data starts going to server
         # the flag file may contains specific file names for a targeted extraction
-        # save = flags.read_flag_file(p)
-        #if dry:
-            
-            #print(p)
-            #continue
+        save = flags.read_flag_file(p)
+        if dry:
+            print(p)
+            continue
         try:
             from_path(p.parent, force=True, save=save)
         except Exception as e:
@@ -84,6 +93,7 @@ def bulk(subjects_folder, dry=False):
             with open(err_file, 'w+') as f:
                 f.write(error_message)
             logger_.error(error_message)
+
             continue
         p.unlink()
         flags.write_flag_file(p.parent.joinpath('register_me.flag'), file_list=save)

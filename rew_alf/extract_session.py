@@ -4,23 +4,12 @@ a modified alf """
 import logging
 from pathlib import Path
 import traceback
-from rewardworld.extractors import (biased_Reward_trials, biased_Reward_wheel)
+from rew_alf.extractors import (biased_Reward_trials, biased_Reward_wheel)
 from ibllib.io import raw_data_loaders as raw
 import ibllib.io.flags as flags
 
-logger_ = logging.getLogger('ibllib')
+logger_= logging.getLogger('ibllib')
 
-def log2sessionfile(func):
-    def func_wrapper(sessionpath, *args, **kwargs):
-        fh = logging.FileHandler(Path(sessionpath).joinpath('extract_register.log'))
-        str_format = '%(asctime)s,%(msecs)d %(levelname)-8s [%(filename)s:%(lineno)d] %(message)s'
-        fh.setFormatter(logging.Formatter(str_format))
-        logger_.addHandler(fh)
-        f = func(sessionpath, *args, **kwargs)
-        fh.close()
-        logger_.removeHandler(fh)
-        return f
-    return func_wrapper
 
 def extractors_exist(session_path):
     settings = raw.load_settings(session_path)
@@ -45,7 +34,7 @@ def is_extracted(session_path):
     else:
         return False
 
-@log2sessionfile
+
 def from_path(session_path, force=False, save=True):
     """
     Extract a session from full ALF path (ex: '/scratch/witten/ibl_witten_01/2018-12-18/001')

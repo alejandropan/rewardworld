@@ -14,5 +14,5 @@ setup(name='rewardworld',
       description='reward Choice Wolrd',
       author='@alejandropan',
       author_email='apv2@princeton.edu',
-      packages= find_packages(),
+      packages= find_packages()
      )

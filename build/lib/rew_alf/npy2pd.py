@@ -31,7 +31,7 @@ Current list of variables
 
 import os
 import re
-import np
+import numpy as np
 
 
 def pybpod_vars():

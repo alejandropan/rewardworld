@@ -19,13 +19,8 @@ def extractors_exist(session_path):
     task_name = settings['PYBPOD_PROTOCOL']
     task_name = task_name.split('_')[-1]
     extractor_type = task_name[:task_name.find('ChoiceWorld')]
-    if any([extractor_type in x for x in globals()]):
-        return extractor_type
-    else:
-        logger_.warning(str(session_path) +
-                        f" No extractors were found for {extractor_type} ChoiceWorld")
-        return False
-
+    
+    return extractor_type
 
 def is_extracted(session_path):
     sp = Path(session_path)

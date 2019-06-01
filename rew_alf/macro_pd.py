@@ -16,15 +16,24 @@ from rew_alf.npy2pd import *
 subject_folder =  '/mnt/s0/Data/Subjects_personal_project/rewblocks8040/'
 mice = sorted(os.listdir (subject_folder))
 variables  = pybpod_vars()
+col = variables
+col.append('ses')
+col.append('mouse_name')
 
-df = pd.DataFrame()
-
+macro = pd.DataFrame(columns = col)
 for mouse in mice:
     dates =  sorted(os.listdir (subject_folder + mouse))
+    df = pd.DataFrame(index=dates, columns = col)
     for day in dates:
         #merge sessions from the same day
         path = subject_folder + mouse + '/' + day
         data  = session_loader(path, variables)
+        df.loc[day]  = data
+    df['ses'] = dates
+    df['mouse_name'] =mouse
+    df = df.set_index(['mouse_name'], drop=False)
+    macro = macro.append(df)
+       
             
         
         

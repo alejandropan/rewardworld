@@ -4,8 +4,9 @@
 Created on Fri May 31 17:33:22 2019
 
 @alejandro
-Functions for extraction and organisation of pybpod npy files
+Functions for extraction and organisation of pybpod npy files.
 
+pybpod_vars is hard coded list of variables: 
 Current list of variables
  
 'choice'
@@ -32,7 +33,7 @@ Current list of variables
 import os
 import re
 import numpy as np
-
+import pandas as pd
 
 def pybpod_vars():
     pybpod_vars   = [
@@ -78,3 +79,28 @@ def session_loader(path,variables):
             data [var]  = dat
             
         return data
+    
+def load_data (subject_folder):
+    """Generates a dataframe with all available information in project folder"""
+    #subject_folder =  '/mnt/s0/Data/Subjects_personal_project/rewblocks8040/'
+    mice = sorted(os.listdir (subject_folder))
+    variables  = pybpod_vars()
+    col = variables
+    col.append('ses')
+    col.append('mouse_name')
+    
+    macro = pd.DataFrame(columns = col)
+    for mouse in mice:
+        dates =  sorted(os.listdir (subject_folder + mouse))
+        df = pd.DataFrame(index=dates, columns = col)
+        for day in dates:
+            #merge sessions from the same day
+            path = subject_folder + mouse + '/' + day
+            data  = session_loader(path, variables)
+            df.loc[day]  = data
+        df['ses'] = dates
+        df['mouse_name'] =mouse
+        df = df.set_index(['mouse_name'], drop=False)
+        macro = macro.append(df)
+    
+    return macro

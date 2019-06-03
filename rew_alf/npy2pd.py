@@ -136,4 +136,5 @@ def unpack (macro):
             raise Exception('Error in trial: {}'.format(trial))
     
     return trial_macro
+
     

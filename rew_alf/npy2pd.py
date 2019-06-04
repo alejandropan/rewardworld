@@ -97,7 +97,7 @@ def load_data (subject_folder):
         df = pd.DataFrame(index=dates, columns = col)
         for day in dates:
             #merge sessions from the same day
-            path = subject_folder + mouse + '/' + day
+            path = subject_folder + mouse + '/' + day +'/'
             data  = session_loader(path, variables)
             df.loc[day]  = data
         df['ses'] = dates

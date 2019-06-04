@@ -28,13 +28,14 @@ def ibl_psychometric (psy_df, ax=None, **kwargs):
     OUTPUTS:  psychometic fit using IBL function from Miles and fit parameters"""
         
     #1st calculate some useful data...
-    psy_df['contrastRight'] = psy_df['contrastRight'].fillna(0)
-    psy_df['contrastLeft']  = psy_df['contrastLeft'].fillna(0)
-    psy_df['signed_contrasts'] =  (psy_df['contrastRight'] - psy_df['contrastLeft'])*100
+    psy_df.loc[:,'contrastRight'] = psy_df['contrastRight'].fillna(0)
+    psy_df.loc[:,'contrastLeft']  = psy_df['contrastLeft'].fillna(0)
+    psy_df.loc[:,'signed_contrasts'] =  (psy_df['contrastRight'] - psy_df['contrastLeft'])*100
     unique_signed_contrasts  = sorted(psy_df['signed_contrasts'].unique())
+
     
     right_choices = psy_df['choice']== -1
-    psy_df['right_choices'] = right_choices
+    psy_df.loc[:,'right_choices'] = right_choices
     total_trials = []
     right_trials = []
             
@@ -52,43 +53,59 @@ def ibl_psychometric (psy_df, ax=None, **kwargs):
             parmin=np.array([np.min(unique_signed_contrasts), 0., 0., 0.]),
             parmax=np.array([np.max(unique_signed_contrasts), 100., 1, 1]))
 
+
+
     sns.lineplot(np.arange(-100,100), psy.erf_psycho_2gammas( pars, np.arange(-100,100)))
-    
-    
     sns.lineplot(x='signed_contrasts', y='right_choices', err_style="bars", linewidth=0, linestyle='None', mew=0.5,
         marker='.', ci=68, data= psy_df)
-    
-    
 
-    ax.set_xticks([-100, -50, 0, 50, 100])
-    ax.set_xticklabels(['-100', '-50', '0', '50', '100'])
-    ax.set_xlim([-110, 110])
-
-    ax.set_yticks([0, .5, 1])
-    ax.set_ylim([-0.03, 1.03])
-    ax.set_xlabel('Contrast (%)')
-    
-    return ax , pars,  L
+    return pars,  L
     
 def plot_psych_block (psy_df , block_variable, ax):
     """Plots psychometric using ibl_psychometric
-    INPUT:  Dataframe where index = trial and block variable = hue"""
+    INPUT:  Dataframe where index = trial and block variable = hue
+    OUTPUT:  Average of all sessions, Average of Last three sessions, Last 5 sessions"""
     blocks  = psy_df[block_variable].unique()
+    
+    #First get fits for each block
+    #Set frame for plots
+    block_summary, axes = plt.subplots(1,2)
+    plt.sca(axes[0])
     
     #First get fits for each block
     for i in blocks:
         psy_df_block  = psy_df.loc[psy_df[block_variable] == i]
-        ax , pars,  L  =  ibl_psychometric (psy_df_block, ax)
+        pars,  L  =  ibl_psychometric (psy_df_block)
         #Get sns.lineplot for raw data for each contrast per session
+    axes[0].set_xlabel('Signed contrast (%)')
+    axes[0].set_ylabel('% Right')
+    axes[0].set_title('All sessions')
+    #plot average last three session
+    dates =  sorted(psy_df['ses'].unique())
+    psy_df_last3  =  psy_df.loc[(psy_df['ses'] == dates[-1]) | (psy_df['ses'] == dates[-2]) | (psy_df['ses'] == dates[-3])]
+    plt.sca(axes[1])
+    for i in blocks:
+        psy_df_block  = psy_df_last3.loc[psy_df_last3[block_variable] == i]
+        pars,  L  =  ibl_psychometric (psy_df_block)
+    axes[1].set_xlabel('Signed contrast (%)')
+    axes[1].set_title('Last 3 sessions')
     
-    #plot last three session
+    #Now plot last 5 sessions
+    plots = len(dates)
+    rows = int(np.ceil(plots/3))
+    cols = int(np.ceil(plots/rows))
+    all_sessions =  plt.figure(figsize=(8, 6))
+    all_sessions.subplots_adjust(hspace=0.5, wspace=0.5)
+    for j, date in enumerate(dates):
+                ax  = all_sessions.add_subplot(rows, cols,1+j)
+                ax.set_title(date)
+                for i in blocks:
+                    psy_df_block  = psy_df.loc[psy_df[block_variable] == i]
+                    psy_df_block_date = psy_df_block.loc[psy_df_block['ses'] == date]
+                    pars,  L  =  ibl_psychometric (psy_df_block_date)         
+    plt.tight_layout(all_sessions)
     
-    for date in sorted(psy_df['ses'].unique())[-3:]:
-        for i in blocks:
-            psy_df_block  = psy_df.loc[psy_df[block_variable] == i]
-            psy_df_block_date = psy_df_block.loc[psy_df_block['ses'] == date]
-            ax , pars,  L  =  ibl_psychometric (psy_df_block_date, ax)
-        #Still need to modify so that it fills subplots
+    return block_summary, all_sessions
         
 def block_qc (psy_df):
     """Quality control for block structure
@@ -98,9 +115,9 @@ def block_qc (psy_df):
     #Select successful trials (reward and unrewarded)
     qc = psy_df.loc[(psy_df['feedbackType']== 1 ) | ( psy_df['feedbackType']  == -2)]
     #Right choice rewarded rate
-    qc['correct_rewarded'] = qc['feedbackType'] == 1
-    qc['correct_unrewarded'] = qc['feedbackType'] == -2
-
+    qc.loc[:,'correct_rewarded'] = qc['feedbackType'] == 1
+    qc.loc[:,'correct_unrewarded'] = qc['feedbackType'] == -2
+    #mean of boolean gives you percentage correct
     block_stats  =  qc.groupby(['rewprobabilityLeft','choice'])['correct_rewarded','correct_unrewarded'].mean()
     
     return block_stats

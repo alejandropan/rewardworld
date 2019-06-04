@@ -19,6 +19,7 @@ from ibl_pipeline.utils import psychofit as psy
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
 
 def ibl_psychometric (psy_df, ax=None, **kwargs):
     """Calculates and plot psychometic curve from dataframe
@@ -57,11 +58,11 @@ def ibl_psychometric (psy_df, ax=None, **kwargs):
 
     sns.lineplot(np.arange(-100,100), psy.erf_psycho_2gammas( pars, np.arange(-100,100)))
     sns.lineplot(x='signed_contrasts', y='right_choices', err_style="bars", linewidth=0, linestyle='None', mew=0.5,
-        marker='.', ci=68, data= psy_df)
+        marker='.', color = 'black',  ci=68, data= psy_df)
 
     return pars,  L
     
-def plot_psych_block (psy_df , block_variable, ax):
+def plot_psych_block (psy_df , block_variable):
     """Plots psychometric using ibl_psychometric
     INPUT:  Dataframe where index = trial and block variable = hue
     OUTPUT:  Average of all sessions, Average of Last three sessions, Last 5 sessions"""
@@ -94,16 +95,21 @@ def plot_psych_block (psy_df , block_variable, ax):
     plots = len(dates)
     rows = int(np.ceil(plots/3))
     cols = int(np.ceil(plots/rows))
-    all_sessions =  plt.figure(figsize=(8, 6))
-    all_sessions.subplots_adjust(hspace=0.5, wspace=0.5)
+    all_sessions =  plt.figure(figsize=(12, 10))
     for j, date in enumerate(dates):
                 ax  = all_sessions.add_subplot(rows, cols,1+j)
                 ax.set_title(date)
+                ax.label_outer()
+                ax.set_xlabel('Signed contrast (%)')
+                ax.set_ylabel('Right choices (%)')
                 for i in blocks:
                     psy_df_block  = psy_df.loc[psy_df[block_variable] == i]
                     psy_df_block_date = psy_df_block.loc[psy_df_block['ses'] == date]
-                    pars,  L  =  ibl_psychometric (psy_df_block_date)         
-    plt.tight_layout(all_sessions)
+                    pars,  L  =  ibl_psychometric (psy_df_block_date,ax)
+                    ax.set_label("block %s" %i)
+    blue_patch = mpatches.Patch(color='blue', label='Right P(rew) = 0.8')
+    orange_patch  =  mpatches.Patch(color='orange', label='Right P(rew) = 0.4')
+    plt.legend(handles=[blue_patch, orange_patch])                
     
     return block_summary, all_sessions
         

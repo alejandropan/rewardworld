@@ -11,7 +11,7 @@ from alf.extractors.training_trials import (
     get_intervals, get_response_times, get_iti_duration,
     get_goCueTrigger_times, get_goCueOnset_times)
 
-#reward block identity hardcoded 0.8  and 0.4 in get_rew_probaLR
+#reward block identity hardcoded 1  and 0.7 in get_rew_probaLR
 #Need to put laser_on in tph
 
 def get_laser(session_path, save=False, data=False):
@@ -28,7 +28,7 @@ def get_rew_probaLR(session_path, save=False, data=False):
     if not data:
         data = raw.load_data(session_path)
     p_rew_Left = np.array([t['rew_probability_left'] for t in data])
-    p_rew_Right = np.array( [0.8 if x == 0.4 else 0.5 if x==0.5 else 0.4 for x in p_rew_Left])
+    p_rew_Right = np.array( [1 if x == 0.7 else 0.5 if x==0.5 else 0.7 for x in p_rew_Left])
     if raw.save_bool(save, '_ibl_trials.rewprobabilityLeft.npy'):
         lpath = Path(session_path).joinpath('alf', '_ibl_trials.rewprobabilityLeft.npy')
         np.save(lpath, p_rew_Left)

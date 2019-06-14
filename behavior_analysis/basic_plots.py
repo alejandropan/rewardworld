@@ -107,8 +107,8 @@ def plot_psych_block (psy_df , block_variable):
                     psy_df_block_date = psy_df_block.loc[psy_df_block['ses'] == date]
                     pars,  L  =  ibl_psychometric (psy_df_block_date,ax)
                     ax.set_label("block %s" %i)
-    blue_patch = mpatches.Patch(color='blue', label='Right P(rew) = 0.8')
-    orange_patch  =  mpatches.Patch(color='orange', label='Right P(rew) = 0.4')
+    blue_patch = mpatches.Patch(color='blue', label='Right P(rew) = 1')
+    orange_patch  =  mpatches.Patch(color='orange', label='Right P(rew) = 0.7')
     plt.legend(handles=[blue_patch, orange_patch])                
     
     return block_summary, all_sessions

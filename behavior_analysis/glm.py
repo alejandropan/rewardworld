@@ -35,7 +35,6 @@ import statsmodels.genmod.bayes_mixed_glm as  bayes
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import cross_val_score
-def glm_reward(psy_df,  mixed_effects=False, sex =  True):
 from sklearn.model_selection import KFold
 
  
@@ -116,8 +115,8 @@ def  glm_logit(psy_df):
     
     data =  data.dropna()
     
-    mdata = data.loc[(data['sex'] == 'F')]
-    fdata = data1.loc[(data1['sex'] == 'M')]
+    mdata = data.loc[(data['sex'] == 'M')]
+    fdata = data.loc[(data['sex'] == 'F')]
     ## construct our model, with contrast as a variable
     
     ##Bayeasian mixed effects #need to change ident and exog_VC to account for mixed effects
@@ -169,7 +168,6 @@ def load_regression (data, mixed_effects  = False):
         logreg1 = LogisticRegression()
         r2  = cross_val_score(logreg1, exog, endog, cv=10)
         print( 'Accuracy  = ' , r2.mean())
-        print(end - start)
 
        
     #cross validate  with sklearn 
@@ -183,7 +181,8 @@ def load_regression (data, mixed_effects  = False):
     return result, r2
 
 
-""" TODO nmiced effects GLM
+"""
+TODO nmiced effects GLM
 
      X_train = X_train.drop(columns = 'mouse_name')
     X_test = X_test.drop(columns = 'mouse_name')
@@ -203,8 +202,9 @@ def load_regression (data, mixed_effects  = False):
     ident  = np.ones([1])  
     model1 = bayes.BinomialBayesMixedGLM(y_train, X_train, exog_vc,ident)
     result = model1.fit_map()
-    result.summary()
-    """"
+    result.summary() 
+    
+"""
     
 
 #####

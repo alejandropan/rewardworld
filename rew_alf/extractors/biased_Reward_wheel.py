@@ -4,4 +4,4 @@
 # @Last Modified by: Niccolò Bonacchi
 # @Last Modified time: 13-02-2019 12:06:19.1919
 
-from alf.extractors.training_wheel import *  # noqa
+from ibllib.io.extractors.training_wheel import *

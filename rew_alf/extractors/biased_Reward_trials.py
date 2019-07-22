@@ -5,13 +5,11 @@ from pathlib import Path
 import numpy as np
 import os
 import ibllib.io.raw_data_loaders as raw
-from alf.extractors.training_trials import (
-    check_alf_folder, get_probaLR,
-    get_choice, get_rewardVolume, get_stimOn_times,
-    get_intervals, get_response_times, get_iti_duration,
-    get_goCueTrigger_times, get_goCueOnset_times)
+from ibllib.io.extractors.training_trials import *
+
 
 #reward block identity hardcoded 1  and 0.7 in get_rew_probaLR
+from ibllib.io.extractors.training_trials import *
 #Need to put laser_on in tph
 
 def get_laser(session_path, save=False, data=False):
@@ -171,7 +169,7 @@ def extract_all(session_path, save=False, data=False):
     feedbackType = get_feedbackType(session_path, save=save, data=data)
     contrastLeft, contrastRight = get_contrastLR(
         session_path, save=save, data=data)
-    probabilityLeft, _ = get_probaLR(session_path, save=save, data=data)
+    probabilityLeft = get_probabilityLeft(session_path, save=save, data=data) #Need to double check this
     choice = get_choice(session_path, save=save, data=data)
     rewardVolume = get_rewardVolume(session_path, save=save, data=data)
     feedback_times = get_feedback_times(session_path, save=save, data=data)

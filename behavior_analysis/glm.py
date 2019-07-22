@@ -143,7 +143,7 @@ def load_regression (data, mixed_effects  = False):
                   'uchoice4', 'Levidence4', 'Revidence4', 'rchoice5', 'uchoice5',\
                   'Levidence5', 'Revidence5']]
     
-    #cols = list(exog.columns)
+    cols = list(exog.columns)
     
     #Normalising contrast
     for col in cols:

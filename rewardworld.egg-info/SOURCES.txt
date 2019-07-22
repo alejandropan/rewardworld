@@ -3,7 +3,6 @@ setup.py
 rew_alf/__init__.py
 rew_alf/extract.py
 rew_alf/extract_session.py
-rew_alf/macro_pd.py
 rew_alf/npy2pd.py
 rew_alf/extractors/__init__.py
 rew_alf/extractors/biased_Reward_trials.py

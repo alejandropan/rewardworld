@@ -66,8 +66,10 @@ class TrialParamHandler(object):
         # Initialize parameters that may change every trial
         self.trial_num = 0
         self.stim_phase = 0.
+
+	#opto
         self.opto =  np.random.choice([1,0], p = [0.15, 0.85]) #alejandro random opto trials #Opto_parameters
-        self.opto_buffer = self.opto
+        self.opto_buffer = [self.opto]
         self.opto_dummy =  self.opto #Dummy variable. Not buffered, to check the importance of buffering optp variable
         self.block_num = 0
         self.block_trial_num = 0
@@ -239,7 +241,7 @@ RELATIVE HUMIDITY:    {self.as_data['RelativeHumidity']} %
         params['elapsed_time'] = str(params['elapsed_time'])
         params['position'] = int(params['position'])
         params['opto'] = int(params['opto'])
-        params['opto'] = int(params['opto_dummy'])
+        params['opto_dummy'] = int(params['opto_dummy'])
         # Delete buffered data
         params['stim_probability_left_buffer'] = ''
         params['position_buffer'] = ''

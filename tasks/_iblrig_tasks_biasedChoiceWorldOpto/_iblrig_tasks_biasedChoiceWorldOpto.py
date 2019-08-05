@@ -183,9 +183,9 @@ for i in range(sph.NTRIALS):  # Main loop
         state_name='reward',
         state_timer=tph.reward_valve_time,
         state_change_conditions={'Tup': 'correct'},
-        output_actions=[('Valve1', 255), ('BNC2', 3)] if tph.opto == 1 else [('Valve1', 255)])
-
-    sma.add_state(
+        output_actions=[('Valve1', 255), ('BNC2', 3)] if tph.opto == 1 else [('Valve1', 255)])
+    
+    sma.add_state(
         state_name='correct',
         state_timer=tph.iti_correct,
         state_change_conditions={'Tup': 'exit_state'},

@@ -18,8 +18,6 @@ U(Right_Choice = False, Correct_choice = False, Reward = False) = 0 /
 U(Right_Choice = False, Correct_choice = True, Reward = False) =  0 /
 
 
-TODO:  invert choice vector so that negative value correspond to negative contrast in correct trials?
-
 @author: ibladmin
 
 TODO:  Description of psy_df
@@ -62,10 +60,10 @@ def  glm_logit(psy_df, sex_diff = True):
     
     ## Build predictor matrix
     
-    #Rewardeded choices: 
-    data.loc[(data['choice'] == -1) & (data['feedbackType'] == -2) , 'rchoice']  = 0
+    #Rewardedchoices: 
+    data.loc[(data['choice'] == -1) & (data['feedbackType'] == -2) , 'rchoice']  = 0 
     data.loc[(data['choice'] == -1) & (data['feedbackType'] == -1) , 'rchoice']  = 0
-    data.loc[(data['choice'] == -1) & (data['feedbackType'] == 1) , 'rchoice']  = -1
+    data.loc[(data['choice'] == -1) & (data['feedbackType'] == 1) , 'rchoice']  = -1    
     data.loc[(data['choice'] == 1) & (data['feedbackType'] == 1) , 'rchoice']  = 1
     data.loc[(data['choice'] == 1) & (data['feedbackType'] == -2) , 'rchoice']  = 0
     data.loc[(data['choice'] == 1) & (data['feedbackType'] == -1) , 'rchoice']  = 0
@@ -79,7 +77,7 @@ def  glm_logit(psy_df, sex_diff = True):
     data.loc[(data['choice'] == 1) & (data['feedbackType'] == -1) , 'uchoice']  = 1
     
     #Drop nogos
-    data = data.drop(data.index[data['feedbackType'] == 0],axis=0)
+    data = data.drop(data.index[data['choice'] == 0],axis=0)
     ## Change -1 for 0 in choice 
     data.loc[(data['choice'] == -1), 'choice'] = 0
     
@@ -95,19 +93,20 @@ def  glm_logit(psy_df, sex_diff = True):
     no_tback = 5 #no of trials back
     
     start = time.time()
-    for date in sorted(data['ses'].unique()):
-        for i in range(no_tback):
-            data.loc[data['ses'] == date,'rchoice%s' %str(i+1)] =  data.loc[data['ses'] == date,'rchoice'].shift(i+1) #no point in 0 shift
-            data.loc[data['ses'] == date,'uchoice%s' %str(i+1)] =  data.loc[data['ses'] == date,'uchoice'].shift(i+1) #no point in 0 shift
-            data.loc[data['ses'] == date,'Levidence%s' %str(i+1)] =  data.loc[data['ses'] == date,'Levidence'].shift(i+1) #no point in 0 shift
-            data.loc[data['ses'] == date,'Revidence%s' %str(i+1)] =  data.loc[data['ses'] == date,'Revidence'].shift(i+1) #no point in 0 shift
+    for mouse in (data['mouse_name'].unique()):
+        for date in sorted(data.loc[(data['mouse_name'] == mouse),'ses'].unique()):
+            for i in range(no_tback):
+                data.loc[data['ses'] == date,'rchoice%s' %str(i+1)] =  data.loc[data['ses'] == date,'rchoice'].shift(i+1) #no point in 0 shift
+                data.loc[data['ses'] == date,'uchoice%s' %str(i+1)] =  data.loc[data['ses'] == date,'uchoice'].shift(i+1) #no point in 0 shift
+                data.loc[data['ses'] == date,'Levidence%s' %str(i+1)] =  data.loc[data['ses'] == date,'Levidence'].shift(i+1) #no point in 0 shift
+                data.loc[data['ses'] == date,'Revidence%s' %str(i+1)] =  data.loc[data['ses'] == date,'Revidence'].shift(i+1) #no point in 0 shift
     end = time.time()
     print(end - start)
     
     
     #Remove first 5 trials from each ses
-    #for date in sorted(data['ses'].unique()):
-    #    data  = data.drop(data.index[data['ses'] == date][0:5] ,axis=0)
+    for date in sorted(data['ses'].unique()):
+        data  = data.drop(data.index[data['ses'] == date][0:5] ,axis=0)
         
     #data = data.reset_index()
     #Drop unnecessary elements

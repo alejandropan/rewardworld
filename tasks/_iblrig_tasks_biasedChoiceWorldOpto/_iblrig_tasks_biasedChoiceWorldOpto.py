@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# @Author: Niccolò Bonacchi
-# @Date:   2018-02-02 12:31:13
+# @Author: Alex Pan
+# @Date:   2018-08-05
 import logging
 
 import matplotlib.pyplot as plt
@@ -177,15 +177,18 @@ for i in range(sph.NTRIALS):  # Main loop
         state_name='error',
         state_timer=tph.iti_error,
         state_change_conditions={'Tup': 'exit_state'},
-        output_actions=[tph.out_noise])
+        output_actions=[tph.out_noise,('BNC2', 3)] if tph.opto == 1 else [tph.out_noise])
 
     sma.add_state(
         state_name='reward',
         state_timer=tph.reward_valve_time,
         state_change_conditions={'Tup': 'correct'},
-        output_actions=[('Valve1', 255), ('BNC2', 3)] if tph.opto == 1 else [('Valve1', 255)])
-    
-    sma.add_state(
+        output_actions=[('Valve1', 255), ('BNC2', 3)] if tph.opto == 1 else [('Valve1', 255)])
+
+    
+
+    sma.add_state(
+
         state_name='correct',
         state_timer=tph.iti_correct,
         state_change_conditions={'Tup': 'exit_state'},

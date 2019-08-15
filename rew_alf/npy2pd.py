@@ -45,11 +45,14 @@ def pybpod_vars():
 	'goCue_times',
 	'goCueTrigger_times',
 	'intervals',
-	'itiDuration',
-	's.probabilityLeft', #hack for avoiding confusion with rewproability
+	#'itiDuration',
+    's.probabilityLeft', #hack for avoiding confusion with rewproability
 	'response_times',
 	'rewardVolume',
-	'rewprobabilityLeft',
+	'opto.npy', 
+    'opto_dummy',
+    'hem_stim',
+    #'rewprobabilityLeft',
 	'stimOn_times'
 	#'position',
 	#'timestamps',
@@ -85,25 +88,28 @@ def load_data (subject_folder):
     INPUT: subjects folder, can include several subjects
     OUTPUT:  macro (dataframe per animal per session)"""
     #subject_folder =  '/mnt/s0/Data/Subjects_personal_project/rewblocks8040/'
-    mice = sorted(os.listdir (subject_folder))
+    viruses = sorted(os.listdir (subject_folder))
     variables  = pybpod_vars()
     col = variables
     col.append('ses')
     col.append('mouse_name')
-    
+    col.append('virus')    
     macro = pd.DataFrame(columns = col)
-    for mouse in mice:
-        dates =  sorted(os.listdir (subject_folder + mouse))
-        df = pd.DataFrame(index=dates, columns = col)
-        for day in dates:
-            #merge sessions from the same day
-            path = subject_folder + mouse + '/' + day +'/'
-            data  = session_loader(path, variables)
-            df.loc[day]  = data
-        df['ses'] = dates
-        df['mouse_name'] =mouse
-        df = df.set_index(['mouse_name'], drop=False)
-        macro = macro.append(df)
+    for virus in viruses:
+        mice = sorted(os.listdir (subject_folder + virus +'/'))
+        for mouse in mice:
+            dates =  sorted(os.listdir (subject_folder + virus + '/' + mouse))
+            df = pd.DataFrame(index=dates, columns = col)
+            for day in dates:
+                #merge sessions from the same day
+                path = subject_folder + virus + '/' + mouse + '/' + day +'/'
+                data  = session_loader(path, variables)
+                df.loc[day]  = data
+            df['virus'] =  virus
+            df['ses'] = dates
+            df['mouse_name'] =mouse
+            df = df.set_index(['mouse_name'], drop=False)
+            macro = macro.append(df)
     
     return macro
 
@@ -123,6 +129,7 @@ def unpack (macro):
         #copy name and session date to all trials
         macro.ix[i,'ses'] = np.full( macro.ix[i,'choice'].size,macro.ix[i,'ses'])
         macro.ix[i,'mouse_name'] = np.full( macro.ix[i,'choice'].size, macro.ix[i,'mouse_name'])
+        macro.ix[i,'virus'] = np.full( macro.ix[i,'choice'].size, macro.ix[i,'virus'])
     #Initialize unpacked dataframe
     trial_macro =  pd.DataFrame(columns = variable_name)
     # ... and fill it 

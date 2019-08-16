@@ -25,11 +25,46 @@ for mouse in psy_df['mouse_name'].unique():
     for day in psy_df.loc[psy_df['mouse_name']== mouse,'ses'].unique():
         psy_df.loc[(psy_df['mouse_name']== mouse) & (psy_df['ses']== day),'previous_choice'] = \
         psy_df.loc[(psy_df['mouse_name']== mouse) & (psy_df['ses']== day), 'choice'].shift(periods=1)
+
+for mouse in psy_df['mouse_name'].unique():
+    for day in psy_df.loc[psy_df['mouse_name']== mouse,'ses'].unique():
+        psy_df.loc[(psy_df['mouse_name']== mouse) & (psy_df['ses']== day),'after_win'] = \
+        psy_df.loc[(psy_df['mouse_name']== mouse) & (psy_df['ses']== day), 'feedbackType'].shift(periods=1)
         
-#make different dataframes depending on the hemisphere stimulated
-chr2_bi = psy_df.loc[(psy_df['virus'] == 'chr2') & (psy_df['hem_stim'] == 'B') ].dropna(subset=['after_opto'])
-chr2_l = psy_df.loc[(psy_df['virus'] == 'chr2') & (psy_df['hem_stim'] == 'L') ].dropna(subset=['after_opto'])
-chr2_r = psy_df.loc[(psy_df['virus'] == 'chr2') & (psy_df['hem_stim'] == 'R') ].dropna(subset=['after_opto'])
+#1st Plot After laser trials across groups
+#Grouping variables
+block_variable = 'after_opto'
+blocks = [1, 0]
+block2_variable ='s.probabilityLeft'
+blocks2 = [0.8, 0.5, 0.2]
+        
+
+#Plot across different trial history groups
+general = psychometric_summary(psy_df , block_variable, blocks, block2_variable, blocks2)
+winner = psychometric_summary(psy_df.loc[psy_df['after_win']==1] , block_variable, blocks, block2_variable, blocks2)
+loser = psychometric_summary(psy_df.loc[psy_df['after_win']==-1] , block_variable, blocks, block2_variable, blocks2)
+
+#Save figs
+general.savefig('general.pdf')
+winner.savefig('winner.pdf')
+loser.savefig('loser.pdf')
+
+
+#plot_psych_var_block(nphr_r,'after_opto', blocks, 's.probabilityLeft', blocks2 )
+
+
+#2nd plot psychometrics after wins
+
+
+#3rd plot psychometrics after loses 
+
+
+
+#4th Same as above for chronometric (different figure)
+ 
+
+
+#5th Chronometric measures 
 
 
 #Probability to stay

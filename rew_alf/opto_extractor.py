@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-# @Author: Niccolò Bonacchi
+# @Author: Alejandro Pan
 # @Date: Tuesday, February 12th 2019, 11:49:54 am
 import numpy as np
 import ibllib.io.raw_data_loaders as raw
@@ -22,7 +22,10 @@ def get_hem(session_path, save=False, data=False, settings=False):
         settings = raw.load_settings(session_path)
     if settings is None or settings['IBLRIG_VERSION_TAG'] == '':
         settings = {'IBLRIG_VERSION_TAG': '100.0.0'}
-    hem_stim = settings['HEM_STIM']
+    if settings['HEM_STIM'] is None:
+        hem_stim = settings['STIM_HEM']
+    else:
+        hem_stim = settings['HEM_STIM']
     hem = np.array([hem_stim for t in data])
     
     

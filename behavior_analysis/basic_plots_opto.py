@@ -39,7 +39,7 @@ block2_variable ='s.probabilityLeft'
 blocks2 = [0.8, 0.5, 0.2]
         
 
-#Plot across different trial history groups
+#Plot across different trial history groups (after win and loses)
 general = psychometric_summary(psy_df , block_variable, blocks, block2_variable, blocks2)
 winner = psychometric_summary(psy_df.loc[psy_df['after_win']==1] , block_variable, blocks, block2_variable, blocks2)
 loser = psychometric_summary(psy_df.loc[psy_df['after_win']==-1] , block_variable, blocks, block2_variable, blocks2)
@@ -50,46 +50,40 @@ winner.savefig('winner.pdf')
 loser.savefig('loser.pdf')
 
 
-#plot_psych_var_block(nphr_r,'after_opto', blocks, 's.probabilityLeft', blocks2 )
+#Plot glm with opto as a regressor for the different stimulation types
+chr2_result, chr2_r2 = glm_logit_opto(psy_df.loc[(psy_df['hem_stim'] == 'B') & (psy_df['virus']== 'chr2') &\
+                                                 (psy_df['s.probabilityLeft'] == 0.2) |(psy_df['s.probabilityLeft'] == 0.8) ])
+nphr_result, nphr_r2 = glm_logit_opto(psy_df.loc[(psy_df['hem_stim'] == 'B') & (psy_df['virus']== 'nphr') &\
+                                                 (psy_df['s.probabilityLeft'] == 0.2) |(psy_df['s.probabilityLeft'] == 0.8) ])
+chr2_l_result, chr2_l_r2 = glm_logit_opto(psy_df.loc[(psy_df['hem_stim'] == 'L') & (psy_df['virus']== 'chr2') &\
+                                                 (psy_df['s.probabilityLeft'] == 0.2) |(psy_df['s.probabilityLeft'] == 0.8) ])
+nphr_l_result, nphr_l_r2 = glm_logit_opto(psy_df.loc[(psy_df['hem_stim'] == 'L') & (psy_df['virus']== 'nphr') &\
+                                                 (psy_df['s.probabilityLeft'] == 0.2) |(psy_df['s.probabilityLeft'] == 0.8) ])
+chr2_r_result, chr2_r_r2 = glm_logit_opto(psy_df.loc[(psy_df['hem_stim'] == 'R') & (psy_df['virus']== 'chr2') &\
+                                                 (psy_df['s.probabilityLeft'] == 0.2) |(psy_df['s.probabilityLeft'] == 0.8) ])
+nphr_r_result, nphr_r_r2 = glm_logit_opto(psy_df.loc[(psy_df['hem_stim'] == 'R') & (psy_df['virus']== 'nphr') &\
+                                                 (psy_df['s.probabilityLeft'] == 0.2) |(psy_df['s.probabilityLeft'] == 0.8) ])
+    
+
+#after opto vs non after opto
+chr2_bi_after_opto  = psy_df.loc[(psy_df['hem_stim'] == 'B') & (psy_df['virus']== 'chr2') &\
+                                                 (psy_df['s.probabilityLeft'] == 0.2) |(psy_df['s.probabilityLeft'] == 0.8) & (psy_df['after_opto'] ==1 )]
+
+nphr_bi_after_opto  = psy_df.loc[(psy_df['hem_stim'] == 'B') & (psy_df['virus']== 'chr2') &\
+                                                 (psy_df['s.probabilityLeft'] == 0.2) |(psy_df['s.probabilityLeft'] == 0.8) & (psy_df['after_opto'] ==0 )]
 
 
-#2nd plot psychometrics after wins
+chr2_l_after_opto = psy_df.loc[(psy_df['hem_stim'] == 'L') & (psy_df['virus']== 'chr2') &\
+                                                 (psy_df['s.probabilityLeft'] == 0.2) |(psy_df['s.probabilityLeft'] == 0.8) & (psy_df['after_opto'] ==1 )]
 
-
-#3rd plot psychometrics after loses 
-
-
-
-#4th Same as above for chronometric (different figure)
- 
-
-
-#5th Chronometric measures 
-
-
-#Probability to stay
-stay_bi_on = len(chr2_bi.loc[(chr2_bi['after_opto']==1) & (chr2_bi['choice'] == chr2_bi['previous_choice'] ) & (chr2_bi['contrastLeft']==1) & (chr2_bi['s.probabilityLeft'] == 0.2) ])/len(chr2_bi.loc[(chr2_bi['after_opto']==1) &(chr2_bi['contrastLeft']==1) & (chr2_bi['s.probabilityLeft'] == 0.2)])
-stay_bi_off  = len(chr2_bi.loc[(chr2_bi['after_opto']==0) & (chr2_bi['choice'] == chr2_bi['previous_choice']) & (chr2_bi['contrastLeft']==1) & (chr2_bi['s.probabilityLeft'] == 0.2)])/len(chr2_bi.loc[(chr2_bi['after_opto']==0) & (chr2_bi['contrastLeft']==1)& (chr2_bi['s.probabilityLeft'] == 0.2) ])
-
-& (chr2_bi['s.probabilityLeft'] == 0.5)
-
-nphr_bi
-nphr_l
-nphr_r
-
-#Plot psychometric data
-blocks =  np.array([1, 0])
-plot_psych_block (chr2_l.loc[chr2_l['s.probabilityLeft']==0.2] , 'after_opto', blocks)
+nphr_l_after_opto = psy_df.loc[(psy_df['hem_stim'] == 'L') & (psy_df['virus']== 'chr2') &\
+                                                 (psy_df['s.probabilityLeft'] == 0.2) |(psy_df['s.probabilityLeft'] == 0.8) & (psy_df['after_opto'] ==0 )]
 
 
 
-#Plot glm
-#include bias blocks only
-psy_df =  psy_df.loc[(psy_df['rewprobabilityLeft'] == 1) | (psy_df['rewprobabilityLeft'] == 0.7)]
 
-#flip psy_df choice so that right is 1 (aesthetic change)
-psy_df['choice']  = psy_df['choice']*-1
+laser_on_result, laser_on_r2 = glm_logit(chr2_l_after_opto)
+
+laser_off_result, laser_on_r2 = glm_logit(nphr_l_after_opto)
 
 
-result, r2 =  glm_logit(psy_df, sex_diff =  False)
-plot_glm(psy_df, result, r2)

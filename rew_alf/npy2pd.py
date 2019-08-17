@@ -61,6 +61,13 @@ def pybpod_vars():
     
     return pybpod_vars
 
+def clean_str(string):
+    """
+    Cleans str with extra spaces e.g ' l ' transforms to 'l'
+    """
+
+
+
 def session_loader(path,variables):
         """returns dictionary with data for a given a day"""
         #merge sessions from the same day

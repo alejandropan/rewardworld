@@ -67,12 +67,6 @@ def ibl_psychometric (psy_df, ax=None, **kwargs):
 
 
 
-
-def plot_psych_var_block(psy_df , block_variable, blocks, block2_variable, blocks2, ax = None, *arg):
-
-
-
-
 def plot_psych_var_block(psy_df , block_variable, blocks, block2_variable, blocks2):
     """Plots psychometric using ibl_psychometric
     INPUT:  Dataframe where index = trial and block variable = hue

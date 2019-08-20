@@ -15,6 +15,11 @@ from glm import *
 psy_raw = load_data('/mnt/s0/Data/Subjects_personal_project/standard_task_opto/')
 psy_df  = unpack(psy_raw)
 
+
+
+#repair spaces
+psy_df.loc[(psy_df['hem_stim']== ' L '), 'hem_stim']= 'L'
+
 #Shift opto to slice through next trial
 for mouse in psy_df['mouse_name'].unique():
     for day in psy_df.loc[psy_df['mouse_name']== mouse,'ses'].unique():
@@ -50,40 +55,18 @@ winner.savefig('winner.pdf')
 loser.savefig('loser.pdf')
 
 
+#Select probability blocks only
+psy_df_global  = psy_df.loc[(psy_df['s.probabilityLeft'] == 0.2) |(psy_df['s.probabilityLeft'] == 0.8)]
+
 #Plot glm with opto as a regressor for the different stimulation types
-chr2_result, chr2_r2 = glm_logit_opto(psy_df.loc[(psy_df['hem_stim'] == 'B') & (psy_df['virus']== 'chr2') &\
-                                                 (psy_df['s.probabilityLeft'] == 0.2) |(psy_df['s.probabilityLeft'] == 0.8) ])
-nphr_result, nphr_r2 = glm_logit_opto(psy_df.loc[(psy_df['hem_stim'] == 'B') & (psy_df['virus']== 'nphr') &\
-                                                 (psy_df['s.probabilityLeft'] == 0.2) |(psy_df['s.probabilityLeft'] == 0.8) ])
-chr2_l_result, chr2_l_r2 = glm_logit_opto(psy_df.loc[(psy_df['hem_stim'] == 'L') & (psy_df['virus']== 'chr2') &\
-                                                 (psy_df['s.probabilityLeft'] == 0.2) |(psy_df['s.probabilityLeft'] == 0.8) ])
-nphr_l_result, nphr_l_r2 = glm_logit_opto(psy_df.loc[(psy_df['hem_stim'] == 'L') & (psy_df['virus']== 'nphr') &\
-                                                 (psy_df['s.probabilityLeft'] == 0.2) |(psy_df['s.probabilityLeft'] == 0.8) ])
-chr2_r_result, chr2_r_r2 = glm_logit_opto(psy_df.loc[(psy_df['hem_stim'] == 'R') & (psy_df['virus']== 'chr2') &\
-                                                 (psy_df['s.probabilityLeft'] == 0.2) |(psy_df['s.probabilityLeft'] == 0.8) ])
-nphr_r_result, nphr_r_r2 = glm_logit_opto(psy_df.loc[(psy_df['hem_stim'] == 'R') & (psy_df['virus']== 'nphr') &\
-                                                 (psy_df['s.probabilityLeft'] == 0.2) |(psy_df['s.probabilityLeft'] == 0.8) ])
-    
+
+glms = opto_laser_glm(psy_df_global)
+glms.savefig('glms.pdf')
 
 #after opto vs non after opto
-chr2_bi_after_opto  = psy_df.loc[(psy_df['hem_stim'] == 'B') & (psy_df['virus']== 'chr2') &\
-                                                 (psy_df['s.probabilityLeft'] == 0.2) |(psy_df['s.probabilityLeft'] == 0.8) & (psy_df['after_opto'] ==1 )]
-
-nphr_bi_after_opto  = psy_df.loc[(psy_df['hem_stim'] == 'B') & (psy_df['virus']== 'chr2') &\
-                                                 (psy_df['s.probabilityLeft'] == 0.2) |(psy_df['s.probabilityLeft'] == 0.8) & (psy_df['after_opto'] ==0 )]
+regressors_pre_reward = opto_glm(psy_df_global)
+regressors_pre_reward.savefig('regressors_pre_reward.pdf')
 
 
-chr2_l_after_opto = psy_df.loc[(psy_df['hem_stim'] == 'L') & (psy_df['virus']== 'chr2') &\
-                                                 (psy_df['s.probabilityLeft'] == 0.2) |(psy_df['s.probabilityLeft'] == 0.8) & (psy_df['after_opto'] ==1 )]
-
-nphr_l_after_opto = psy_df.loc[(psy_df['hem_stim'] == 'L') & (psy_df['virus']== 'chr2') &\
-                                                 (psy_df['s.probabilityLeft'] == 0.2) |(psy_df['s.probabilityLeft'] == 0.8) & (psy_df['after_opto'] ==0 )]
-
-
-
-
-laser_on_result, laser_on_r2 = glm_logit(chr2_l_after_opto)
-
-laser_off_result, laser_on_r2 = glm_logit(nphr_l_after_opto)
 
 

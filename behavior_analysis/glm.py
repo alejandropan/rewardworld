@@ -30,7 +30,7 @@ from sklearn.model_selection import cross_val_score
 from sklearn.model_selection import KFold
 
  
-def  glm_logit(psy_df, sex_diff = False):
+def  glm_logit(psy_df, sex_diff = False, after_opto= False, *args, **kwargs):
 
    ##calculate useful variables
     
@@ -42,18 +42,22 @@ def  glm_logit(psy_df, sex_diff = False):
 
         
     #Add sex if not present
-    if not 'sex' in psy_df:
-        psy_df.loc[:,'sex'] = np.empty([psy_df.shape[0],1])
-        mice  = sorted(psy_df['mouse_name'].unique())
-        for mouse in mice:
-            sex = input('Sex of animal ')
-            psy_df.loc[ psy_df['mouse_name'] == mouse, ['sex']]  = sex
+    if sex_diff==True:
+        if not 'sex' in psy_df:
+            psy_df.loc[:,'sex'] = np.empty([psy_df.shape[0],1])
+            mice  = sorted(psy_df['mouse_name'].unique())
+            for mouse in mice:
+                sex = input('Sex of animal ')
+                psy_df.loc[ psy_df['mouse_name'] == mouse, ['sex']]  = sex
     
     #make separate datafrme 
-    data =  psy_df.loc[ :, ['sex', 'mouse_name', 'feedbackType', 'signed_contrasts', 'choice','ses']]
-    
+    if sex_diff==True:
+        data =  psy_df.loc[ :, ['sex', 'mouse_name', 'feedbackType', 'signed_contrasts', 'choice','ses']]
+    elif after_opto==True:
     ## Build predictor matrix
-    
+        data =  psy_df.loc[ :, ['mouse_name', 'feedbackType', 'signed_contrasts', 'choice','ses', 'after_opto']]
+    else:
+        data =  psy_df.loc[ :, ['mouse_name', 'feedbackType', 'signed_contrasts', 'choice','ses']]
     #Rewardedchoices: 
     data.loc[(data['choice'] == -1) & (data['feedbackType'] == -2) , 'rchoice']  = 0 
     data.loc[(data['choice'] == -1) & (data['feedbackType'] == -1) , 'rchoice']  = 0
@@ -108,8 +112,13 @@ def  glm_logit(psy_df, sex_diff = False):
     
     data =  data.dropna()
     
-    mdata = data.loc[(data['sex'] == 'M')]
-    fdata = data.loc[(data['sex'] == 'F')]
+    #Select sets of trials with opto at -1 trials
+    if after_opto==True:
+        data = data.loc[(data['after_opto'] == 1)]
+    
+    if sex_diff==True:
+        mdata = data.loc[(data['sex'] == 'M')]
+        fdata = data.loc[(data['sex'] == 'F')]
     ## construct our model, with contrast as a variable
     
     ##Bayeasian mixed effects #need to change ident and exog_VC to account for mixed effects
@@ -218,15 +227,20 @@ def  glm_logit_opto(psy_df, sex_diff = False):
 
         
     #Add sex if not present
-    if not 'sex' in psy_df:
-        psy_df.loc[:,'sex'] = np.empty([psy_df.shape[0],1])
-        mice  = sorted(psy_df['mouse_name'].unique())
-        for mouse in mice:
-            sex = input('Sex of animal ')
-            psy_df.loc[ psy_df['mouse_name'] == mouse, ['sex']]  = sex
+    if sex_diff==True:
+        if not 'sex' in psy_df:
+            psy_df.loc[:,'sex'] = np.empty([psy_df.shape[0],1])
+            mice  = sorted(psy_df['mouse_name'].unique())
+            for mouse in mice:
+                sex = input('Sex of animal ')
+                psy_df.loc[ psy_df['mouse_name'] == mouse, ['sex']]  = sex
+    
+    if sex_diff==True:
+        data =  psy_df.loc[ :, ['sex', 'mouse_name', 'feedbackType', 'signed_contrasts', 'choice','ses']]
+    
     
     #make separate datafrme 
-    data =  psy_df.loc[ :, ['sex', 'mouse_name', 'feedbackType', 'signed_contrasts', 'choice','ses','opto.npy']]
+    data =  psy_df.loc[ :, ['mouse_name', 'feedbackType', 'signed_contrasts', 'choice','ses','opto.npy']]
     
     ## Build predictor matrix
     
@@ -307,9 +321,9 @@ def  glm_logit_opto(psy_df, sex_diff = False):
     #data =  data.drop(columns  = ['feedbackType','sex', 'ses','signed_contrasts', 'index'])
     
     data =  data.dropna()
-    
-    mdata = data.loc[(data['sex'] == 'M')]
-    fdata = data.loc[(data['sex'] == 'F')]
+    if sex_diff==True:
+        mdata = data.loc[(data['sex'] == 'M')]
+        fdata = data.loc[(data['sex'] == 'F')]
     ## construct our model, with contrast as a variable
     
     ##Bayeasian mixed effects #need to change ident and exog_VC to account for mixed effects

@@ -21,6 +21,14 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 
+
+def signed_contrast(psy_df):
+    psy_df.loc[:,'contrastRight'] = psy_df['contrastRight'].fillna(0)
+    psy_df.loc[:,'contrastLeft']  = psy_df['contrastLeft'].fillna(0)
+    psy_df.loc[:,'signed_contrasts'] =  (psy_df['contrastRight'] - psy_df['contrastLeft'])*100
+    
+    return psy_df
+    
 def ibl_psychometric (psy_df, ax=None, **kwargs):
     """Calculates and plot psychometic curve from dataframe
     datajoint independent
@@ -29,9 +37,8 @@ def ibl_psychometric (psy_df, ax=None, **kwargs):
     OUTPUTS:  psychometic fit using IBL function from Miles and fit parameters"""
         
     #1st calculate some useful data...
-    psy_df.loc[:,'contrastRight'] = psy_df['contrastRight'].fillna(0)
-    psy_df.loc[:,'contrastLeft']  = psy_df['contrastLeft'].fillna(0)
-    psy_df.loc[:,'signed_contrasts'] =  (psy_df['contrastRight'] - psy_df['contrastLeft'])*100
+    
+    psy_df = signed_contrast(psy_df)
     unique_signed_contrasts  = sorted(psy_df['signed_contrasts'].unique())
 
     
@@ -56,8 +63,62 @@ def ibl_psychometric (psy_df, ax=None, **kwargs):
 
 
     return pars,  L
+
+
+
+
+def plot_psych_var_block(psy_df , block_variable, blocks, block2_variable, blocks2):
+    """Plots psychometric using ibl_psychometric
+    INPUT:  Dataframe where index = trial and block variable = hue
+    block_variable =   name of block struct column 
+    blocks =  blovks that I want plotted (np.array) (e.g np.array([1, 0])),
+    ax= axes to place the plot
+    block2 variable and blocks if for adding an extra block eg prob or opto
+    OUTPUT:  Average of all sessions, Average of Last three sessions, Last 5 sessions"""
     
-def plot_psych_block (psy_df , block_variable, blocks):
+    #First get fits for each block
+    #Set frame for plots
+    fig , axes =  plt.subplots(1,1)
+    plt.sca(axes)
+    if block2_variable:
+        sns.set()
+        lines = ['dashed','solid']
+        colors =['green','black','blue']
+        for j,i in enumerate(blocks):
+            for p, bl2 in enumerate(blocks2):
+                psy_df_block  = psy_df.loc[(psy_df[block2_variable] == bl2) & (psy_df[block_variable] == i)] 
+                pars,  L  =  ibl_psychometric (psy_df_block)
+                plt.plot(np.arange(-100,100), psy.erf_psycho_2gammas( pars, np.arange(-100,100)), linewidth=2,\
+                         color = colors[p], linestyle = lines[j])
+                sns.lineplot(x='signed_contrasts', y='right_choices', err_style="bars", \
+                             linewidth=0, linestyle='None', mew=0.5,marker='.',
+                             color = colors[p],  ci=68, data= psy_df_block, ax =axes)
+            
+    else:       
+        colors = ['blue','black']
+        sns.set()
+        #First get fits for each block
+        for j,i in enumerate(blocks):
+            psy_df_block  = psy_df.loc[psy_df[block_variable] == i]
+            pars,  L  =  ibl_psychometric (psy_df_block) 
+            ln = sns.lineplot(np.arange(-100,100), psy.erf_psycho_2gammas( pars, np.arange(-100,100)), color = colors[p], ax = axes, linewidth=2)
+            ln  = sns.lineplot(x='signed_contrasts', y='right_choices', err_style="bars", linewidth=0, linestyle='None', mew=0.5,
+                         marker='.', color = colors[j],  ci=68, data= psy_df_blocks)
+            #Get sns.lineplot for raw data for each contrast per session
+    
+    
+    axes.set_xlim([-50,50])
+    green_patch = mpatches.Patch(color='green', label='P(L) = 0.8')
+    black_patch  =  mpatches.Patch(color='black', label='P(L) = 0.5')
+    blue_patch  =  mpatches.Patch(color='blue', label='P(L) = 0.2')
+    dashed  =  plt.Line2D([0], [0], color='black', lw=2, label='Laser on', ls = '--')
+    solid  = plt.Line2D([0], [0], color='black', lw=2, label='Laser off', ls = '-')
+    plt.legend(handles=[dashed, solid,green_patch, black_patch, blue_patch], loc = 'lower right')
+    
+    return fig, axes
+
+    
+def plot_psych_block_sessions (psy_df , block_variable, blocks):
     """Plots psychometric using ibl_psychometric
     INPUT:  Dataframe where index = trial and block variable = hue
     block_variable =   name of block struct column (e.g rewprobabilityLeft)

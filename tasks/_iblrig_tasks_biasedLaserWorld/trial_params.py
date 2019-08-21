@@ -27,7 +27,7 @@ Re using block functions for opto since there will be no block on top of that
 
 def draw_opto(opto_probability_left):
     return int(np.random.choice(
-        [1, -1], p=[opto_probability_left, 1 - opto_probability_left])) #1 is right and -1 is opto
+        [1, 0], p=[opto_probability_left, 1 - opto_probability_left])) 
 
 def init_opto_block_len(tph):
     if tph.block_init_5050:
@@ -45,7 +45,7 @@ def init_opto_probability_left(tph):
 
 def update_opto_probability_left(tph):
     if tph.block_trial_num != 1:
-        return tph.stim_probability_left
+        return tph.opto_probability_left
 
     if tph.block_num == 1 and tph.block_init_5050:
         return 0.5
@@ -142,10 +142,8 @@ class TrialParamHandler(object):
         ########opto
         self.opto_probability_left = init_opto_probability_left(self)
         self.opto_probability_left_buffer = [self.opto_probability_left]
-        self.opto = draw_opto(self.opto_probability_left)  # alejandro random opto trials #Opto_parameters
+        self.opto = draw_opto(self.opto_probability_left) if self.position < 0 else draw_opto(1 - self.opto_probability_left)
         self.opto_buffer = [self.opto]
-        self.opto_net = 1 if (self.opto * self.position) > 0 else -1
-        self.opto_net_buffer = [self.opto_net]
         self.opto_dummy = self.opto  # Dummy variable. Not buffered, to check the importance of buffering optp variable
         ########
 
@@ -179,7 +177,7 @@ STIM PHASE:           {self.stim_phase}
 BLOCK NUMBER:         {self.block_num}
 BLOCK LENGTH:         {self.block_len}
 TRIALS IN BLOCK:      {self.block_trial_num}
-STIM PROB LEFT:       {self.stim_probability_left}
+STIM PROB LEFT:       {self.opto_probability_left}
 
 RESPONSE TIME:        {self.response_time_buffer[-1]}
 TRIAL CORRECT:        {self.trial_correct}
@@ -206,16 +204,6 @@ RELATIVE HUMIDITY:    {self.as_data['RelativeHumidity']} %
         self.data_file = str(self.data_file)
         # Increment trial number
         self.trial_num += 1
-        # Update opto + buffer
-        # Update opto probability left + buffer
-        self.opto_probability_left = update_opto_probability_left(self)
-        self.opto_probability_left_buffer.append(self.opto_probability_left)
-        # Update opto + buffer
-        self.opto = draw_opto(opto_probability_left) #alejandro random opto trials #Opto_parameters
-        self.opto_buffer.append(self.opto) #alejandro random opto trials #Opto_parameters
-        self.opto_net = 1 if (self.opto * self.position) > 0 else -1
-        self.opto_net_buffer.append(self.opto_net)
-        self.opto_dummy = self.opto  #Dummy variable. Not buffered, to check the importance of buffering optp variable
         # Update quiescent period
         self.quiescent_period = self.quiescent_period_base + misc.texp()
         # Update stimulus phase
@@ -229,6 +217,14 @@ RELATIVE HUMIDITY:    {self.as_data['RelativeHumidity']} %
         self.position = blocks.draw_position(
             self.position_set, self.stim_probability_left)
         self.position_buffer.append(self.position)
+        # Update opto + buffer
+        # Update opto + buffer
+        # Update opto probability left + buffer
+        self.opto_probability_left = update_opto_probability_left(self)
+        self.opto_probability_left_buffer.append(self.opto_probability_left)
+        self.opto = draw_opto(self.opto_probability_left) if self.position < 0 else draw_opto(1 - self.opto_probability_left) #alejandro random opto trials #Opto_parameters
+        self.opto_buffer.append(self.opto) #alejandro random opto trials #Opto_parameters
+        self.opto_dummy = self.opto  #Dummy variable. Not buffered, to check the importance of buffering optp variable
         # Update contrast + buffer
         self.contrast = misc.draw_contrast(
             self.contrast_set, prob_type=self.contrast_set_probability_type)
@@ -291,6 +287,7 @@ RELATIVE HUMIDITY:    {self.as_data['RelativeHumidity']} %
         params['opto_dummy'] = int(params['opto_dummy'])
         # Delete buffered data
         params['stim_probability_left_buffer'] = ''
+        params['opto_probability_left_buffer'] = ''
         params['position_buffer'] = ''
         params['contrast_buffer'] = ''
         params['signed_contrast_buffer'] = ''
@@ -366,6 +363,7 @@ if __name__ == '__main__':
         print('BLOCK TRIAL NUM: {:>10s}'.format(
             f'{tph.block_trial_num}/{tph.block_len}'))
         print('PROBABILITY_LEFT: {:>9}'.format(tph.stim_probability_left))
+        print('OPTO_PROBABILITY_LEFT: {:>9}'.format(tph.opto_probability_left))
         print('SIGNED CONTRAST: {:>10}'.format(tph.signed_contrast))
 
         if x == 90:

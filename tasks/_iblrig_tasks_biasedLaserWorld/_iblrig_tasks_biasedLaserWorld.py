@@ -177,13 +177,13 @@ for i in range(sph.NTRIALS):  # Main loop
         state_name='error',
         state_timer=tph.iti_error,
         state_change_conditions={'Tup': 'exit_state'},
-        output_actions=[tph.out_noise,('BNC2', 3)]
+        output_actions=[tph.out_noise])
 
     sma.add_state(
         state_name='reward',
         state_timer=tph.reward_valve_time,
         state_change_conditions={'Tup': 'correct'},
-        output_actions=[('Valve1', 255), ('BNC2', 3)] if tph.opto_net == 1 else [('Valve1', 255)])
+        output_actions=[('Valve1', 255), ('BNC2', 3)] if tph.opto == 1 else [('Valve1', 255)])
 
     sma.add_state(
         state_name='correct',

@@ -11,7 +11,7 @@ import numpy as np
 import matplotlib.patches as mpatches
 import pandas as pd
 
-def shorten_df(psy_df, n_trials):
+def shorten_df(psy_df, n_trials_start,n_trials_end):
     psy_df_short = pd.DataFrame()
     conditions  = psy_df['hem_stim'].unique()
     mice = psy_df['mouse_name'].unique()
@@ -19,7 +19,7 @@ def shorten_df(psy_df, n_trials):
             for hem in conditions:
                 for ses in psy_df.loc[(psy_df['hem_stim']==hem) & (psy_df['mouse_name']==mouse),'ses'].unique():
                     a  = psy_df.loc[(psy_df['hem_stim']==hem) & (psy_df['mouse_name']==mouse) & (psy_df['ses']==ses)]
-                    a = a.iloc[0:n_trials,:]
+                    a = a.iloc[n_trials_start:n_trials_end,:]
                     psy_df_short = psy_df_short.append(a)
     return psy_df_short
             

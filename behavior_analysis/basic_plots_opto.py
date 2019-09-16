@@ -15,6 +15,16 @@ from glm import *
 psy_raw = load_data('/mnt/s0/Data/Subjects_personal_project/standard_task_opto/')
 psy_df  = unpack(psy_raw)
 
+#hot_fix for optoblocks until extractor is integrated
+def opto_block_assigner (psy_df):
+    psy_df['opto_block'] = np.nan
+    psy_df.loc[(psy_df['feedbackType'] == 1) & (psy_df['opto.npy'] == 1) & (psy_df['contrastLeft'] >= 0), 'opto_block'] = 'L'
+    psy_df.loc[(psy_df['feedbackType'] == 1) & (psy_df['opto.npy'] == 0) & (psy_df['contrastRight'] >= 0), 'opto_block'] = 'L'
+    psy_df.loc[(psy_df['feedbackType'] == 1) & (psy_df['opto.npy'] == 1) & (psy_df['contrastRight'] >= 0), 'opto_block'] = 'R'
+    psy_df.loc[(psy_df['feedbackType'] == 1) & (psy_df['opto.npy'] == 0) & (psy_df['contrastLeft'] >= 0), 'opto_block'] = 'R'
+    psy_df['opto_block'] = psy_df['opto_block'].fillna(method='ffill') #propagate last valid block assignment for nan (incorrect trials)
+    return psy_df
+
 
 
 #repair spaces

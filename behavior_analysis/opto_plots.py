@@ -99,13 +99,6 @@ def psychometric_summary_opto_blocks(psy_df , block_variable, blocks):
     return figure 
 
 
-
-
-
-
-
-
-
 def psychometric_summary(psy_df , block_variable, blocks, block2_variable, blocks2):
     """
     INPUTS:

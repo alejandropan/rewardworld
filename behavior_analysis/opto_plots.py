@@ -213,7 +213,7 @@ def opto_glm(psy_df_global):
     figure,ax = plt.subplots(2,3, figsize=(24,24))
     for v, virus in enumerate(viruses):
         conditions  = psy_df_global.loc[(psy_df_global['virus']== virus),'hem_stim'].unique()
-        for c , hem in enumerate(['B','L']): #(conditions)
+        for c , hem in enumerate(conditions): 
             psy_df = psy_df_global.loc[(psy_df_global['virus']== virus) & (psy_df_global['hem_stim']== hem)]
             pool_rew_predictors  = pd.DataFrame()
             pool_urew_predictors  = pd.DataFrame()
@@ -294,7 +294,7 @@ def opto_laser_glm(psy_df_global):
     figure,ax = plt.subplots(5,3, figsize=(24,80))
     for v, virus in enumerate(viruses):
         conditions  = psy_df_global.loc[(psy_df_global['virus']== virus),'hem_stim'].unique()
-        for c , hem in enumerate(['B','L']): #(conditions)
+        for c , hem in enumerate(conditions): #(conditions)
             psy_df = psy_df_global.loc[(psy_df_global['virus']== virus) & (psy_df_global['hem_stim']== hem)]
             plt.sca(ax[v,c])
             

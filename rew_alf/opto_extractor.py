@@ -9,11 +9,8 @@ import ibllib.io.flags as flags
 import logging
 from pathlib import Path
 
-from ibllib.io.extractors import (ephys_trials, ephys_fpga,
-                                  biased_wheel, biased_trials,
-                                  training_trials, training_wheel)
-
-# this is a decorator to add a logfile to each extraction and registration on top of the logging
+"Currently this extractors runs separately from the reward or biased extractor. It runs after and is optional only " \
+"extracting opto information"
 
 def get_hem(session_path, save=False, data=False, settings=False):
     if not data:

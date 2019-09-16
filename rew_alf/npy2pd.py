@@ -95,7 +95,7 @@ def load_data (subject_folder):
     INPUT: subjects folder, can include several subjects
     OUTPUT:  macro (dataframe per animal per session)"""
     #subject_folder =  '/mnt/s0/Data/Subjects_personal_project/rewblocks8040/'
-    viruses = sorted(os.listdir (subject_folder))
+    viruses = sorted([x for x in (os.listdir (subject_folder)) if ".DS_Store" not in x])
     variables  = pybpod_vars()
     col = variables
     col.append('ses')
@@ -103,9 +103,9 @@ def load_data (subject_folder):
     col.append('virus')    
     macro = pd.DataFrame(columns = col)
     for virus in viruses:
-        mice = sorted(os.listdir (subject_folder + virus +'/'))
+        mice = sorted([x for x in (os.listdir (subject_folder + virus +'/')) if ".DS_Store" not in x])
         for mouse in mice:
-            dates =  sorted(os.listdir (subject_folder + virus + '/' + mouse))
+            dates =  sorted([x for x in (os.listdir (subject_folder + virus + '/' + mouse)) if ".DS_Store" not in x])
             df = pd.DataFrame(index=dates, columns = col)
             for day in dates:
                 #merge sessions from the same day

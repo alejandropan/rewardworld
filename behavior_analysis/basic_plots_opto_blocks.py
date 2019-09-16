@@ -61,7 +61,7 @@ last = psychometric_summary_opto_blocks(psy_df_last , block_variable, blocks)
 
 #Save figs
 long.savefig('long.pdf')
-short.savefig('first.pdf')
+first.savefig('first.pdf')
 last.savefig('last.pdf')
 
 
@@ -69,11 +69,6 @@ last.savefig('last.pdf')
 
 glms = opto_laser_glm(psy_df)
 glms.savefig('glms.pdf')
-
-#after opto vs non after opto
-regressors_pre_reward = opto_glm(psy_df_global)
-regressors_pre_reward.savefig('regressors_pre_reward.pdf')
-
 
 
 

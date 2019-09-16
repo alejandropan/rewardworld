@@ -20,8 +20,8 @@ def extractors_exist(session_path):
     task_name = settings['PYBPOD_PROTOCOL']
     task_name = task_name.split('_')[-1]
 
-    if task_name  = 'biasedLaserWorld':
-        extractor_type = 'bias'
+    if task_name == 'biasedLaserWorld':
+        extractor_type = 'biased'
     else:
         extractor_type = task_name[:task_name.find('ChoiceWorld')]
 

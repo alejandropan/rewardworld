@@ -15,6 +15,9 @@ from glm import *
 psy_raw = load_data('/mnt/s0/Data/Subjects_personal_project/standard_task_opto/')
 psy_df  = unpack(psy_raw)
 
+#hot_fix for optoblocks until extractor is integrated
+
+
 
 
 #repair spaces

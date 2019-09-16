@@ -12,7 +12,7 @@ from glm import *
 
 
 #Input folder with raw npy files
-psy_raw = load_data('/mnt/s0/Data/Subjects_personal_project/standard_task_opto/')
+psy_raw = load_data('/Volumes/witten/Alex/server_backup/Subjects_personal_project/opto_blocks/')
 psy_df  = unpack(psy_raw)
 
 

@@ -11,6 +11,94 @@ import numpy as np
 import matplotlib.patches as mpatches
 import pandas as pd
 
+def shorten_df(psy_df, n_trials):
+    psy_df_short = pd.DataFrame()
+    conditions  = psy_df['hem_stim'].unique()
+    mice = psy_df['mouse_name'].unique()
+    for mouse in mice:
+            for hem in conditions:
+                for ses in psy_df.loc[(psy_df['hem_stim']==hem) & (psy_df['mouse_name']==mouse),'ses'].unique():
+                    a  = psy_df.loc[(psy_df['hem_stim']==hem) & (psy_df['mouse_name']==mouse) & (psy_df['ses']==ses)]
+                    a = a.iloc[0:n_trials,:]
+                    psy_df_short = psy_df_short.append(a)
+    return psy_df_short
+            
+
+def psychometric_summary_opto_blocks(psy_df , block_variable, blocks):
+    """
+    INPUTS:
+    block_variable: string with name of block variable 1,  in this case L or R block
+    conditions:  List of potential hemisphere
+    viruses: List of viruses
+    blocks: Has to be [L,R] in this order, it defines the laser on and off
+    OUTPUTS:
+    Figure with psychometrics (Info on psychometric measures):
+    pars  : bias    = pars[0]
+   threshold    = pars[1]
+   gamma1    = pars[2]
+   gamma2    = pars[3]
+    """
+    #Clarify variables:
+    conditions  = psy_df['hem_stim'].unique()
+    mice = psy_df['mouse_name'].unique()
+    viruses =  psy_df['virus'].unique()
+    figure,ax = plt.subplots(12,4, figsize=(24,100))
+    #psy_measures_rows = np.nan(len(blocks)*len(blocks2)*len(conditions)*len(mice))
+    psy_measures =  pd.DataFrame(columns = ['mouse_name','virus','laser_on','probabilityLeft','conditions','bias','threshold', 'gamma1', 'gamma2'  ])
+    
+    #Plot summaries divided by hem stimulated and virus
+    for v, virus in enumerate(viruses):
+        for c , hem in enumerate(conditions):
+            plt.sca(ax[v,c])
+            sns.set()
+            colors =['blue', 'green']
+            for j,i in enumerate(blocks):
+                    psy_df_block  = psy_df.loc[(psy_df['hem_stim'] == hem) & (psy_df['virus'] == virus) & (psy_df[block_variable] == i)] 
+                    pars,  L  =  ibl_psychometric (psy_df_block)
+                    plt.plot(np.arange(-100,100), psy.erf_psycho_2gammas( pars, np.arange(-100,100)), linewidth=2,\
+                             color = colors[j])
+                    sns.lineplot(x='signed_contrasts', y='right_choices', err_style="bars", \
+                                 linewidth=0, linestyle='None', mew=0.5,marker='.',
+                                 color = colors[j],  ci=68, data= psy_df_block)
+                    
+            ax[v,c].set_xlim([-25,25])
+            ax[v,c].set_title(virus +' '+ hem)
+            ax[v,c].set_ylabel('Fraction of CW choices')
+            ax[v,c].set_xlabel('Signed contrast')
+            green_patch = mpatches.Patch(color='green', label='Stim right = Laser on')
+            blue_patch  =  mpatches.Patch(color='blue', label='Stim left = Laser on')
+            plt.legend(handles=[green_patch, blue_patch], loc = 'lower right')
+        
+    #Plor summaries as above but per mouse
+    
+    for m, mouse in enumerate(mice):
+        for c , hem in enumerate(conditions):
+            plt.sca(ax[m+2,c])
+            sns.set()
+            colors =['blue', 'green']
+            virus =  psy_df.loc[(psy_df['mouse_name'] == mouse), 'virus'].unique()[0]
+            for j,i in enumerate(blocks):
+                    psy_df_block  = psy_df.loc[(psy_df['hem_stim'] == hem) & (psy_df['mouse_name'] == mouse) & (psy_df[block_variable] == i)] 
+                    pars,  L  =  ibl_psychometric (psy_df_block)
+                    plt.plot(np.arange(-100,100), psy.erf_psycho_2gammas( pars, np.arange(-100,100)), linewidth=2,\
+                             color = colors[j])
+                    sns.lineplot(x='signed_contrasts', y='right_choices', err_style="bars", \
+                                 linewidth=0, linestyle='None', mew=0.5,marker='.',
+                                 color = colors[j],  ci=68, data= psy_df_block)
+                    psy_measures = psy_measures.append({'mouse_name': mouse, 'virus':virus, 'block': i,\
+                                                        'conditions':hem,'threshold': pars[1],'bias':pars[0],\
+                                                       'gamma1':pars[2],'gamma2':pars[3]}, ignore_index=True)
+            ax[m+2,c].set_xlim([-25,25])
+            ax[m+2,c].set_title(mouse +' ' + virus +' '+ hem)
+            ax[m+2,c].set_ylabel('Fraction of CW choices')
+            ax[m+2,c].set_xlabel('Signed contrast')
+            green_patch = mpatches.Patch(color='green', label='Stim right = Laser on')
+            blue_patch  =  mpatches.Patch(color='blue', label='Stim left = Laser on')
+            plt.legend(handles=[green_patch, blue_patch], loc = 'lower right')
+        
+    return figure 
+
+
 def psychometric_summary(psy_df , block_variable, blocks, block2_variable, blocks2):
     """
     INPUTS:

@@ -1,10 +1,11 @@
-""" @alejandro 2019  - Alex extractor functions for Reward choice world, 
+""" @alejandro 2019  - Alex extractor functions for Reward choice world,
 fork from ibllib will be complicated for this, requires  the rewardworld.extractors module
 a modified alf """
 import logging
 from pathlib import Path
 import traceback
 from rew_alf.extractors import (biased_Reward_trials, biased_Reward_wheel)
+from ibllib.io.extractors import (biased_trials, biased_wheel)
 from ibllib.io import raw_data_loaders as raw
 import ibllib.io.flags as flags
 
@@ -18,8 +19,12 @@ def extractors_exist(session_path):
         return False
     task_name = settings['PYBPOD_PROTOCOL']
     task_name = task_name.split('_')[-1]
-    extractor_type = task_name[:task_name.find('ChoiceWorld')]
-    
+
+    if task_name == 'biasedLaserWorld':
+        extractor_type = 'biased'
+    else:
+        extractor_type = task_name[:task_name.find('ChoiceWorld')]
+
     return extractor_type
 
 def is_extracted(session_path):

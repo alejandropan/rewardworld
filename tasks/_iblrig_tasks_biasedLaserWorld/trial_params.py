@@ -26,8 +26,10 @@ Re using block functions for opto since there will be no block on top of that
 
 
 def draw_opto(opto_probability_left):
-    return int(np.random.choice(
-        [1, 0], p=[opto_probability_left, 1 - opto_probability_left])) 
+    if non_opto_block ==1 :
+        return int(0)
+    else:
+        return int(np.random.choice([1, 0], p=[opto_probability_left, 1 - opto_probability_left]))
 
 def init_opto_block_len(tph):
     if tph.block_init_5050:
@@ -38,15 +40,25 @@ def init_opto_block_len(tph):
             max_=tph.block_len_max)
 
 def init_opto_probability_left(tph):
+    #  -1 indicates non opto blocks, since opto_probability left can be 0 when in a non_opto block or when in a block
+    #  with stim on the right
     if tph.block_init_5050:
         return 0.5
+    if tph.non_opto_block == 1:
+        return -1
     else:
         return np.random.choice([1.00, 0.00])
 
+def init_opto_block(tph):
+    return np.random.choice([1, 0], p=[0.4, 0.6])  # Whether this block will have opto
+
 def update_opto_probability_left(tph):
+    #  -1 indicates non opto blocks, since opto_probability left can be 0 when in a non_opto block or when in a block
+    #  with stim on the right
+    if tph.non_opto_block==1:
+        return -1
     if tph.block_trial_num != 1:
         return tph.opto_probability_left
-
     if tph.block_num == 1 and tph.block_init_5050:
         return 0.5
     elif tph.block_num == 1 and not tph.block_init_5050:
@@ -55,6 +67,12 @@ def update_opto_probability_left(tph):
         return np.random.choice([1.00, 0.00])
     else:
         return round(abs(1 - tph.opto_probability_left), 1)
+
+def update_opto_block(tph):
+    if tph.block_trial_num != 1:
+        return tph.non_opto_block
+    else:
+        return np.random.choice([1, 0], p=[0.4, 0.6]) #Whether this block will have opto
 
 class TrialParamHandler(object):
     """All trial parameters for the current trial.
@@ -100,8 +118,6 @@ class TrialParamHandler(object):
         # Initialize parameters that may change every trial
         self.trial_num = 0
         self.stim_phase = 0.
-
-
         self.block_num = 0
         self.block_trial_num = 0
         self.block_len_factor = sph.BLOCK_LEN_FACTOR
@@ -140,6 +156,7 @@ class TrialParamHandler(object):
         self.water_delivered = 0
 
         ########opto
+        self.non_opto_block = init_opto_block(self)
         self.opto_probability_left = init_opto_probability_left(self)
         self.opto_probability_left_buffer = [self.opto_probability_left]
         self.opto = draw_opto(self.opto_probability_left) if self.position < 0 else draw_opto(1 - self.opto_probability_left)
@@ -217,8 +234,8 @@ RELATIVE HUMIDITY:    {self.as_data['RelativeHumidity']} %
         self.position = blocks.draw_position(
             self.position_set, self.stim_probability_left)
         self.position_buffer.append(self.position)
-        # Update opto + buffer
-        # Update opto + buffer
+        # Update opto block
+        self.non_opto_block = update_opto_block(self)
         # Update opto probability left + buffer
         self.opto_probability_left = update_opto_probability_left(self)
         self.opto_probability_left_buffer.append(self.opto_probability_left)

@@ -84,7 +84,7 @@ def get_psych_data(tph):
         return prop_resp_ccw
 
     prop_resp_ccw02 = get_prop_ccw_resp(0.0)
-    prop_resp_ccw05 = get_prop_ccw_resp(0.5)
+    prop_resp_ccw05 = get_prop_ccw_resp(-1)
     prop_resp_ccw08 = get_prop_ccw_resp(1)
 
     return sig_contrasts_all, prop_resp_ccw02, prop_resp_ccw05, prop_resp_ccw08
@@ -107,7 +107,7 @@ def get_chron_data(tph):
         rts = [x if not np.isnan(x) else 0 for x in rts]
         return rts
 
-    rts02, rts05, rts08 = get_rts(0), get_rts(0.5), get_rts(1)
+    rts02, rts05, rts08 = get_rts(0), get_rts(-1), get_rts(1)
 
     return sig_contrasts_all, rts02, rts05, rts08
 
@@ -142,7 +142,7 @@ def plot_bars(bar_data, ax=None):
     #############################################################
     if bar_data['stim_pl'] == 0:
         clr = 'green'
-    elif bar_data['stim_pl'] == 0.5:
+    elif bar_data['stim_pl'] == -1:
         clr = 'black'
     elif bar_data['stim_pl'] == 1:
         clr = 'blue'
@@ -205,10 +205,10 @@ def plot_psych(psych_data, ax=None):
     y05 = psych_data[2]
     y08 = psych_data[3]
 
-    ax.plot(x, y05, c='k', label='CCW responses 50/50',
+    ax.plot(x, y05, c='k', label='Non opto',
             marker='o', ls='-', alpha=0.5)
-    ax.plot(x, y02, c='g', label='CCW responses 20/80', marker='o', ls='-')
-    ax.plot(x, y08, c='b', label='CCW responses 80/20', marker='o', ls='-')
+    ax.plot(x, y02, c='g', label='Right Stimuli Opto', marker='o', ls='-')
+    ax.plot(x, y08, c='b', label='Left Stimuli Opto', marker='o', ls='-')
 
     ax.axhline(0.5, color='gray', ls='--', alpha=0.5)
     ax.axvline(0.0, color='gray', ls='--', alpha=0.5)
@@ -231,11 +231,11 @@ def plot_chron(chron_data, ax=None):
     y08 = chron_data[3]
 
     ax.plot(x, y05, c='k',
-            label='Median response time 50/50', marker='o', ls='-', alpha=0.5)
+            label='Median response no opto', marker='o', ls='-', alpha=0.5)
     ax.plot(x, y02, c='g',
-            label='Median response time 20/80', marker='o', ls='-')
+            label='Median response right stimuli opto', marker='o', ls='-')
     ax.plot(x, y08, c='b',
-            label='Median response time 80/20', marker='o', ls='-')
+            label='Median response left stimuli opto', marker='o', ls='-')
 
     ax.axhline(0.5, color='gray', ls='--', alpha=0.5)
     ax.axvline(0.0, color='gray', ls='--', alpha=0.5)

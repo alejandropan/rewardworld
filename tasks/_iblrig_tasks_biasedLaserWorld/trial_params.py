@@ -26,8 +26,10 @@ Re using block functions for opto since there will be no block on top of that
 
 
 def draw_opto(opto_probability_left):
-    return int(np.random.choice(
-        [1, 0], p=[opto_probability_left, 1 - opto_probability_left])) 
+    if non_opto_block ==1 :
+        return int(0)
+    else:
+        return int(np.random.choice([1, 0], p=[opto_probability_left, 1 - opto_probability_left]))
 
 def init_opto_block_len(tph):
     if tph.block_init_5050:
@@ -46,7 +48,6 @@ def init_opto_probability_left(tph):
 def update_opto_probability_left(tph):
     if tph.block_trial_num != 1:
         return tph.opto_probability_left
-
     if tph.block_num == 1 and tph.block_init_5050:
         return 0.5
     elif tph.block_num == 1 and not tph.block_init_5050:

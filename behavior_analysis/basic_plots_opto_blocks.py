@@ -8,7 +8,7 @@ Need to reinstall module, at the moment I need to be in npy2pd module, same for 
 from npy2pd import *
 from basic_plots import *
 from glm import *
-
+import numpy as np
 
 
 #Input folder with raw npy files
@@ -48,35 +48,27 @@ for mouse in psy_df['mouse_name'].unique():
         
 #1st Plot After laser trials across groups
 #Grouping variables
-block_variable = 'after_opto'
-blocks = [1, 0]
-block2_variable ='s.probabilityLeft'
-blocks2 = [0.8, 0.5, 0.2]
+block_variable = 'opto_block'
+blocks = ['L', 'R']
         
 
 #Plot across different trial history groups (after win and loses)
-general = psychometric_summary(psy_df , block_variable, blocks, block2_variable, blocks2)
-winner = psychometric_summary(psy_df.loc[psy_df['after_win']==1] , block_variable, blocks, block2_variable, blocks2)
-loser = psychometric_summary(psy_df.loc[psy_df['after_win']==-1] , block_variable, blocks, block2_variable, blocks2)
+long = psychometric_summary_opto_blocks(psy_df , block_variable, blocks)
+psy_df_short = shorten_df(psy_df, 0,200)
+first = psychometric_summary_opto_blocks(psy_df_short , block_variable, blocks)
+psy_df_last = shorten_df(psy_df, -200,-1)
+last = psychometric_summary_opto_blocks(psy_df_last , block_variable, blocks)
 
 #Save figs
-general.savefig('general.pdf')
-winner.savefig('winner.pdf')
-loser.savefig('loser.pdf')
+long.savefig('long.pdf')
+first.savefig('first.pdf')
+last.savefig('last.pdf')
 
-
-#Select probability blocks only
-psy_df_global  = psy_df.loc[(psy_df['s.probabilityLeft'] == 0.2) |(psy_df['s.probabilityLeft'] == 0.8)]
 
 #Plot glm with opto as a regressor for the different stimulation types
 
-glms = opto_laser_glm(psy_df_global)
+glms = opto_laser_glm(psy_df)
 glms.savefig('glms.pdf')
-
-#after opto vs non after opto
-regressors_pre_reward = opto_glm(psy_df_global)
-regressors_pre_reward.savefig('regressors_pre_reward.pdf')
-
 
 
 

@@ -83,9 +83,9 @@ def get_psych_data(tph):
                                                                 ntrials)]
         return prop_resp_ccw
 
-    prop_resp_ccw02 = get_prop_ccw_resp(0.2)
+    prop_resp_ccw02 = get_prop_ccw_resp(0.0)
     prop_resp_ccw05 = get_prop_ccw_resp(0.5)
-    prop_resp_ccw08 = get_prop_ccw_resp(0.8)
+    prop_resp_ccw08 = get_prop_ccw_resp(1)
 
     return sig_contrasts_all, prop_resp_ccw02, prop_resp_ccw05, prop_resp_ccw08
 
@@ -107,7 +107,7 @@ def get_chron_data(tph):
         rts = [x if not np.isnan(x) else 0 for x in rts]
         return rts
 
-    rts02, rts05, rts08 = get_rts(0.2), get_rts(0.5), get_rts(0.8)
+    rts02, rts05, rts08 = get_rts(0), get_rts(0.5), get_rts(1)
 
     return sig_contrasts_all, rts02, rts05, rts08
 
@@ -140,11 +140,11 @@ def plot_bars(bar_data, ax=None):
     ax.text(1, 3, str(bar_data['time_from_start']),
             color='black', fontweight='bold', size='x-large')
     #############################################################
-    if bar_data['stim_pl'] == 0.2:
+    if bar_data['stim_pl'] == 0:
         clr = 'green'
     elif bar_data['stim_pl'] == 0.5:
         clr = 'black'
-    elif bar_data['stim_pl'] == 0.8:
+    elif bar_data['stim_pl'] == 1:
         clr = 'blue'
     ax.barh(2, bar_data['block_len'], width, color=clr,
             label='Block Length')

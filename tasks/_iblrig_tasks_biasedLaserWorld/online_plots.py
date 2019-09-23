@@ -144,6 +144,10 @@ def plot_bars(bar_data, ax=None):
         clr = 'green'
     elif bar_data['stim_pl'] == -1:
         clr = 'black'
+
+    elif bar_data['stim_pl'] == 2:
+
+        clr = 'black'
     elif bar_data['stim_pl'] == 1:
         clr = 'blue'
     ax.barh(2, bar_data['block_len'], width, color=clr,

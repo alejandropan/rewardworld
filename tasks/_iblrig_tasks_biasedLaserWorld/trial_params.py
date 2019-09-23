@@ -41,7 +41,7 @@ def init_opto_probability_left(tph):
     if tph.block_init_5050:
         return 0.5
     else:
-        return np.random.choice([0.8, 0.2])
+        return np.random.choice([1.00, 0.00])
 
 def update_opto_probability_left(tph):
     if tph.block_trial_num != 1:
@@ -50,9 +50,9 @@ def update_opto_probability_left(tph):
     if tph.block_num == 1 and tph.block_init_5050:
         return 0.5
     elif tph.block_num == 1 and not tph.block_init_5050:
-        return np.random.choice([0.8, 0.2])
+        return np.random.choice([1.00, 0.00])
     elif tph.block_num == 2 and tph.block_init_5050:
-        return np.random.choice([0.8, 0.2])
+        return np.random.choice([1.00, 0.00])
     else:
         return round(abs(1 - tph.opto_probability_left), 1)
 

@@ -232,6 +232,7 @@ for i in range(sph.NTRIALS):  # Main loop
             sph.patch_settings_file(patch)
         [log.warning(msg) for x in range(5)]
 
+        
 bpod.close()
 
 

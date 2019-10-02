@@ -7,12 +7,18 @@ Need to reinstall module, at the moment I need to be in npy2pd module, same for 
 """
 from npy2pd import *
 from basic_plots import *
+from opto_plots import *
 from glm import *
 import numpy as np
 
 
 #Input folder with raw npy files
 psy_raw = load_data('/Volumes/witten/Alex/server_backup/Subjects_personal_project/opto_blocks/')
+
+if psy_raw.isnull().values.any():
+    psy_raw  = psy_raw.dropna()
+    print ('Warning: sessions deleted due to entire variables with NaN')
+
 psy_df  = unpack(psy_raw)
 
 #hot_fix for optoblocks until extractor is integrated
@@ -28,6 +34,7 @@ def opto_block_assigner (psy_df):
 
 
 #repair spaces
+psy_df = opto_block_assigner (psy_df)
 psy_df.loc[(psy_df['hem_stim']== ' L '), 'hem_stim']= 'L'
 
 #Shift opto to slice through next trial
@@ -52,7 +59,7 @@ block_variable = 'opto_block'
 blocks = ['L', 'R']
         
 
-#Plot across different trial history groups (after win and loses)
+#Plot across different trial history groups
 long = psychometric_summary_opto_blocks(psy_df , block_variable, blocks)
 psy_df_short = shorten_df(psy_df, 0,200)
 first = psychometric_summary_opto_blocks(psy_df_short , block_variable, blocks)

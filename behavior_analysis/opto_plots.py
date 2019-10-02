@@ -10,6 +10,7 @@ import seaborn as sns
 import numpy as np
 import matplotlib.patches as mpatches
 import pandas as pd
+from basic_plots import *
 
 def shorten_df(psy_df, n_trials_start,n_trials_end):
     psy_df_short = pd.DataFrame()

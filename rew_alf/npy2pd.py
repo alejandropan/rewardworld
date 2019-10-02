@@ -47,6 +47,7 @@ def pybpod_vars():
 	'intervals',
 	#'itiDuration',
     's.probabilityLeft', #hack for avoiding confusion with rewproability
+    'opto_probability_left',
 	'response_times',
 	'rewardVolume',
 	'opto.npy', 
@@ -54,9 +55,6 @@ def pybpod_vars():
     'hem_stim',
     #'rewprobabilityLeft',
 	'stimOn_times'
-	#'position',
-	#'timestamps',
-	#'velocity'
     ]
     
     return pybpod_vars

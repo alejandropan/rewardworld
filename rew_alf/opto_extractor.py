@@ -45,14 +45,18 @@ def get_opto(session_path, save=False, data=False, settings=False):
         lpath = Path(session_path).joinpath('alf', '_ibl_trials.opto.npy')
         np.save(lpath, opto)
         
+    opto_probability_left =  np.array([t['opto_probability_left'] for t in data])
+    if raw.save_bool(save, '_ibl_trials.opto_probability_left.npy'):
+        lpath = Path(session_path).joinpath('alf', '_ibl_trials.opto_probability_left.npy')
+        np.save(lpath, opto)
+
     dummy_opto  = np.array([t['opto'] for t in data]) #Same as opto but not buffer saved
     if raw.save_bool(save, '_ibl_trials.dummy_opto.npy'):
         lpath = Path(session_path).joinpath('alf', '_ibl_trials.opto_dummy.npy')
         np.save(lpath, opto)
-    return opto, dummy_opto
+    return opto,opto_probability_left, dummy_opto
 
 def extract_opto(session_path, save=False):
-        data = data = raw.load_data(session_path)
         opto, dummy_opto = get_opto(session_path, save=save, data=False, settings=False)
         hemisphere  = get_hem(session_path, save=save, data=False, settings=False)
         out = {'laser_on': opto}

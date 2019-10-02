@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# @Author: Niccolò Bonacchi
+# @Author: NiccolÃ² Bonacchi
 # @Date:   2018-02-20 14:46:10
 # matplotlib.use('Qt5Agg')
 from pathlib import Path
@@ -131,7 +131,7 @@ def plot_bars(bar_data, ax=None):
     ax.cla()
 
     width = 0.5
-    xlabels = ['Water\nDelivered\n(µl)', 'Trial\nOutcome',
+    xlabels = ['Water\nDelivered\n(Âµl)', 'Trial\nOutcome',
                'Current\nBlock', 'Session\nDuration']
     x = range(len(xlabels))  # the x locations for the groups
     #############################################################
@@ -143,6 +143,10 @@ def plot_bars(bar_data, ax=None):
     if bar_data['stim_pl'] == 0:
         clr = 'green'
     elif bar_data['stim_pl'] == -1:
+        clr = 'black'
+
+    elif bar_data['stim_pl'] == 2:
+
         clr = 'black'
     elif bar_data['stim_pl'] == 1:
         clr = 'blue'
@@ -268,7 +272,7 @@ def plot_vars(vars_data, ax=None, ax2=None):
     ax.bar(x[0], median_rt, width, color="cyan",
            label='Median RT (10^1ms)')
     ax.bar(x[1], temp, width, color="magenta",
-           label='Temperature (ºC)')
+           label='Temperature (ÂºC)')
 
     ax2.bar(x[3], rel_hum, width, color="yellow",
             label='Relative humidity')

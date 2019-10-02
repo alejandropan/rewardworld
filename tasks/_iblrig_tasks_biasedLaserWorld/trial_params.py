@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# @Author: Niccolò Bonacchi
+# @Author: NiccolÃ² Bonacchi
 # @Date:   2018-02-02 14:06:34
 import datetime
 import json
@@ -26,7 +26,11 @@ Re using block functions for opto since there will be no block on top of that
 
 
 def draw_opto(opto_probability_left):
-    if non_opto_block ==1 :
+    if opto_probability_left == -1:
+        return int(0)
+
+    if opto_probability_left == 2: #For the cases where when 1-opto_probability_left = 1 - (-1)
+
         return int(0)
     else:
         return int(np.random.choice([1, 0], p=[opto_probability_left, 1 - opto_probability_left]))
@@ -56,7 +60,7 @@ def update_opto_probability_left(tph):
     #  -1 indicates non opto blocks, since opto_probability left can be 0 when in a non_opto block or when in a block
     #  with stim on the right
     if tph.non_opto_block==1:
-        return -1
+        return int(-1)
     if tph.block_trial_num != 1:
         return tph.opto_probability_left
     if tph.block_num == 1 and tph.block_init_5050:
@@ -66,7 +70,7 @@ def update_opto_probability_left(tph):
     elif tph.block_num == 2 and tph.block_init_5050:
         return np.random.choice([1.00, 0.00])
     else:
-        return round(abs(1 - tph.opto_probability_left), 1)
+        return np.random.choice([1.00, 0.00])
 
 def update_opto_block(tph):
     if tph.block_trial_num != 1:
@@ -201,9 +205,9 @@ TRIAL CORRECT:        {self.trial_correct}
 
 NTRIALS CORRECT:      {self.ntrials_correct}
 NTRIALS ERROR:        {self.trial_num - self.ntrials_correct}
-WATER DELIVERED:      {np.round(self.water_delivered, 3)} µl
+WATER DELIVERED:      {np.round(self.water_delivered, 3)} Âµl
 TIME FROM START:      {self.elapsed_time}
-TEMPERATURE:          {self.as_data['Temperature_C']} ºC
+TEMPERATURE:          {self.as_data['Temperature_C']} ÂºC
 AIR PRESSURE:         {self.as_data['AirPressure_mb']} mb
 RELATIVE HUMIDITY:    {self.as_data['RelativeHumidity']} %
 ##########################################"""
@@ -302,6 +306,8 @@ RELATIVE HUMIDITY:    {self.as_data['RelativeHumidity']} %
         params['position'] = int(params['position'])
         params['opto'] = int(params['opto'])
         params['opto_dummy'] = int(params['opto_dummy'])
+
+        params['non_opto_block'] = int(params['non_opto_block'])
         # Delete buffered data
         params['stim_probability_left_buffer'] = ''
         params['opto_probability_left_buffer'] = ''

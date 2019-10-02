@@ -57,7 +57,7 @@ def get_opto(session_path, save=False, data=False, settings=False):
     return opto,opto_probability_left, dummy_opto
 
 def extract_opto(session_path, save=False):
-        opto, dummy_opto = get_opto(session_path, save=save, data=False, settings=False)
+        opto, opto_probability_left, dummy_opto = get_opto(session_path, save=save, data=False, settings=False)
         hemisphere  = get_hem(session_path, save=save, data=False, settings=False)
         out = {'laser_on': opto}
         out = {'hem_stim': hemisphere}

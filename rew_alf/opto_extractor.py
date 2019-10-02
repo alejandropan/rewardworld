@@ -48,12 +48,12 @@ def get_opto(session_path, save=False, data=False, settings=False):
     opto_probability_left =  np.array([t['opto_probability_left'] for t in data])
     if raw.save_bool(save, '_ibl_trials.opto_probability_left.npy'):
         lpath = Path(session_path).joinpath('alf', '_ibl_trials.opto_probability_left.npy')
-        np.save(lpath, opto)
+        np.save(lpath, opto_probability_left)
 
     dummy_opto  = np.array([t['opto'] for t in data]) #Same as opto but not buffer saved
     if raw.save_bool(save, '_ibl_trials.dummy_opto.npy'):
         lpath = Path(session_path).joinpath('alf', '_ibl_trials.opto_dummy.npy')
-        np.save(lpath, opto)
+        np.save(lpath, dummy_opto)
     return opto,opto_probability_left, dummy_opto
 
 def extract_opto(session_path, save=False):

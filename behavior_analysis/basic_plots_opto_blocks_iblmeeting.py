@@ -434,7 +434,8 @@ def opto_laser_glm(psy_df_global):
     for v, virus in enumerate(viruses):
         conditions  = psy_df_global.loc[(psy_df_global['virus']== virus),'hem_stim'].unique()
         for c , hem in enumerate(conditions): #(conditions)
-            psy_df = psy_df_global.loc[(psy_df_global['virus']== virus) & (psy_df_global['hem_stim']== hem)]
+            psy_df = psy_df_global.loc[(psy_df_global['virus']== virus) & \
+                                       (psy_df_global['hem_stim']== hem)]
             plt.sca(ax[v,c])
             
             mouse_result, mouse_r2  = glm_logit_opto(psy_df, sex_diff = False)
@@ -447,7 +448,8 @@ def opto_laser_glm(psy_df_global):
                 
             #Plotting
                 
-            ax[v,c]  = sns.barplot(x = 'Predictors', y = 'Coef', data=mouse_result, yerr= mouse_result['SEM'])    
+            ax[v,c]  = sns.barplot(x = 'Predictors', y = 'Coef', \
+              data=mouse_result, yerr= mouse_result['SEM'])    
             ax[v,c].set_xticklabels(mouse_result['Predictors'], rotation=-90)
             ax[v,c].set_ylabel('coef')
             ax[v,c].axhline(y=0, linestyle='--', color='black', linewidth=2)

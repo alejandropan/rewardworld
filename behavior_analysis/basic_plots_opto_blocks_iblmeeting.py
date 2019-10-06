@@ -32,8 +32,14 @@ def opto_block_assigner (psy_df):
     psy_df.loc[(psy_df['opto_probability_left'] == -1), 'opto_block'] = 'non_opto'
     return psy_df
 
+'''
+ In the task there is no unrewarded opto trials, even if opto.npy is 1, if the 
+state machine does not reach the state 'reward', the laser never goes off. Therfore:
+'''
+#  Correct for lack of unrewarded laser
 
-
+psy_df.loc[(psy_df['opto.npy'] == 1) & (psy_df['feedbackType'] == -1), \
+           'opto.npy'] = 0
 
 
 #repair spaces
@@ -498,8 +504,9 @@ def block_qc(psy_df):
     psy_df.loc[(psy_df['contrastLeft'] == 0) | \
                (psy_df['contrastRight'] == 0), 'choice'].count()
     
-    unrewarded_opto = np.isnan(psy_df.loc[(psy_df['opto.npy'] == 1) &\
-                                          (psy_df['feedbackType'] == -1)].count()[0])
+    unrewarded_opto = psy_df.loc[(psy_df['opto.npy'] == 1) &\
+                                          (psy_df['feedbackType'] == \
+                                           -1)].count()[0]
     
     return percentage_left, percentage_left_0, unrewarded_opto
     

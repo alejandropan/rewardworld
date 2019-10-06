@@ -87,6 +87,7 @@ glms.savefig('glms.pdf')
 summary_opto(psy_df.loc[(psy_df['hem_stim']=='B')] , block_variable, blocks)
 
 
+
 def summary_opto(psy_df , block_variable, blocks):
     """
     INPUTS:
@@ -185,7 +186,7 @@ def summary_opto_permouse(psy_df , block_variable, blocks):
     return figure 
 
 
-def choice_at_zero (psy_df):
+def choice_at_zero_2blocks (psy_df):
     """ Calculate choice at 0 contrast across blocks
     INPUTS:
     psy_df,  general dataframe with all the information about each trials
@@ -234,7 +235,7 @@ def choice_at_zero (psy_df):
                 data = psy_0.loc[(psy_0['virus'] == 'chr2') & \
                                  (psy_0['previous_choice'] == -1)],\
                                  facecolor=(1, 1, 1, 0),\
-                linewidth=2.5, edgecolor=["b", "g"], ax = ax[1,0])
+                linewidth=2.5, edgecolor=["k", "k"], ax = ax[1,0])
     sns.lineplot( x = 'after_opto', y = 'right_choices', \
                 data = psy_0.loc[(psy_0['virus'] == 'chr2') & \
                                  (psy_0['previous_choice'] == -1)], \
@@ -249,7 +250,7 @@ def choice_at_zero (psy_df):
                 data = psy_0.loc[(psy_0['virus'] == 'nphr') & \
                                  (psy_0['previous_choice'] == -1)],\
                                  facecolor=(1, 1, 1, 0),\
-                linewidth=2.5, edgecolor=["b", "g"], ax = ax[1,1])
+                linewidth=2.5, edgecolor=["k", "k"], ax = ax[1,1])
     sns.lineplot( x = 'after_opto', y = 'right_choices', \
                 data = psy_0.loc[(psy_0['virus'] == 'nphr') & \
                                  (psy_0['previous_choice'] == -1)], \
@@ -261,6 +262,170 @@ def choice_at_zero (psy_df):
     ax[1,1].set_ylabel('% CCW (Right) choices')
     plt.tight_layout()
     
+def choice_at_zero_3blocks (psy_df):
+    """ Calculate choice at 0 contrast across blocks
+    INPUTS:
+    psy_df,  general dataframe with all the information about each trials
+    block_variable, dividing blovk variable (E.g opto stim block)
+    blocks, identity of the blocks in block variable
+    """
+    
+    #  Reduce dataframe to trials with 0
+    psy_0 = \
+    psy_df.loc[(psy_df['contrastRight'] == 0) | (psy_df['contrastLeft'] == 0 )]
+    
+    #  Calculate percentage of right choices
+    right_choices = psy_0['choice']== -1
+    psy_0.loc[:,'right_choices'] = right_choices
+    
+    #  Start plotting
+    sns.set()
+    figure, ax  = plt.subplots(2,2, figsize = [6,10])
+    sns.barplot( x = 'opto_block', y = 'right_choices', \
+                data = psy_0.loc[psy_0['virus'] == 'chr2'],\
+                facecolor=(1, 1, 1, 0),\
+                linewidth=2.5, edgecolor=["b","g", 'k'], ax = ax[0,0])
+    sns.lineplot( x = 'opto_block', y = 'right_choices', \
+                data = psy_0.loc[psy_0['virus'] == 'chr2'], \
+                hue = 'mouse_name', ci=None, palette = "Greys" ,\
+                linewidth=2,  alpha = 0.75, ax = ax[0,0])
+    ax[0,0].set_ylim([0.2,0.6])
+    ax[0,0].legend_.remove()
+    ax[0,0].set_xlabel('Opto block')
+    ax[0,0].set_ylabel('% CCW (Right) choices')
+    
+    sns.barplot( x = 'opto_block', y = 'right_choices', \
+                data = psy_0.loc[psy_0['virus'] == 'nphr'] ,linewidth=2.5, \
+                facecolor=(1, 1, 1, 0),
+                edgecolor=["b", "g", 'k'],  ax = ax[0,1])
+    sns.lineplot( x = 'opto_block', y = 'right_choices', \
+                data = psy_0.loc[psy_0['virus'] == 'nphr'], hue = 'mouse_name', \
+                ci=None, palette = "Greys" ,linewidth=2,ax = ax[0,1], \
+                alpha = 0.75)
+    ax[0,1].set_ylim([0.2,0.6])
+    ax[0,1].legend_.remove()
+    ax[0,1].set_xlabel('Opto block')
+    ax[0,1].set_ylabel('% CCW (Right) choices')
+    
+    sns.barplot( x = 'after_opto', y = 'right_choices', \
+                data = psy_0.loc[(psy_0['virus'] == 'chr2') & \
+                                 (psy_0['previous_choice'] == -1)],\
+                                 facecolor=(1, 1, 1, 0),\
+                linewidth=2.5, edgecolor=["b", "g", 'k'], ax = ax[1,0])
+    sns.lineplot( x = 'after_opto', y = 'right_choices', \
+                data = psy_0.loc[(psy_0['virus'] == 'chr2') & \
+                                 (psy_0['previous_choice'] == -1)], \
+                hue = 'mouse_name', ci=None, palette = "Greys" ,linewidth=2, \
+                ax = ax[1,0], alpha = 0.75)
+    ax[1,0].set_ylim([0.2,0.7])
+    ax[1,0].legend_.remove()
+    ax[1,0].set_xlabel('Laser ON on previous trial')
+    ax[1,0].set_ylabel('% CCW (Right) choices')
+    
+    sns.barplot( x = 'after_opto', y = 'right_choices', \
+                data = psy_0.loc[(psy_0['virus'] == 'nphr') & \
+                                 (psy_0['previous_choice'] == -1)],\
+                                 facecolor=(1, 1, 1, 0),\
+                linewidth=2.5, edgecolor=["b", "g", 'k'], ax = ax[1,1])
+    sns.lineplot( x = 'after_opto', y = 'right_choices', \
+                data = psy_0.loc[(psy_0['virus'] == 'nphr') & \
+                                 (psy_0['previous_choice'] == -1)], \
+                hue = 'mouse_name', ci=None, palette = "Greys" ,linewidth=2, \
+                ax = ax[1,1], alpha = 0.75)
+    ax[1,1].set_ylim([0.2,0.7])
+    ax[1,1].legend_.remove()
+    ax[1,1].set_xlabel('Laser ON on previous trial')
+    ax[1,1].set_ylabel('% CCW (Right) choices')
+    plt.tight_layout()
+    
+
+
+def opto_chronometric(psy_df):
+    """
+    DESCRIPTION:  Plot chronometric for laser on and off
+    INPUT: psy_df dataframe with trials
+    OUTPUT: figure with chronometric for laser on / off
+    """
+    psy_df  = ibl_rt(psy_df)
+    conditions  = psy_df['hem_stim'].unique()
+    mice = psy_df['mouse_name'].unique()
+    viruses =  psy_df['virus'].unique()
+    figure,ax = plt.subplots(1,2, figsize=(15,5))
+
+    for v, virus in enumerate(viruses):
+        for c , hem in enumerate(conditions):
+            plt.sca(ax[v])
+            sns.set()
+            colors =['blue', 'green']
+            if len(blocks) > 2:
+                colors =['blue', 'green']
+            for j,i in enumerate(blocks):
+                    psy_df_block  = psy_df.loc[(psy_df['hem_stim'] == hem) & \
+                                               (psy_df['virus'] == virus) & \
+                                               (psy_df[block_variable] == i)] 
+                    sns.lineplot(x='signed_contrasts', y='RT', marker = 'o',\
+                                 err_style="bars", ci=68, style='after_opto',\
+                                 color = colors[j], data= psy_df_block)
+                    
+            ax[v].set_xlim([-25,25])
+            ax[v].set_title(virus +' '+ hem)
+            ax[v].set_ylabel('Reaction Times (s)')
+            ax[v].set_xlabel('Signed contrast')
+            green_patch = mpatches.Patch(color='green', \
+                                         label='Stim right = Laser on')
+            blue_patch  =  mpatches.Patch(color='blue', \
+                                          label='Stim left = Laser on')
+            dashed  =  plt.Line2D([0], [0], color='black', lw= 1.5, \
+                                 label='Laser ON t-1', ls = '--')
+            solid  = plt.Line2D([0], [0], color='black', lw=1.5, \
+                                label='Laser OFF t-1', ls = '-')
+            
+            plt.legend(handles=[green_patch, blue_patch, dashed, solid], \
+                       loc = 'lower right')
+            
+         
+def opto_chronometric_permouse (psy_df):
+    psy_df  = ibl_rt(psy_df)
+    conditions  = psy_df['hem_stim'].unique()
+    viruses =  psy_df['virus'].unique()
+    figure,ax = plt.subplots(2,3, figsize=(15,15))
+
+    #Plot summaries divided by hem stimulated and virus
+    for v , virus in enumerate(viruses):
+        for m, mouse in enumerate(psy_df.loc[psy_df['virus'] == virus, \
+                                             'mouse_name'].unique()):
+        
+            plt.sca(ax[v,m])
+            sns.set()
+            colors =['blue', 'green']
+            if len(blocks) > 2:
+                colors =['blue', 'green', 'black']
+            for j,i in enumerate(blocks):
+                    psy_df_block  = psy_df.loc[(psy_df['hem_stim'] == hem) & \
+                                    (psy_df['mouse_name'] == mouse) & \
+                                    (psy_df[block_variable] == i)] 
+                    sns.lineplot(x='signed_contrasts', y='RT', \
+                                 err_style="bars", \
+                                 linestyle='None',marker='o',
+                                 color = colors[j], ci=68, style='after_opto',\
+                                 data= psy_df_block)
+   
+            ax[v,m].set_xlim([-25,25])
+            ax[v,m].set_title(mouse +' ' + virus +' '+ hem)
+            ax[v,m].set_ylabel('Fraction of CW choices')
+            ax[v,m].set_xlabel('Signed contrast')
+            green_patch = mpatches.Patch(color='green', \
+                                         label='Stim right = Laser on')
+            blue_patch  =  mpatches.Patch(color='blue', \
+                                          label='Stim left = Laser on')
+            dashed  =  plt.Line2D([0], [0], color='black', lw= 1.5, \
+                                 label='Laser ON t-1', ls = '--')
+            solid  = plt.Line2D([0], [0], color='black', lw=1.5, \
+                                label='Laser OFF t-1', ls = '-')
+            plt.legend(handles=[green_patch, blue_patch, \
+                                dashed, solid], loc = 'lower right')
+        
+    return figure 
 
 def block_qc(psy_df):
     """
@@ -284,7 +449,6 @@ def block_qc(psy_df):
     
     
     
-    
-    
+
 
     

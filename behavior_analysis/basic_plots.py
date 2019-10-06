@@ -280,4 +280,12 @@ def plot_glm(psy_df, result, r2):
     
     return results
 
-
+def ibl_rt (psy_df):
+    """
+    INPUT dataframe with trials
+    OUTPUT dataframe with RTs and signed contrast
+    """
+    psy_df['RT']  = psy_df['response_times'] -  psy_df['stimOn_times']
+    psy_df = signed_contrast(psy_df)
+    
+    return psy_df

@@ -427,6 +427,57 @@ def opto_chronometric_permouse (psy_df):
         
     return figure 
 
+
+def opto_laser_glm(psy_df_global):
+    viruses =  psy_df_global['virus'].unique()
+    figure,ax = plt.subplots(5,3, figsize=(24,80))
+    for v, virus in enumerate(viruses):
+        conditions  = psy_df_global.loc[(psy_df_global['virus']== virus),'hem_stim'].unique()
+        for c , hem in enumerate(conditions): #(conditions)
+            psy_df = psy_df_global.loc[(psy_df_global['virus']== virus) & (psy_df_global['hem_stim']== hem)]
+            plt.sca(ax[v,c])
+            
+            mouse_result, mouse_r2  = glm_logit_opto(psy_df, sex_diff = False)
+                
+            mouse_result  =  pd.DataFrame({"Predictors": mouse_result.model.exog_names , "Coef" : mouse_result.params.values,\
+                              "SEM": mouse_result.bse.values, "Significant": mouse_result.pvalues < 0.05/len(mouse_result.model.exog_names)})
+    
+            #Drop current evidence
+            mouse_result = mouse_result.iloc[2:]
+                
+            #Plotting
+                
+            ax[v,c]  = sns.barplot(x = 'Predictors', y = 'Coef', data=mouse_result, yerr= mouse_result['SEM'])    
+            ax[v,c].set_xticklabels(mouse_result['Predictors'], rotation=-90)
+            ax[v,c].set_ylabel('coef')
+            ax[v,c].axhline(y=0, linestyle='--', color='black', linewidth=2)
+            ax[v,c].set_title(virus +' '+ hem)
+            
+            
+            #Have to cahnge glm function so that it has the optopn to run normal glm only on opto.npy trials
+            for i,mouse in enumerate(psy_df['mouse_name'].unique()):
+                mouse_result, mouse_r2  = glm_logit_opto(psy_df.loc[(psy_df['mouse_name']==mouse)], sex_diff = False)
+                
+                mouse_result  =  pd.DataFrame({"Predictors": mouse_result.model.exog_names , "Coef" : mouse_result.params.values,\
+                              "SEM": mouse_result.bse.values, "Significant": mouse_result.pvalues < 0.05/len(mouse_result.model.exog_names)})
+    
+                #Drop current evidence
+                mouse_result = mouse_result.iloc[2:]    
+                
+                #Plotting
+                plt.sca(ax[v+i+2,c])
+                ax[v+i+2,c]  = sns.barplot(x = 'Predictors', y = 'Coef', data=mouse_result, yerr= mouse_result['SEM'])    
+                ax[v+i+2,c].set_xticklabels(mouse_result['Predictors'], rotation=-90)
+                ax[v+i+2,c].set_ylabel('coef')
+                ax[v+i+2,c].axhline(y=0, linestyle='--', color='black', linewidth=2)
+                ax[v+i+2,c].set_title(virus +' '+mouse +' '+ hem)
+                
+                
+    return figure
+
+
+
+
 def block_qc(psy_df):
     """
     INPUT: dataframe with all trial information
@@ -434,6 +485,7 @@ def block_qc(psy_df):
     percetange_left : percetange of left stimuli
     percentage_left_0: percentage of 0 that are rewarded
     with a left choice
+    unrewarded_opto
     """
     
     percentage_left = pd.isnull(psy_df['contrastRight']).sum() / \
@@ -444,7 +496,10 @@ def block_qc(psy_df):
     psy_df.loc[(psy_df['contrastLeft'] == 0) | \
                (psy_df['contrastRight'] == 0), 'choice'].count()
     
-    return percentage_left, percentage_left_0
+    unrewarded_opto = np.isnan(psy_df.loc[(psy_df['opto.npy'] == 1) &\
+                                          (psy_df['feedbackType'] == -1)].count()[0])
+    
+    return percentage_left, percentage_left_0, unrewarded_opto
     
     
     

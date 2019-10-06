@@ -20,6 +20,7 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
+import glm
 
 
 def signed_contrast(psy_df):

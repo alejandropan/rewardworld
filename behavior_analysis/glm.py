@@ -240,9 +240,13 @@ def  glm_logit_opto(psy_df, sex_diff = False):
     
     
     #make separate datafrme 
-    data =  psy_df.loc[ :, ['mouse_name', 'feedbackType', 'signed_contrasts', 'choice','ses','opto.npy']]
+    data =  psy_df.loc[ :, ['mouse_name', 'feedbackType', 'signed_contrasts', 'choice','ses','opto.npy', 'opto_block']]
     
     ## Build predictor matrix
+    
+    # Change -1 for 1in choice 
+    data['choice'] = data['choice'] * -1
+    
     
     #Rewardedchoices: 
     data.loc[(data['choice'] == -1) & (data['feedbackType'] == -2) , 'rchoice']  = 0 
@@ -264,8 +268,7 @@ def  glm_logit_opto(psy_df, sex_diff = False):
     
     #Drop nogos
     data = data.drop(data.index[data['choice'] == 0],axis=0)
-    ## Change -1 for 0 in choice 
-    data.loc[(data['choice'] == -1), 'choice'] = 0
+    
     
     #make Revidence and LEvidence
     data.loc[(data['signed_contrasts'] >= 0), 'Revidence'] = data.loc[(data['signed_contrasts'] >= 0), 'signed_contrasts'].abs()
@@ -274,9 +277,9 @@ def  glm_logit_opto(psy_df, sex_diff = False):
     data.loc[(data['signed_contrasts'] >= 0), 'Levidence'] = 0
     
     
-    #make opto column
-    
-        #Opto column already in 1 and 0
+    #make block column
+    data.loc[(data['opto_block'] == 'L') , 'opto_block_b']  = -1
+    data.loc[(data['opto_block'] == 'R') , 'opto_block_b']  = 1
     
     #Opto 
     data.loc[(data['opto.npy'] == 1) & (data['rchoice'] == -1) , 'opto_rew']  = -1
@@ -294,7 +297,6 @@ def  glm_logit_opto(psy_df, sex_diff = False):
     data.loc[(data['opto.npy'] == 0) & (data['uchoice'] == 0) , 'opto_unrew']  = 0
     
     #previous choices and evidence
-    
     no_tback = 5 #no of trials back
     
     start = time.time()
@@ -308,6 +310,7 @@ def  glm_logit_opto(psy_df, sex_diff = False):
                 data.loc[data['ses'] == date,'opto%s' %str(i+1)] =  data.loc[data['ses'] == date,'opto.npy'].shift(i+1)
                 data.loc[data['ses'] == date,'opto_rew%s' %str(i+1)] =  data.loc[data['ses'] == date,'opto_rew'].shift(i+1)
                 data.loc[data['ses'] == date,'opto_unrew%s' %str(i+1)] =  data.loc[data['ses'] == date,'opto_unrew'].shift(i+1)
+                data.loc[data['ses'] == date,'opto_block%s' %str(i+1)] =  data.loc[data['ses'] == date,'opto_block_b'].shift(i+1) #06102019
     end = time.time()
     print(end - start)
     
@@ -352,7 +355,8 @@ def load_regression_opto (data, mixed_effects  = False):
                   'uchoice4', 'Levidence4', 'Revidence4',\
                   'opto4','opto_rew4', 'opto_unrew4',\
                   'rchoice5', 'uchoice5',\
-                  'Levidence5', 'Revidence5', 'opto5','opto_rew5', 'opto_unrew5']]
+                  'Levidence5', 'Revidence5', 'opto5','opto_rew5', 'opto_unrew5',\
+                  'opto_block_b','opto_block1', 'opto_block2', 'opto_block3', 'opto_block4', 'opto_block5']]#06102019
     
     cols = list(exog.columns)
     
@@ -370,7 +374,8 @@ def load_regression_opto (data, mixed_effects  = False):
                   'uchoice4', 'Levidence4', 'Revidence4',\
                   'opto4','opto_rew4', 'opto_unrew4',\
                   'rchoice5', 'uchoice5',\
-                  'Levidence5', 'Revidence5', 'opto5','opto_rew5', 'opto_unrew5'] )
+                  'Levidence5', 'Revidence5', 'opto5','opto_rew5', 'opto_unrew5',\
+                 'opto_block_b','opto_block1', 'opto_block2', 'opto_block3', 'opto_block4', 'opto_block5'] )
         
     
     ##Cross validation

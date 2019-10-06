@@ -260,6 +260,8 @@ def choice_at_zero (psy_df):
     ax[1,1].set_xlabel('Laser ON on previous trial')
     ax[1,1].set_ylabel('% CCW (Right) choices')
     plt.tight_layout()
+    
+
 def block_qc(psy_df):
     """
     INPUT: dataframe with all trial information

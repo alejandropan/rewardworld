@@ -20,8 +20,7 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
-import glm
-
+from glm import *
 
 def signed_contrast(psy_df):
     psy_df.loc[:,'contrastRight'] = psy_df['contrastRight'].fillna(0)

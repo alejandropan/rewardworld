@@ -296,6 +296,10 @@ def  glm_logit_opto(psy_df, sex_diff = False):
     data.loc[(data['opto.npy'] == 1) & (data['uchoice'] == 0) , 'opto_unrew']  = 0
     data.loc[(data['opto.npy'] == 0) & (data['uchoice'] == 0) , 'opto_unrew']  = 0
     
+    
+    ## Change -1 for 0 in choice 
+    data.loc[(data['choice'] == -1), 'choice'] = 0
+    
     #previous choices and evidence
     no_tback = 5 #no of trials back
     
@@ -377,7 +381,14 @@ def load_regression_opto (data, mixed_effects  = False):
                   'Levidence5', 'Revidence5', 'opto5','opto_rew5', 'opto_unrew5',\
                  'opto_block_b','opto_block1', 'opto_block2', 'opto_block3', 'opto_block4', 'opto_block5'] )
         
-    
+   #  Add exception for cases in which there is no possibility for urnewarded opto
+   
+    if np.isnan(exog['opto_unrew1_zscore'].mean()):
+        exog = exog.drop(columns = ['opto_unrew1_zscore','opto_unrew2_zscore', \
+                            'opto_unrew3_zscore',\
+                            'opto_unrew4_zscore','opto_unrew5_zscore'])
+        
+        
     ##Cross validation
     
     if mixed_effects == False :

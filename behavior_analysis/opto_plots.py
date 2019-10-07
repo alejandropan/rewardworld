@@ -11,6 +11,7 @@ import numpy as np
 import matplotlib.patches as mpatches
 import pandas as pd
 from basic_plots import *
+from glm import *
 
 def shorten_df(psy_df, n_trials_start,n_trials_end):
     psy_df_short = pd.DataFrame()
@@ -53,6 +54,8 @@ def psychometric_summary_opto_blocks(psy_df , block_variable, blocks):
             plt.sca(ax[v,c])
             sns.set()
             colors =['blue', 'green']
+            if len(blocks) > 2:
+                colors =['blue', 'green', 'black']
             for j,i in enumerate(blocks):
                     psy_df_block  = psy_df.loc[(psy_df['hem_stim'] == hem) & (psy_df['virus'] == virus) & (psy_df[block_variable] == i)] 
                     pars,  L  =  ibl_psychometric (psy_df_block)
@@ -77,6 +80,8 @@ def psychometric_summary_opto_blocks(psy_df , block_variable, blocks):
             plt.sca(ax[m+2,c])
             sns.set()
             colors =['blue', 'green']
+            if len(blocks) > 2:
+                colors =['blue', 'green', 'black']
             virus =  psy_df.loc[(psy_df['mouse_name'] == mouse), 'virus'].unique()[0]
             for j,i in enumerate(blocks):
                     psy_df_block  = psy_df.loc[(psy_df['hem_stim'] == hem) & (psy_df['mouse_name'] == mouse) & (psy_df[block_variable] == i)] 

@@ -15,6 +15,9 @@ import numpy as np
 #Input folder with raw npy files
 psy_raw = load_data('/Volumes/witten/Alex/server_backup/Subjects_personal_project/opto_blocks/')
 
+#For non random block
+psy_raw=psy_raw.drop(columns=['opto_probability_left'])
+#Only for random blocks
 if psy_raw.isnull().values.any():
     psy_raw  = psy_raw.dropna()
     print ('Warning: sessions deleted due to entire variables with NaN')
@@ -25,8 +28,8 @@ psy_df  = unpack(psy_raw)
 def opto_block_assigner (psy_df):
     psy_df['opto_block'] = np.nan
     psy_df.loc[(psy_df['opto_probability_left'] == 1), 'opto_block'] = 'L'
-    psy_df.loc[(psy_df['opto_probability_left'] == 0), 'opto_block'] = 'L'
-    psy_df.loc[(psy_df['opto_probability_left'] == -1), 'opto_block'] = 'R'
+    psy_df.loc[(psy_df['opto_probability_left'] == 0), 'opto_block'] = 'R'
+    psy_df.loc[(psy_df['opto_probability_left'] == -1), 'opto_block'] = 'non_opto'
     return psy_df
 
 
@@ -54,12 +57,12 @@ for mouse in psy_df['mouse_name'].unique():
 #1st Plot After laser trials across groups
 #Grouping variables
 block_variable = 'opto_block'
-blocks = ['L', 'R']
+blocks = ['L', 'R', 'non_opto']
         
 
 #Plot across different trial history groups
-long = psychometric_summary_opto_blocks(psy_df , block_variable, blocks)
-psy_df_short = shorten_df(psy_df, 0,200)
+long = psychometric_summary_opto_blocks(psy_df, block_variable, blocks)
+psy_df_short = shorten_df(psy_df, 0,400)
 first = psychometric_summary_opto_blocks(psy_df_short , block_variable, blocks)
 psy_df_last = shorten_df(psy_df, -200,-1)
 last = psychometric_summary_opto_blocks(psy_df_last , block_variable, blocks)

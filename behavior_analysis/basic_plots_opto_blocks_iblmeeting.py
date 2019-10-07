@@ -70,7 +70,7 @@ blocks = ['L', 'R', 'non_opto']
 
 #Plot across different trial history groups
 long = psychometric_summary_opto_blocks(psy_df, block_variable, blocks)
-psy_df_short = shorten_df(psy_df, 0,200)
+psy_df_short = shorten_df(psy_df, 0,400)
 first = psychometric_summary_opto_blocks(psy_df_short , block_variable, blocks)
 psy_df_last = shorten_df(psy_df, -200,-1)
 last = psychometric_summary_opto_blocks(psy_df_last , block_variable, blocks)
@@ -352,6 +352,11 @@ def opto_chronometric(psy_df):
     INPUT: psy_df dataframe with trials
     OUTPUT: figure with chronometric for laser on / off
     """
+    if not 'signed_contrasts' in psy_df:
+        psy_df.loc[:,'contrastRight'] = psy_df['contrastRight'].fillna(0)
+        psy_df.loc[:,'contrastLeft']  = psy_df['contrastLeft'].fillna(0)
+        psy_df.loc[:,'signed_contrasts'] =  (psy_df['contrastRight'] - psy_df['contrastLeft'])
+    
     psy_df  = ibl_rt(psy_df)
     conditions  = psy_df['hem_stim'].unique()
     mice = psy_df['mouse_name'].unique()
@@ -364,7 +369,7 @@ def opto_chronometric(psy_df):
             sns.set()
             colors =['blue', 'green']
             if len(blocks) > 2:
-                colors =['blue', 'green']
+                colors =['blue', 'green', 'black']
             for j,i in enumerate(blocks):
                     psy_df_block  = psy_df.loc[(psy_df['hem_stim'] == hem) & \
                                                (psy_df['virus'] == virus) & \

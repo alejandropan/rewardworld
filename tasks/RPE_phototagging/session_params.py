@@ -13,7 +13,6 @@ from pythonosc import udp_client
 import iblrig.iotasks as iotasks
 import iblrig.user_input as user_input
 from iblrig.path_helper import SessionPathCreator
-
 import iblrig.adaptive as adaptive
 import iblrig.ambient_sensor as ambient_sensor
 import iblrig.bonsai as bonsai
@@ -32,21 +31,128 @@ class SessionParamHandler(object):
     will and calculates other secondary session parameters,
     runs Bonsai and saves all params in a settings file.json"""
 
-    def __init__(self, task_settings, user_settings):
+    def __init__(self, task_settings, user_settings, debug=False, fmake=True):
+
+        self.DEBUG = debug
+
         # =====================================================================
+
         # IMPORT task_settings, user_settings, and SessionPathCreator params
+
         # =====================================================================
+
         ts = {i: task_settings.__dict__[i]
+
               for i in [x for x in dir(task_settings) if '__' not in x]}
+
         self.__dict__.update(ts)
+
         us = {i: user_settings.__dict__[i]
+
               for i in [x for x in dir(user_settings) if '__' not in x]}
+
         self.__dict__.update(us)
+
         self = iotasks.deserialize_pybpod_user_settings(self)
-        spc = SessionPathCreator(self.IBLRIG_FOLDER, self.IBLRIG_DATA_FOLDER,
-                                 self.PYBPOD_SUBJECTS[0],
+
+        if not fmake:
+
+            make = False
+
+        elif fmake and 'ephys' in self.PYBPOD_BOARD:
+
+            make = True
+
+        else:
+
+            make = ['video']
+
+        spc = SessionPathCreator(self.PYBPOD_SUBJECTS[0],
+
                                  protocol=self.PYBPOD_PROTOCOL,
-                                 board=self.PYBPOD_BOARD, make=True)
+
+                                 make=make)
+
+        self.__dict__.update(spc.__dict__)
+
+        # =====================================================================
+
+        # IMPORT task_settings, user_settings, and SessionPathCreator params
+
+        # =====================================================================
+
+        ts = {i: task_settings.__dict__[i]
+
+              for i in [x for x in dir(task_settings) if '__' not in x]}
+
+        self.__dict__.update(ts)
+
+        us = {i: user_settings.__dict__[i]
+
+              for i in [x for x in dir(user_settings) if '__' not in x]}
+
+        self.__dict__.update(us)
+
+        self = iotasks.deserialize_pybpod_user_settings(self)
+
+        if not fmake:
+
+            make = False
+
+        elif fmake and 'ephys' in self.PYBPOD_BOARD:
+
+            make = True
+
+        else:
+
+            make = ['video']
+
+        spc = SessionPathCreator(self.PYBPOD_SUBJECTS[0],
+
+                                 protocol=self.PYBPOD_PROTOCOL,
+
+                                 make=make)
+
+        self.__dict__.update(spc.__dict__)
+
+        # =====================================================================
+
+        # IMPORT task_settings, user_settings, and SessionPathCreator params
+
+        # =====================================================================
+
+        ts = {i: task_settings.__dict__[i]
+
+              for i in [x for x in dir(task_settings) if '__' not in x]}
+
+        self.__dict__.update(ts)
+
+        us = {i: user_settings.__dict__[i]
+
+              for i in [x for x in dir(user_settings) if '__' not in x]}
+
+        self.__dict__.update(us)
+
+        self = iotasks.deserialize_pybpod_user_settings(self)
+
+        if not fmake:
+
+            make = False
+
+        elif fmake and 'ephys' in self.PYBPOD_BOARD:
+
+            make = True
+
+        else:
+
+            make = ['video']
+
+        spc = SessionPathCreator(self.PYBPOD_SUBJECTS[0],
+
+                                 protocol=self.PYBPOD_PROTOCOL,
+
+                                 make=make)
+
         self.__dict__.update(spc.__dict__)
 
         # =====================================================================
@@ -59,8 +165,15 @@ class SessionParamHandler(object):
         # =====================================================================
         # PROBES + WEIGHT
         # =====================================================================
-        self.FORM_DATA = user_input.session_form(mouse_name=self.SUBJECT_NAME)
-        self = user_input.parse_form_data(self)
+        form_data = -1
+
+        while form_data == -1:
+
+            form_data = user_input.session_form(mouse_name=self.SUBJECT_NAME)
+
+        self.SUBJECT_WEIGHT = user_input.get_form_subject_weight(form_data)
+
+        self.PROBE_DATA = user_input.get_form_probe_data(form_data)
         # =====================================================================
         # SAVE SETTINGS FILE AND TASK CODE
         # =====================================================================
@@ -68,7 +181,6 @@ class SessionParamHandler(object):
 
         self.behavior_data = []
         self.elapsed_time = 0
-        self.init_datetime = parser.parse(sph.PYBPOD_SESSION)
     # =========================================================================
     # METHODS
     # =========================================================================
@@ -131,7 +243,7 @@ class SessionParamHandler(object):
     # =========================================================================
     # SAVE TRIAL DATA
     # =========================================================================
-     def session_completed(self, behavior_data):
+    def session_completed(self, behavior_data):
         """Update outcome variables using bpod.session.current_trial
         Check trial for state entries, first value of first tuple"""
         # Update elapsed_time
@@ -144,7 +256,7 @@ class SessionParamHandler(object):
         params['osc_client'] = 'osc_client_pointer'
         params['init_datetime'] = params['init_datetime'].isoformat()
         params['elapsed_time'] = str(params['elapsed_time'])
-'
+
         # Dump and save
         out = json.dumps(params, cls=ComplexEncoder)
         self.data_file.write(out)
@@ -155,4 +267,31 @@ class SessionParamHandler(object):
             misc.create_flags(self.data_file_path, self.poop_count)
         
 if __name__ == '__main__':
+    import task_settings as _task_settings
+    # import scratch._user_settings as _user_settings
+    import iblrig.fake_user_settings as _user_settings
+    import datetime
+    dt = datetime.datetime.now()
+    dt = [str(dt.year), str(dt.month), str(dt.day),
+          str(dt.hour), str(dt.minute), str(dt.second)]
+    dt = [x if int(x) >= 10 else '0' + x for x in dt]
+    dt.insert(3, '-')
+    _user_settings.PYBPOD_SESSION = ''.join(dt)
+    _user_settings.PYBPOD_SETUP = 'biasedChoiceWorld'
+    _user_settings.PYBPOD_PROTOCOL = '_iblrig_tasks_biasedChoiceWorld'
+    if platform == 'linux':
+        r = "/home/nico/Projects/IBL/github/iblrig"
+        _task_settings.IBLRIG_FOLDER = r
+        d = ("/home/nico/Projects/IBL/github/iblrig/scratch/" +
+             "test_iblrig_data")
+        _task_settings.IBLRIG_DATA_FOLDER = d
+    _task_settings.USE_VISUAL_STIMULUS = False
+    _task_settings.AUTOMATIC_CALIBRATION = False
+
+    sph = SessionParamHandler(_task_settings, _user_settings,
+                              debug=False, fmake=True)
+    for k in sph.__dict__:
+        if sph.__dict__[k] is None:
+            print(f"{k}: {sph.__dict__[k]}")
+    self = sph
     print("Done!")

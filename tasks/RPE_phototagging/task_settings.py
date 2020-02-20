@@ -1,0 +1,19 @@
+﻿#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Mon Nov 18 15:22:32 2019
+
+@author: alex
+"""
+
+# =============================================================================
+# TASK PARAMETER DEFINITION (should appear on GUI) init trial objects values
+# =============================================================================
+# SOUND, AMBIENT SENSOR, AND VIDEO RECORDINGS
+RECORD_SOUND = True
+RECORD_AMBIENT_SENSOR_DATA = True
+# REWARDS
+REWARD_AMOUNT = 5  # (µl) Amount of reward to be delivered upon correct choice each trial (overwitten if adaptive ON)  # noqa
+REWARD_TYPE = 'Water 10% Sucrose'  # Water, Water 10% Sucrose, Water 15% Sucrose, Water 2% Citric Acid (Guo et al.. PLoS One 2014)  # noqa
+# TASK
+NTRIALS = 100  # Number of trials for the current session

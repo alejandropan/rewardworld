@@ -4,7 +4,8 @@ a modified alf """
 import logging
 from pathlib import Path
 import traceback
-from rew_alf.extractors import (biased_Reward_trials, biased_Reward_wheel)
+from rew_alf.extractors import (biased_Reward_trials, biased_Reward_wheel, 
+                                ephys_fpga_opto, laser_ephys_trials, opto_extractor)
 from ibllib.io.extractors import (biased_trials, biased_wheel)
 from ibllib.io import raw_data_loaders as raw
 import ibllib.io.flags as flags
@@ -46,23 +47,26 @@ def from_path(session_path, force=False, save=True):
     if is_extracted(session_path) and not force:
         logger_.info(f"Session {session_path} already extracted.")
         return
-    if extractor_type == 'training':
-        data = raw.load_data(session_path)
-        training_trials.extract_all(session_path, data=data, save=save)
-        training_wheel.extract_all(session_path, bp_data=data, save=save)
-        logger_.info('session extracted \n')  # timing info in log
+    #Same opto sessions might be marked as biased
     if extractor_type == 'biased':
         data = raw.load_data(session_path)
         biased_trials.extract_all(session_path, data=data, save=save)
         biased_wheel.extract_all(session_path, bp_data=data, save=save)
+        opto_extractor.extract(session_path, dry=False)
         logger_.info('session extracted \n')  # timing info in log
     if extractor_type == 'Reward':
         data = raw.load_data(session_path)
         biased_Reward_trials.extract_all(session_path, data=data, save=save)
         biased_Reward_wheel.extract_all(session_path, bp_data=data, save=save)
+        opto_extractor.extract(session_path, dry=False)
         logger_.info('session extracted \n')  # timing info in log
-
-
+    if extractor_type == 'ephys':
+        data = raw.load_data(session_path)
+        biased_Reward_wheel.extract_all(session_path, bp_data=data, save=save)
+        laser_ephys_trials.extract_all(session_path, data=data, save=save)
+        ephys_fpga_opto.extract_all(session_path, save=False, tmax=None)
+        opto_extractor.extract(session_path, dry=False)
+        logger_.info('session extracted \n')  # timing info in log
 def bulk(subjects_folder, dry=False):
     ses_path = Path(subjects_folder).glob('**/extract_me.flag')
     for p in ses_path:

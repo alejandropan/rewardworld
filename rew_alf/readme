@@ -1,0 +1,3 @@
+Readme:
+Extract runs extrac session which chooses type of session and runs extractors in rew_alf/extractors
+Opto extractor requires opto.flag

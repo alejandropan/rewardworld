@@ -9,8 +9,8 @@ import ibllib.io.flags as flags
 import logging
 from pathlib import Path
 
-"Currently this extractors runs separately from the reward or biased extractor. It runs after and is optional only " \
-"extracting opto information"
+'''Currently this extractors runs separately from the reward or biased extractor. It runs after and is optional only " \
+extracting opto information'''
 
 def get_hem(session_path, save=False, data=False, settings=False):
     if not data:
@@ -60,6 +60,7 @@ def extract_opto(session_path, save=False):
         opto, opto_probability_left, dummy_opto = get_opto(session_path, save=save, data=False, settings=False)
         hemisphere  = get_hem(session_path, save=save, data=False, settings=False)
         out = {'laser_on': opto}
+        out = {'opto_prob': opto_probability_left}
         out = {'hem_stim': hemisphere}
         
         return out

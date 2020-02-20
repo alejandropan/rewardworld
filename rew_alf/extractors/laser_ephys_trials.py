@@ -69,14 +69,23 @@ def extract_all(session_path, save=False, data=False, settings=False):
     feedbackType = get_feedbackType(session_path, save=save, data=data, settings=settings)
     contrastLeft, contrastRight = get_contrastLR(
         session_path, save=save, data=data, settings=settings)
+    #assert same number of fpga and bpod trials
+    len_from_ephys = len(np.load(session_path + '/alf/_ibl_trials.goCue_times.npy'))
+    assert len_from_ephys == len(contrastLeft) 
     choice = get_choice(session_path, save=save, data=data, settings=settings)
     rewardVolume = get_rewardVolume(session_path, save=save, data=data, settings=settings)
     feedback_times = get_feedback_times(session_path, save=save, data=data, settings=settings)
     stimOn_times = get_stimOn_times(session_path, save=save, data=data, settings=settings)
-    intervals = get_intervals(session_path, save=save, data=data, settings=settings)
-    response_times = get_response_times(session_path, save=save, data=data, settings=settings)
+    intervals = get_intervals(session_path, save=False, data=data, settings=settings)
+    rpath = os.path.join(session_path, 'alf', '_ibl_trials.intervals_bpod.npy')
+    np.save(rpath, intervals)
+    response_times = get_response_times(session_path, save=False, data=data, settings=settings)
+    rpath = os.path.join(session_path, 'alf', '_ibl_trials.response_times_bpod.npy')
+    np.save(rpath, response_times)
     go_cue_trig_times = get_goCueTrigger_times(
-        session_path, save=save, data=data, settings=settings)
+        session_path, save=False, data=data, settings=settings)
+    rpath = os.path.join(session_path, 'alf', '_ibl_trials.goCueTrigger_times_bpod.npy')
+    np.save(rpath, go_cue_trig_times)
     go_cue_times = get_goCueOnset_times(session_path, save=save, data=data, settings=settings)
     out = {'feedbackType': feedbackType,
            'contrastLeft': contrastLeft,
@@ -86,10 +95,10 @@ def extract_all(session_path, save=False, data=False, settings=False):
            'rewardVolume': rewardVolume,
            'feedback_times': feedback_times,
            'stimOn_times': stimOn_times,
-           'intervals': intervals,
-           'response_times': response_times,
+           'intervals_bpod': intervals,
+           'response_times_bpod': response_times,
            'goCue_times': go_cue_times,
-           'goCueTrigger_times': go_cue_trig_times}
+           'goCueTrigger_times_bpod': go_cue_trig_times}
 
     # Version specific extractions
     if version.ge(settings['IBLRIG_VERSION_TAG'], '5.0.0'):

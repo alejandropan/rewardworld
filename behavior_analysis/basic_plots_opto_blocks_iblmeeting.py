@@ -14,8 +14,8 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 
-#Input folder with raw npy files
-psy_raw = load_data('/Volumes/witten/Alex/server_backup/Subjects_personal_project/opto_blocks_random/')
+#Input folder with raw npy files'
+psy_raw = load_data('/Volumes/LaCie/subjects_personal_project/estable_opto_task/')
 
 #For non random block
 #Only for random blocks
@@ -508,8 +508,8 @@ def opto_laser_glm(psy_df_global):
             
             mouse_result, mouse_r2  = glm_logit_opto(psy_df, sex_diff = False)
                 
-            mouse_result  =  pd.DataFrame({"Predictors": mouse_result.model.exog_names , "Coef" : mouse_result.params.values,\
-                              "SEM": mouse_result.bse.values, "Significant": mouse_result.pvalues < 0.05/len(mouse_result.model.exog_names)})
+            mouse_result  =  pd.DataFrame({"Predictors": mouse_result.model.exog_names , "Coef" : mouse_result.params,\
+                              "SEM": mouse_result.bse, "Significant": mouse_result.pvalues < 0.05/len(mouse_result.model.exog_names)})
     
             #Drop current evidence
             mouse_result = mouse_result.iloc[2:]
@@ -528,8 +528,8 @@ def opto_laser_glm(psy_df_global):
             for i,mouse in enumerate(psy_df['mouse_name'].unique()):
                 mouse_result, mouse_r2  = glm_logit_opto(psy_df.loc[(psy_df['mouse_name']==mouse)], sex_diff = False)
                 
-                mouse_result  =  pd.DataFrame({"Predictors": mouse_result.model.exog_names , "Coef" : mouse_result.params.values,\
-                              "SEM": mouse_result.bse.values, "Significant": mouse_result.pvalues < 0.05/len(mouse_result.model.exog_names)})
+                mouse_result  =  pd.DataFrame({"Predictors": mouse_result.model.exog_names , "Coef" : mouse_result.params,\
+                              "SEM": mouse_result.bse, "Significant": mouse_result.pvalues < 0.05/len(mouse_result.model.exog_names)})
     
                 #Drop current evidence
                 mouse_result = mouse_result.iloc[2:]    

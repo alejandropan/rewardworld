@@ -124,17 +124,17 @@ def unpack (macro):
     OUTPUT: trial_macro
     EXCEPTION: Raise exception in nan trials (note: these are not 0 trials, 
     these are trials where both contrastLeft and contrastRight = 0)
-    WARNING: ix is deprecated I am going to need a new solution"""
+    """
     variable_name = list(macro.columns.values)
     ses_num = macro.shape[0]
-    #change sessions measing all RTs to nan
+    #change sessions measing all RTs to nan 
     for i in range(ses_num):
-        if  np.isnan(np.nanmean(macro.ix[i,'stimOn_times'])):
-            macro.ix[i,'stimOn_times']  =  np.full( macro.ix[i,'choice'].size, np.nan)
+        if  np.isnan(np.nanmean(macro.iloc[i, macro.columns.get_loc('stimOn_times')])):
+            macro.iloc[i, macro.columns.get_loc('stimOn_times')]  =  np.full( macro.iloc[i, macro.columns.get_loc('choice')].size, np.nan)
         #copy name and session date to all trials
-        macro.ix[i,'ses'] = np.full( macro.ix[i,'choice'].size,macro.ix[i,'ses'])
-        macro.ix[i,'mouse_name'] = np.full( macro.ix[i,'choice'].size, macro.ix[i,'mouse_name'])
-        macro.ix[i,'virus'] = np.full( macro.ix[i,'choice'].size, macro.ix[i,'virus'])
+        macro.iloc[i, macro.columns.get_loc('ses')] = np.full( macro.iloc[i, macro.columns.get_loc('choice')].size, macro.iloc[i, macro.columns.get_loc('ses')])
+        macro.iloc[i, macro.columns.get_loc('mouse_name')] = np.full(macro.iloc[i, macro.columns.get_loc('choice')].size, macro.iloc[i, macro.columns.get_loc('mouse_name')])
+        macro.iloc[i, macro.columns.get_loc('virus')]= np.full( macro.iloc[i, macro.columns.get_loc('choice')].size, macro.iloc[i, macro.columns.get_loc('virus')])
     #Initialize unpacked dataframe
     trial_macro =  pd.DataFrame(columns = variable_name)
     # ... and fill it 

@@ -166,7 +166,7 @@ def load_regression (data, mixed_effects  = False):
 
     ##Frequentist wihtout mixed effects
         X_train, X_test, y_train, y_test = train_test_split(exog, np.ravel(endog), test_size=0.3)
-        logit_model = sm.Logit(y_train,X_train)
+        logit_model = sm.Logit(y_train.astype(np.float),X_train.astype(np.float))
         result=logit_model.fit()
         print(result.summary2())
 
@@ -175,7 +175,7 @@ def load_regression (data, mixed_effects  = False):
         
         cv = KFold(n_splits=10,  shuffle=False)
         logreg1 = LogisticRegression()
-        r2  = cross_val_score(logreg1, exog, endog, cv=10)
+        r2  = cross_val_score(logreg1, exog.astype(np.float), endog.astype(np.float), cv=10)
         print( 'Accuracy  = ' , r2.mean())
 
        
@@ -184,8 +184,8 @@ def load_regression (data, mixed_effects  = False):
     
         logreg = LogisticRegression()
         logreg.fit(X_train, y_train)
-        accu = logreg.score(X_test, y_test)
-        print('Accuracy of logistic regression classifier on test set: {:.2f}'.format(logreg.score(X_test, y_test)))
+        accu = logreg.score(X_test.astype(np.float), y_test.astype(np.float))
+        #print('Accuracy of logistic regression classifier on test set: {:.2f}'.format(logreg.score(X_test, y_test)))
 
     return result, r2
 
@@ -279,6 +279,7 @@ def  glm_logit_opto(psy_df, sex_diff = False):
     
     #make block column
     data.loc[(data['opto_block'] == 'L') , 'opto_block_b']  = -1
+    data.loc[(data['opto_block'] == 'non_opto') , 'opto_block_b']  = 0
     data.loc[(data['opto_block'] == 'R') , 'opto_block_b']  = 1
     
     #Opto 
@@ -311,10 +312,8 @@ def  glm_logit_opto(psy_df, sex_diff = False):
                 data.loc[data['ses'] == date,'uchoice%s' %str(i+1)] =  data.loc[data['ses'] == date,'uchoice'].shift(i+1) #no point in 0 shift
                 data.loc[data['ses'] == date,'Levidence%s' %str(i+1)] =  data.loc[data['ses'] == date,'Levidence'].shift(i+1) #no point in 0 shift
                 data.loc[data['ses'] == date,'Revidence%s' %str(i+1)] =  data.loc[data['ses'] == date,'Revidence'].shift(i+1) #no point in 0 shift
-                data.loc[data['ses'] == date,'opto%s' %str(i+1)] =  data.loc[data['ses'] == date,'opto.npy'].shift(i+1)
                 data.loc[data['ses'] == date,'opto_rew%s' %str(i+1)] =  data.loc[data['ses'] == date,'opto_rew'].shift(i+1)
                 data.loc[data['ses'] == date,'opto_unrew%s' %str(i+1)] =  data.loc[data['ses'] == date,'opto_unrew'].shift(i+1)
-                data.loc[data['ses'] == date,'opto_block%s' %str(i+1)] =  data.loc[data['ses'] == date,'opto_block_b'].shift(i+1) #06102019
     end = time.time()
     print(end - start)
     
@@ -352,15 +351,15 @@ def load_regression_opto (data, mixed_effects  = False):
     endog  = pd.DataFrame(data['choice'])
     exog  = data[[ 'Revidence', 'Levidence',\
             'rchoice1', 'uchoice1', 'Levidence1',\
-                  'Revidence1','opto1','opto_rew1', 'opto_unrew1', 'rchoice2', 'uchoice2', 'Levidence2', 'Revidence2',\
-                  'opto2','opto_rew2', 'opto_unrew2',
-                  'rchoice3', 'uchoice3', 'Levidence3', 'Revidence3', 'opto3','opto_rew3', 'opto_unrew3',
+                  'Revidence1', 'opto_rew1', 'opto_unrew1', 'rchoice2', 'uchoice2', 'Levidence2', 'Revidence2',\
+                  'opto_rew2', 'opto_unrew2',
+                  'rchoice3', 'uchoice3', 'Levidence3', 'Revidence3', 'opto_rew3', 'opto_unrew3',
                   'rchoice4',\
                   'uchoice4', 'Levidence4', 'Revidence4',\
-                  'opto4','opto_rew4', 'opto_unrew4',\
+                  'opto_rew4', 'opto_unrew4',\
                   'rchoice5', 'uchoice5',\
-                  'Levidence5', 'Revidence5', 'opto5','opto_rew5', 'opto_unrew5',\
-                  'opto_block_b','opto_block1', 'opto_block2', 'opto_block3', 'opto_block4', 'opto_block5']]#06102019
+                  'Levidence5', 'Revidence5', 'opto_rew5', 'opto_unrew5',\
+                  'opto_block_b']]#06102019
     
     cols = list(exog.columns)
     
@@ -371,15 +370,15 @@ def load_regression_opto (data, mixed_effects  = False):
     
     exog  =exog.drop(columns = [  'Revidence', 'Levidence',\
             'rchoice1', 'uchoice1', 'Levidence1',\
-                  'Revidence1','opto1','opto_rew1', 'opto_unrew1', 'rchoice2', 'uchoice2', 'Levidence2', 'Revidence2',\
-                  'opto2','opto_rew2', 'opto_unrew2',
-                  'rchoice3', 'uchoice3', 'Levidence3', 'Revidence3', 'opto3','opto_rew3', 'opto_unrew3',
+                  'Revidence1','opto_rew1', 'opto_unrew1', 'rchoice2', 'uchoice2', 'Levidence2', 'Revidence2',\
+                  'opto_rew2', 'opto_unrew2',
+                  'rchoice3', 'uchoice3', 'Levidence3', 'Revidence3','opto_rew3', 'opto_unrew3',
                   'rchoice4',\
                   'uchoice4', 'Levidence4', 'Revidence4',\
-                  'opto4','opto_rew4', 'opto_unrew4',\
+                  'opto_rew4', 'opto_unrew4',\
                   'rchoice5', 'uchoice5',\
-                  'Levidence5', 'Revidence5', 'opto5','opto_rew5', 'opto_unrew5',\
-                 'opto_block_b','opto_block1', 'opto_block2', 'opto_block3', 'opto_block4', 'opto_block5'] )
+                  'Levidence5', 'Revidence5', 'opto_rew5', 'opto_unrew5',\
+                 'opto_block_b'] )
         
    #  Add exception for cases in which there is no possibility for urnewarded opto
    
@@ -395,7 +394,7 @@ def load_regression_opto (data, mixed_effects  = False):
 
     ##Frequentist wihtout mixed effects
         X_train, X_test, y_train, y_test = train_test_split(exog, np.ravel(endog), test_size=0.3)
-        logit_model = sm.Logit(y_train,X_train)
+        logit_model = sm.Logit(y_train.astype(np.float),X_train.astype(np.float))
         result=logit_model.fit()
         print(result.summary2())
 
@@ -404,7 +403,7 @@ def load_regression_opto (data, mixed_effects  = False):
         
         cv = KFold(n_splits=10,  shuffle=False)
         logreg1 = LogisticRegression()
-        r2  = cross_val_score(logreg1, exog, endog, cv=10)
+        r2  = cross_val_score(logreg1, exog.astype(np.float) , endog.astype(np.float) , cv=10)
         print( 'Accuracy  = ' , r2.mean())
 
        
@@ -412,9 +411,9 @@ def load_regression_opto (data, mixed_effects  = False):
     #NOTE: Currently cross validating without mixed effects
     
         logreg = LogisticRegression()
-        logreg.fit(X_train, y_train)
-        accu = logreg.score(X_test, y_test)
-        print('Accuracy of logistic regression classifier on test set: {:.2f}'.format(logreg.score(X_test, y_test)))
+        logreg.fit(X_train.astype(np.float), y_train.astype(np.float))
+        accu = logreg.score(X_test.astype(np.float), y_test.astype(np.float))
+        #print('Accuracy of logistic regression classifier on test set: {:.2f}'.format(logreg.score(X_test, y_test)))
 
     return result, r2
 
@@ -450,7 +449,7 @@ def load_regression (data, mixed_effects  = False):
 
     ##Frequentist wihtout mixed effects
         X_train, X_test, y_train, y_test = train_test_split(exog, np.ravel(endog), test_size=0.3)
-        logit_model = sm.Logit(y_train,X_train)
+        logit_model = sm.Logit(y_train.astype(np.float),X_train.astype(np.float))
         result=logit_model.fit()
         print(result.summary2())
 
@@ -459,7 +458,7 @@ def load_regression (data, mixed_effects  = False):
         
         cv = KFold(n_splits=10,  shuffle=False)
         logreg1 = LogisticRegression()
-        r2  = cross_val_score(logreg1, exog, endog, cv=10)
+        r2  = cross_val_score(logreg1, exog.astype(np.float) , endog.astype(np.float))
         print( 'Accuracy  = ' , r2.mean())
 
        
@@ -468,8 +467,8 @@ def load_regression (data, mixed_effects  = False):
     
         logreg = LogisticRegression()
         logreg.fit(X_train, y_train)
-        accu = logreg.score(X_test, y_test)
-        print('Accuracy of logistic regression classifier on test set: {:.2f}'.format(logreg.score(X_test, y_test)))
+        accu = logreg.score(X_test.astype(np.float), y_test.astype(np.float))
+        #print('Accuracy of logistic regression classifier on test set: {:.2f}'.format(logreg.score(X_test, y_test)))
 
     return result, r2
 

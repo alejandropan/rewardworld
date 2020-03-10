@@ -297,7 +297,7 @@ def opto_glm(psy_df_global):
 
 def opto_laser_glm(psy_df_global):
     viruses =  psy_df_global['virus'].unique()
-    figure,ax = plt.subplots(5,3, figsize=(24,80))
+    figure,ax = plt.subplots(7,3, figsize=(24,80))
     for v, virus in enumerate(viruses):
         conditions  = psy_df_global.loc[(psy_df_global['virus']== virus),'hem_stim'].unique()
         for c , hem in enumerate(conditions): #(conditions)

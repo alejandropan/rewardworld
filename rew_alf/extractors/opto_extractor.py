@@ -39,17 +39,18 @@ def get_opto(session_path, save=False, data=False, settings=False):
         settings = raw.load_settings(session_path)
     if settings is None or settings['IBLRIG_VERSION_TAG'] == '':
         settings = {'IBLRIG_VERSION_TAG': '100.0.0'}
-
-    opto = np.array([t['opto'] for t in data])
-    if raw.save_bool(save, '_ibl_trials.opto.npy'):
-        lpath = Path(session_path).joinpath('alf', '_ibl_trials.opto.npy')
-        np.save(lpath, opto)
-        
+    
     opto_probability_left =  np.array([t['opto_probability_left'] for t in data])
     if raw.save_bool(save, '_ibl_trials.opto_probability_left.npy'):
         lpath = Path(session_path).joinpath('alf', '_ibl_trials.opto_probability_left.npy')
         np.save(lpath, opto_probability_left)
-
+    
+    opto = fix_opto(Path(session_path).joinpath('alf'))
+        # opto = np.array([t['opto'] for t in data]) - old before stable opto protocol
+    if raw.save_bool(save, '_ibl_trials.opto.npy'):
+        lpath = Path(session_path).joinpath('alf', '_ibl_trials.opto.npy')
+        np.save(lpath, opto)     
+    
     dummy_opto  = np.array([t['opto'] for t in data]) #Same as opto but not buffer saved
     if raw.save_bool(save, '_ibl_trials.dummy_opto.npy'):
         lpath = Path(session_path).joinpath('alf', '_ibl_trials.opto_dummy.npy')
@@ -66,7 +67,7 @@ def extract_opto(session_path, save=False):
         return out
 
 def extract(subjects_folder, dry=False):
-    ses_path = Path(subjects_folder).glob('**/opto.flag')
+    ses_path = Path(subjects_folder).glob('**/extract_me.flag')
     for p in ses_path:
         # @alejandro no need for flags until personal project data starts going to server
         # the flag file may contains specific file names for a targeted extraction
@@ -81,6 +82,21 @@ def extract(subjects_folder, dry=False):
 
         p.unlink()
         flags.write_flag_file(p.parent.joinpath('opto_extracted.flag'), file_list=save)
+
+
+def fix_opto(alf_folder):
+    choices = np.load(Path(alf_folder).joinpath('_ibl_trials.choice.npy'))
+    opto_probability_left = np.load(Path(alf_folder).joinpath('_ibl_trials.opto_probability_left.npy'))
+    opto = np.zeros([len(choices),1])
+    # Remember choice  = 1 is left choice and -1 right choice
+    for i, b in enumerate(choices):
+        if (b == 1 and opto_probability_left[i] == 1):
+            opto[i] = int(1)
+        elif (b == -1 and opto_probability_left[i] == 0):
+            opto[i] = int(1)
+        else:
+            continue
+    return opto
 
 
 if __name__ == "__main__":

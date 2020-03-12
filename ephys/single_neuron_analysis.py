@@ -24,10 +24,9 @@ def load_behavior(session_folder):
     del session['intervals']
     ##Fix opto, opto variable is not the truth
     del session['opto_dummy']
-    del session['opto.npy']
-    session['opto.npy'] = 0
+    session['opto.npy'][:] = 0
     session['real_opto'] = np.load(session_folder + '/alf/_ibl_trials.laser_epoch_in.npy')
-    session.loc[(~np.isnan(session['real_opto']) == 1), 'opto.npy'] = 1
+    session['opto.npy'] = (~np.isnan(session['real_opto']) == 1)*1
     ##
     session['response_times'] = session['response_times'][:727]
     session = pd.DataFrame.from_dict(session)

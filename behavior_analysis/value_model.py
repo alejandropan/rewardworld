@@ -133,7 +133,7 @@ def RunPOMDP(model_data,params):
                     reward = 1
     			
             elif currentStim==0:
-                if np.random.rand() > 0.5:	
+                if np.random.rand() > 0.5:	# no evidence up to chance, if correct
                     if action[trial,i] == 'left':      
                         if extraReward[trial] == 'left':
                             reward = 1 + extraRewardVal
@@ -150,11 +150,39 @@ def RunPOMDP(model_data,params):
                         elif extraReward[trial] == 'none':
                             reward = 1
     				
-                else:
-                    reward = 0
+                else: # if 0 evidence incorrect
+                    if action[trial,i] == 'left':      
+                        if extraReward[trial] == 'left':
+                            reward = 0 + extraRewardVal
+                        elif extraReward[trial] == 'right':
+                            reward = 0
+                        elif extraReward[trial] == 'none':
+                            reward = 0
+    					
+                    elif action[trial,i] =='right':
+                        if extraReward[trial] == 'left':
+                            reward = 0
+                        elif extraReward[trial] == 'right':
+                            reward = 0 + extraRewardVal
+                        elif extraReward[trial] == 'none':
+                            reward = 0
     			
-            else:
-                reward = 0
+            else: # Evidence cases with errors
+                if currentStim>0 and (action[trial,i] == 'left'): # erroneous choice
+                    if extraReward[trial] == 'left':
+                        reward = 0 + extraRewardVal # Add extra reward in our case the laser, if it is a laser trial
+                    elif extraReward[trial] == 'right':
+                        reward = 0
+                    elif extraReward[trial] == 'none':
+                        reward = 0
+        			
+                elif currentStim<0 and (action[trial,i] == 'right'): # erroneous choice
+                    if extraReward[trial] == 'left':
+                        reward = 0
+                    elif extraReward[trial] == 'right': # Add extra reward in our case the laser, if it is a laser trial
+                        reward = 0 + extraRewardVal
+                    elif extraReward[trial] == 'none':
+                        reward = 0
     			
     		
     		

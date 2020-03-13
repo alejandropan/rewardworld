@@ -11,7 +11,18 @@ import numpy as np
 import pandas as pd
 from scipy.stats import norm
 from npy2pd import *
-import scipy.stats.norm as norm
+
+import numpy as np, pandas as pd
+from matplotlib import pyplot as plt
+import seaborn as sns
+from scipy.optimize import minimize
+import scipy.stats as stats
+import numdifftools as ndt
+import statsmodels.api as sm
+from statsmodels.base.model import GenericLikelihoodModel
+
+
+
 
 #Input folder with raw npy files'
 psy_df = opto_block_assigner(psy_df)
@@ -72,7 +83,7 @@ def RunPOMDP(model_data,params):
     
     
     # set run numbers
-    iterN = 100  # model values are averaged over iterations (odd number)
+    iterN = 21  # model values are averaged over iterations (odd number)
     trialN = len(stimTrials)
     
     
@@ -188,14 +199,14 @@ def RunPOMDP(model_data,params):
     		
     		# calculate the prediction error, and update Q values
             if action[trial,i] == 'left':
-                predictionError[trial, i] = reward - QL[trial,i]
-                QLL	= QLL + learningRate * predictionError[trial,i] * Belief_L
-                QRL	= QRL + learningRate * predictionError[trial,i] * Belief_R
+                predictionError[trial, i] = reward - QL[trial,i] 
+                QLL	= QLL + learningRate * predictionError[trial,i] * Belief_L #Belief is left, left action
+                QRL	= QRL + learningRate * predictionError[trial,i] * Belief_R #Belief is left, right action
     			
             else:   # right
                 predictionError[trial, i] = reward - QR[trial,i]
-                QLR		= QLR + learningRate * predictionError[trial,i] * Belief_L
-                QRR		= QRR + learningRate * predictionError[trial,i] * Belief_R
+                QLR		= QLR + learningRate * predictionError[trial,i] * Belief_L #Belief is left, right action
+                QRR		= QRR + learningRate * predictionError[trial,i] * Belief_R #Belief is right, right action
     
     actionLeft = (action == 'left').astype(int)
     actionRight = (action == 'right').astype(int)
@@ -257,6 +268,27 @@ def plot_action_opto_block(session,output):
     psy_df['right_choice'] = psy_df['choice'] == -1
     sns.lineplot(data = psy_df, x = 'signed_contrasts', y = 'right_choice', hue = 'opto_block')
 
-    
+
+
+# define likelihood function
+def MLERegression(params):
+    output = RunPOMDP(model_data,params) # predictions
+    #yhat = np.zeros(len(output['action']))
+    #yhat[output['action']<0] = 1
+    #yhat[output['action']>0] = -1
+    #yhat[output['action']== 0] = np.random.choice([1,-1], p = [0.5,0.5])
+    # next, we flip the Bayesian question
+    # compute PDF of observed values normally distributed around mean (yhat)
+    # with a standard deviation of sd
+    #negLL = -np.sum(stats.norm.logpdf(psy_df['choice'], loc=yhat, scale=sd))
+    # return negative LL
+    negLL = -np.sum(stats.norm.logpdf(psy_df['choice'], loc=output['action'],\
+                                       scale=sd))
+    return(negLL)
+
+# let’s start with some random coefficient guesses and optimize
+
+guess = np.array([0.35 ,-0.5,0.3])
+results = minimize(MLERegression, guess, method='Nelder-Mead', tol=1e-6)
     
                 

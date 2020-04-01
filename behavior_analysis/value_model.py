@@ -17,9 +17,9 @@ from matplotlib import pyplot as plt
 import seaborn as sns
 from scipy.optimize import minimize
 import scipy.stats as stats
-import numdifftools as ndt
 import statsmodels.api as sm
 from statsmodels.base.model import GenericLikelihoodModel
+from scipy.optimize import least_squares
 
 
 
@@ -30,10 +30,16 @@ psy_df = add_signed_contrasts(psy_df)
 psy_df = add_trial_within_block(psy_df)
 
 
+# Select dataset
+psy_df1  = psy_df
+
+psy_df  = psy_df.loc[psy_df['virus']=='nphr']
+psy_df = psy_df.reset_index()
+
 # Set variables 
-learningRate = 0.35     # learning rate
-extraRewardVal = -0.5     # value for opto
-beliefNoiseSTD = 0.30			# noise in belief
+learningRate = 0.15     # learning rate
+extraRewardVal = -1    # value for opto
+beliefNoiseSTD = 0.075			# noise in belief
 
 
 params = [learningRate, extraRewardVal, beliefNoiseSTD]
@@ -62,7 +68,20 @@ model_data = pd.DataFrame({'stimTrials': signed_contrasts[:,0],'extraRewardTrial
 
 # RUN
 
-output = RunPOMDP(model_data,params);
+#Least squares
+guess = np.array([0.1 ,-1.2,0.075])
+result1 = least_squares(LSE_objective, guess, loss='soft_l1', f_scale=0.1)
+params = result1['x']
+model = RunPOMDP(params, model_data)
+
+
+#Plt
+plot_action_opto_block(output,psy_df)
+
+
+#MLE (TODO)
+guess = np.array([0.1 ,-1.2,0.075])
+
 
 
 
@@ -72,7 +91,7 @@ output = RunPOMDP(model_data,params);
 
 
 
-def RunPOMDP(model_data,params):
+def RunPOMDP(params, model_data):
 
     learningRate = params[0]
     extraRewardVal = params[1]
@@ -83,7 +102,7 @@ def RunPOMDP(model_data,params):
     
     
     # set run numbers
-    iterN = 21  # model values are averaged over iterations (odd number)
+    iterN = 5  # model values are averaged over iterations (odd number)
     trialN = len(stimTrials)
     
     
@@ -210,22 +229,19 @@ def RunPOMDP(model_data,params):
     
     actionLeft = (action == 'left').astype(int)
     actionRight = (action == 'right').astype(int)
-    meanActionNum = np.mean(actionRight-actionLeft,1)
+    meanActionNum = np.mean(actionRight,1)
+    #meanActionNum = np.mean(actionRight-actionLeft,1)
+    #sdActionNum = np.std(actionRight-actionLeft,1)
+    
     
     # set output
     output=pd.DataFrame()
     output['action'] = meanActionNum
     output['QL'] = np.mean(QL,1)
     output['QR'] = np.mean(QR,1)
+    #output['action_sd']  = sdActionNum
     
-    
-    return output
-
-result = np.zeros(len(output['action']))
-result[output['action']>0] = 1
-result[output['action']<0] = -1
-
-
+    return (output)
 
 # Stable block assigner
 def opto_block_assigner (psy_df):
@@ -259,36 +275,47 @@ def add_trial_within_block(session):
                 session.iloc[l, session.columns.get_loc('trial_within_block')] = x
     return session
 
-def plot_action_opto_block(session,output):
-    # Divide by block
-    # neutral block
-    output  = RunPOMDP(model_data,params)
-    psy_df['action'] = output['action']
-    sns.lineplot(data = psy_df, x = 'signed_contrasts', y = 'action', hue = 'opto_block')
-    psy_df['right_choice'] = psy_df['choice'] == -1
-    sns.lineplot(data = psy_df, x = 'signed_contrasts', y = 'right_choice', hue = 'opto_block')
+def plot_action_opto_block(output,psy_df):
+    '''
+    Parameters
+    ----------
+    output : Output from runPOMDP
+    psy_df : dataframe with real data
 
+    Returns
+    -------
+    Figure model vs real data.
+
+    '''
+    #
+    # neutral block
+    psy_df['action'] = output['action']
+    ax = sns.lineplot(data = psy_df, x = 'signed_contrasts', y = 'action',
+                      hue = 'opto_block', ci=None, legend=False)
+    ax.lines[0].set_linestyle("--")
+    ax.lines[1].set_linestyle("--")
+    ax.lines[2].set_linestyle("--")
+    psy_df['right_choice'] = psy_df['choice'] == -1
+    sns.lineplot(data = psy_df, x = 'signed_contrasts', y = 'right_choice', 
+                 hue = 'opto_block')
+    ax.set_ylabel('Fraction of Right Choices')
+    
+
+
+def LSE_objective(params, model_data = model_data):
+    output = RunPOMDP(params,model_data) # predictions
+    error = psy_df['right_choice'] - output['action']
+    return error
 
 
 # define likelihood function
 def MLERegression(params):
     output = RunPOMDP(model_data,params) # predictions
-    #yhat = np.zeros(len(output['action']))
-    #yhat[output['action']<0] = 1
-    #yhat[output['action']>0] = -1
-    #yhat[output['action']== 0] = np.random.choice([1,-1], p = [0.5,0.5])
-    # next, we flip the Bayesian question
-    # compute PDF of observed values normally distributed around mean (yhat)
-    # with a standard deviation of sd
-    #negLL = -np.sum(stats.norm.logpdf(psy_df['choice'], loc=yhat, scale=sd))
     # return negative LL
-    negLL = -np.sum(stats.norm.logpdf(psy_df['choice'], loc=output['action'],\
-                                       scale=sd))
+    negLL = -np.sum(stats.norm.logpdf(psy_df['right_choice'], loc=output['action'],\
+                                       scale = params[2]))
     return(negLL)
 
-# let’s start with some random coefficient guesses and optimize
 
-guess = np.array([0.35 ,-0.5,0.3])
-results = minimize(MLERegression, guess, method='Nelder-Mead', tol=1e-6)
-    
-                
+
+

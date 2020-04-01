@@ -33,6 +33,7 @@ def load_behavior(session_folder):
     session = add_trial_within_block(session)
     session['after_opto'] = session['opto.npy'].shift(periods=1)
     session['after_reward'] = session['feedbackType'].shift(periods=1)
+    return session
     
 
 def add_trial_within_block(session):

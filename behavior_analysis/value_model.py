@@ -20,7 +20,7 @@ import scipy.stats as stats
 import statsmodels.api as sm
 from statsmodels.base.model import GenericLikelihoodModel
 from scipy.optimize import least_squares
-
+from scipy.special import softmax
 
 
 
@@ -35,14 +35,6 @@ psy_df1  = psy_df
 
 psy_df  = psy_df.loc[psy_df['virus']=='nphr']
 psy_df = psy_df.reset_index()
-
-# Set variables 
-learningRate = 0.15     # learning rate
-extraRewardVal = -1    # value for opto
-beliefNoiseSTD = 0.075			# noise in belief
-
-
-params = [learningRate, extraRewardVal, beliefNoiseSTD]
 
 # Get sesion information
 
@@ -68,19 +60,30 @@ model_data = pd.DataFrame({'stimTrials': signed_contrasts[:,0],'extraRewardTrial
 
 # RUN
 
-#Least squares
-guess = np.array([0.1 ,-1.2,0.075])
-result1 = least_squares(LSE_objective, guess, loss='soft_l1', f_scale=0.1)
-params = result1['x']
-model = RunPOMDP(params, model_data)
 
+# Set variables (for initiliaziton)
+learningRate = 0.15     # learning rate
+extraRewardVal = -1    # value for opto
+beliefNoiseSTD = 0.075			# noise in belief
+Temperature = 1 #Temperature for softmax
+
+
+params = [learningRate, extraRewardVal, beliefNoiseSTD, Temperature]
+
+
+
+#Least squares
+result1 = minimize(session_log_likelihood, params, options ={'disp':True})
+
+
+params = result1['x']
+output = RunPOMDP(params, model_data)
 
 #Plt
 plot_action_opto_block(output,psy_df)
 
 
-#MLE (TODO)
-guess = np.array([0.1 ,-1.2,0.075])
+
 
 
 
@@ -96,13 +99,14 @@ def RunPOMDP(params, model_data):
     learningRate = params[0]
     extraRewardVal = params[1]
     beliefNoiseSTD = params[2]
+    Temperature = params[3]
     
     stimTrials = model_data['stimTrials']
     extraReward = model_data['extraRewardTrials']
     
     
     # set run numbers
-    iterN = 5  # model values are averaged over iterations (odd number)
+    iterN = 1  # model values are averaged over iterations (odd number)
     trialN = len(stimTrials)
     
     
@@ -110,6 +114,8 @@ def RunPOMDP(params, model_data):
     action = np.empty([trialN,iterN],dtype=object)
     QL = np.zeros([trialN,iterN])
     QR = np.zeros([trialN,iterN])
+    pL = np.zeros([trialN,iterN])
+    pR = np.zeros([trialN,iterN])
     predictionError = np.zeros([trialN,iterN])
 
 
@@ -131,19 +137,43 @@ def RunPOMDP(params, model_data):
             # initialise Q values for this iteration
             QL[trial,i] = Belief_L*QLL + Belief_R*QRL # need explanation for 4 q values
             QR[trial,i] = Belief_L*QLR + Belief_R*QRR 
-    		# action <-- max(QL,QR)
-            if QL[trial,i] > QR[trial,i]: # Action with higher action value (Q) is chosen
-                action[trial,i] = 'left'
-    			
-            elif QL[trial,i] < QR[trial,i]:
-                action[trial,i] = 'right'
-                
-            else:
-                if np.random.rand() >= 0.5: # If Q is the same random choice
-                    action[trial,i] = 'right'
-                else:
-                    action[trial,i] = 'left'
     		
+            ##### action <-- max(QL,QR)
+            
+            #if QL[trial,i] > QR[trial,i]: # Action with higher action value (Q) is chosen
+            #    action[trial,i] = 'left'
+    		#	
+            #elif QL[trial,i] < QR[trial,i]:
+            #    action[trial,i] = 'right'
+            #    
+            #else:
+            #    if np.random.rand() >= 0.5: # If Q is the same random choice
+            #        action[trial,i] = 'right'
+            #    else:
+            #        action[trial,i] = 'left'
+    		
+            #####
+            
+            #switiching for a softmax
+            
+            #Calculate softmax
+            pL[:,i]= softmax(QL[:,i]/T)
+            pR[:,i]= softmax(QR[:,i]/T)
+            #Choose action
+            pL1 = pL[trial,i]/(pL[trial,i]+pR[trial,i])
+            pR1 = pR[trial,i]/(pL[trial,i]+pR[trial,i])
+            
+            if (np.isnan(pL1) | np.isnan(pR1) ) :
+                action[trial,i] = np.random.choice(['left', 'right'], p=[0.5, 0.5])
+            
+            else:
+                action[trial,i] = np.random.choice(['left', 'right'], p=[pL1, pR1])
+            
+            
+            #action[trial,i] = np.random.choice(['left', 'right'],
+                                               #p=[pL[trial,i], 1-pL[trial,i]])
+            
+            
     		# trial reward for action chosen by agent
             if currentStim<0 and (action[trial,i] == 'left'): # If action and stim pair, reward
                 if extraReward[trial] == 'left':
@@ -197,7 +227,7 @@ def RunPOMDP(params, model_data):
                         elif extraReward[trial] == 'none':
                             reward = 0
     			
-            else: # Evidence cases with errors
+            else: #  cases with errors
                 if currentStim>0 and (action[trial,i] == 'left'): # erroneous choice
                     if extraReward[trial] == 'left':
                         reward = 0 + extraRewardVal # Add extra reward in our case the laser, if it is a laser trial
@@ -231,7 +261,7 @@ def RunPOMDP(params, model_data):
     actionRight = (action == 'right').astype(int)
     meanActionNum = np.mean(actionRight,1)
     #meanActionNum = np.mean(actionRight-actionLeft,1)
-    #sdActionNum = np.std(actionRight-actionLeft,1)
+    sdActionNum = np.std(actionRight-actionLeft,1)
     
     
     # set output
@@ -239,7 +269,10 @@ def RunPOMDP(params, model_data):
     output['action'] = meanActionNum
     output['QL'] = np.mean(QL,1)
     output['QR'] = np.mean(QR,1)
-    #output['action_sd']  = sdActionNum
+    output['action_sd']  = sdActionNum
+    output['pL'] = np.mean(pL1,1)
+    output['pR'] = np.mean(pR1,1)
+    
     
     return (output)
 
@@ -302,20 +335,13 @@ def plot_action_opto_block(output,psy_df):
     
 
 
-def LSE_objective(params, model_data = model_data):
-    output = RunPOMDP(params,model_data) # predictions
-    error = psy_df['right_choice'] - output['action']
-    return error
-
-
-# define likelihood function
-def MLERegression(params):
-    output = RunPOMDP(model_data,params) # predictions
-    # return negative LL
-    negLL = -np.sum(stats.norm.logpdf(psy_df['right_choice'], loc=output['action'],\
-                                       scale = params[2]))
-    return(negLL)
-
-
+def session_log_likelihood(params, trial_data = model_data,):
+    try:
+        output = RunPOMDP(params, model_data)
+        negLL = -np.sum(stats.norm.logpdf(psy_df['right_choice'], loc=output['pR1']))\
+                                           #scale = params[2]))
+    except:
+        print(params)
+    return negLL
 
 

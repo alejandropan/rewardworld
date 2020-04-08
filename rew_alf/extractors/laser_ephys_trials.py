@@ -70,8 +70,6 @@ def extract_all(session_path, save=False, data=False, settings=False):
     contrastLeft, contrastRight = get_contrastLR(
         session_path, save=save, data=data, settings=settings)
     #assert same number of fpga and bpod trials
-    len_from_ephys = len(np.load(session_path + '/alf/_ibl_trials.goCue_times.npy'))
-    assert len_from_ephys == len(contrastLeft) 
     choice = get_choice(session_path, save=save, data=data, settings=settings)
     rewardVolume = get_rewardVolume(session_path, save=save, data=data, settings=settings)
     feedback_times = get_feedback_times(session_path, save=save, data=data, settings=settings)

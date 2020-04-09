@@ -7,6 +7,7 @@ import traceback
 from rew_alf.extractors import (biased_Reward_trials, biased_Reward_wheel, 
                                 ephys_fpga_opto, laser_ephys_trials, opto_extractor)
 from ibllib.io.extractors import (biased_trials, biased_wheel)
+from ibllib.pipes.experimental_data import sync_merge_ephys
 from ibllib.io import raw_data_loaders as raw
 import ibllib.io.flags as flags
 from ibllib.ephys import ephysqc, sync_probes, spikes
@@ -66,11 +67,15 @@ def from_path(session_path, force=False, save=True):
         data = raw.load_data(session_path)
         biased_Reward_wheel.extract_all(session_path, bp_data=data, save=save)
         laser_ephys_trials.extract_all(session_path, data=data, save=save)
-        ephys_fpga_opto.extract_all(session_path, save=False, tmax=None)
+        ephys_fpga_opto.extract_all(session_path, save=True, tmax=None)
         opto_extractor.extract(session_path, dry=False)
-        sync_merge_ephys(session_path, dry=False)
-        logger_.info('session extracted \n')  # timing info in log
         # Generate phy alf
+        sync_merge_ephys(session_path, dry=False)
+        # logger_.info('session extracted \n')  # timing info in log
+        # Get brain locations
+        
+        
+        
         
 def bulk(subjects_folder, dry=False):
     ses_path = Path(subjects_folder).glob('**/extract_me.flag')

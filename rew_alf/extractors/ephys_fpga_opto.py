@@ -5,13 +5,13 @@ import uuid
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy import interpolate
-
+import ibllib.io.flags as flags
 from brainbox.core import Bunch
 from brainbox.behavior import wheel as whl
 import sys
 #Have to add path to ibllib exceptions
 import os
-ibllib_path = '/Users/alex/Documents/PYTHON/ibllib/ibllib'
+ibllib_path = '/home/ibladmin/Documents/PYTHON/ibllib/ibllib'
 os.chdir(ibllib_path)
 #
 import exceptions as err
@@ -529,7 +529,7 @@ def extract_sync(session_path, save=False, force=False, ephys_files=None):
 
 def _get_all_probes_sync(session_path, bin_exists=True):
     # round-up of all bin ephys files in the session, infer revision and get sync map
-    ephys_files = glob_ephys_files(session_path, bin_exists=bin_exists)
+    ephys_files = glob_ephys_files(session_path)
     version = get_neuropixel_version_from_files(ephys_files)
     extract_sync(session_path, save=True)
     # attach the sync information to each binary file found
@@ -563,7 +563,7 @@ def _get_main_probe_sync(session_path, bin_exists=True):
     return sync, sync_chmap
 
 
-def extract_all(session_path, save=False, tmax=None):
+def extract_all(session_path, save=True, tmax=None):
     """
     For the IBL ephys task, reads ephys binary file and extract:
         -   sync
@@ -590,3 +590,4 @@ def extract_all(session_path, save=False, tmax=None):
     extract_camera_sync(sync, alf_path, save=save, chmap=sync_chmap)
     extract_behaviour_sync(sync, alf_path, save=save, chmap=sync_chmap, tmax=tmax)
     align_with_bpod(session_path)  # checks consistency and compute dt with bpod
+    flags.write_flag_file(session_path.joinpath('sync_merge_ephys.flag'), file_list=save)

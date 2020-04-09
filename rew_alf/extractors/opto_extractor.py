@@ -80,7 +80,7 @@ def extract(subjects_folder, dry=False):
         except:
             pass
 
-        p.unlink()
+        #p.unlink() commented we need the flag for the sync merge step
         flags.write_flag_file(p.parent.joinpath('opto_extracted.flag'), file_list=save)
 
 

@@ -11,7 +11,7 @@ from brainbox.behavior import wheel as whl
 import sys
 #Have to add path to ibllib exceptions
 import os
-ibllib_path = '/home/ibladmin/Documents/PYTHON/ibllib/ibllib'
+ibllib_path = '/Users/alex/Documents/PYTHON/ibllib/ibllib'
 os.chdir(ibllib_path)
 #
 import exceptions as err
@@ -590,4 +590,4 @@ def extract_all(session_path, save=True, tmax=None):
     extract_camera_sync(sync, alf_path, save=save, chmap=sync_chmap)
     extract_behaviour_sync(sync, alf_path, save=save, chmap=sync_chmap, tmax=tmax)
     align_with_bpod(session_path)  # checks consistency and compute dt with bpod
-    flags.write_flag_file(session_path.joinpath('sync_merge_ephys.flag'), file_list=save)
+    flags.write_flag_file(session_path.joinpath('raw_ephys_file', 'sync_merge_ephys.flag'), file_list=save)

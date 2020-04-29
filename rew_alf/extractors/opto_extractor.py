@@ -57,7 +57,7 @@ def get_opto(session_path, save=False, data=False, settings=False):
         np.save(lpath, dummy_opto)
     return opto,opto_probability_left, dummy_opto
 
-def extract_opto(session_path, save=False):
+def extract_opto(session_path, save=True):
         opto, opto_probability_left, dummy_opto = get_opto(session_path, save=save, data=False, settings=False)
         hemisphere  = get_hem(session_path, save=save, data=False, settings=False)
         out = {'laser_on': opto}
@@ -71,16 +71,17 @@ def extract(subjects_folder, dry=False):
     for p in ses_path:
         # @alejandro no need for flags until personal project data starts going to server
         # the flag file may contains specific file names for a targeted extraction
-        save = flags.read_flag_file(p)
+        
         if dry:
             print(p)
             continue
         try:
-            extract_opto(p.parent, save=save)
+            extract_opto(p.parent, save=True)
         except:
             pass
 
         #p.unlink() commented we need the flag for the sync merge step
+        save = flags.read_flag_file(p)
         flags.write_flag_file(p.parent.joinpath('opto_extracted.flag'), file_list=save)
 
 

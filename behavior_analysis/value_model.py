@@ -23,22 +23,20 @@ import statsmodels.api as sm
 from statsmodels.base.model import GenericLikelihoodModel
 from scipy.optimize import minimize
 from scipy.special import softmax
-
-
+from value_model_figures import *
 
 #Input folder with raw npy files'
 psy_df = opto_block_assigner(psy_df)
 psy_df = add_signed_contrasts(psy_df)
 psy_df = add_trial_within_block(psy_df)
-psy_df = psy_df.drop(psy_df[psy_df['choice'] == 0].index, inplace = True) 
+psy_df = psy_df.drop(psy_df[psy_df['choice'] == 0].index) 
 
 # Select dataset
 psy_df1  = psy_df
 
-psy_df  = psy_df.loc[psy_df['virus']=='nphr']
+psy_df  = psy_df.loc[psy_df['virus']=='chr2']
 psy_df = psy_df.reset_index()
 
-psy_df = 
 # Get sesion information
 
 # Opto stimuli
@@ -60,11 +58,11 @@ signed_contrasts[:,0] = psy_df['signed_contrasts'].to_numpy()
 
 # Make dataframe
 model_data = pd.DataFrame({'stimTrials': signed_contrasts[:,0],'extraRewardTrials': psy_df['opto.npy'], 
-                          'choice': psy_df['choice'], 'reward': psy_df['feedbackType']})
+                          'choice': psy_df['choice'], 'reward': psy_df['feedbackType'], 'ses':psy_df['ses']})
 model_data.loc[model_data['reward'] == -1, 'reward'] = 0
 
 simulate_data = pd.DataFrame({'stimTrials': signed_contrasts[:,0],'extraRewardTrials': psy_df['opto_block'], 
-                          'choice': psy_df['choice']})
+                          'choice': psy_df['choice'], 'ses':psy_df['ses']})
 simulate_data.loc[simulate_data['extraRewardTrials'] == 'non_opto','extraRewardTrials'] = 'none'
 simulate_data.loc[simulate_data['extraRewardTrials'] == 'L','extraRewardTrials'] = 'left'
 simulate_data.loc[simulate_data['extraRewardTrials'] == 'R','extraRewardTrials'] = 'right'
@@ -75,9 +73,9 @@ simulate_data.loc[simulate_data['extraRewardTrials'] == 'R','extraRewardTrials']
 
 
 # Set variables (for initiliaziton)
-learningRate = 0.2   # learning rate
-extraRewardVal = -0.5    # value for opto
-beliefNoiseSTD = 0.001 
+learningRate = 0.1   # learning rate
+extraRewardVal = -0.75    # value for opto
+beliefNoiseSTD = 0.1 
 Temperature = 0.6
 
 
@@ -92,10 +90,11 @@ result1 = minimize(session_log_likelihood, params, args=(simulate_data), callbac
 
 
 params = res['x']
-output = simulatePOMDP(params, simulate_data)
+output = RunPOMDP(params, model_data)
+output1 = simulatePOMDP(params, simulate_data)
 
 #Plt
-plot_action_opto_block(output,psy_df)
+plot_action_opto_block(output1,psy_df)
 
 
 
@@ -119,54 +118,43 @@ def add_signed_contrasts (psy_df):
     (psy_df['contrastRight'] - psy_df['contrastLeft'])
     return psy_df
 
-def add_trial_within_block(session):
+def add_trial_within_block(df):
     '''
-    session: dataframe with behavioral data
+    df: dataframe with behavioral data
     '''
-    session['trial_within_block'] = np.nan
-    block_breaks = np.diff(session['opto_probability_left'])
-    block_breaks = np.where(block_breaks != 0)
-    for i, t in enumerate(block_breaks[0]):
-        if i == 0:
-            for l in range(t+1):
-                session.iloc[l, session.columns.get_loc('trial_within_block')] = l
-        else:
-            for x, l in enumerate(range(block_breaks[0][i-1]+1,t+1)):
-                session.iloc[l, session.columns.get_loc('trial_within_block')] = x
-    return session
+    df['trial_within_block'] = np.nan
+    for mouse in df['mouse_name'].unique():
+        for ses in df.loc[df['mouse_name']==mouse,'ses'].unique():
+            session= df.loc[(df['mouse_name']
+                             ==mouse) & (df['ses']==ses)]
+            block_breaks = np.diff(session['opto_probability_left'])
+            block_breaks = np.where(block_breaks != 0)
+            for i, t in enumerate(block_breaks[0]):
+                if i == 0:
+                    for l in range(t+1):
+                        session.iloc[l, session.columns.get_loc('trial_within_block')] = l
+                
+                else:
+                    for x, l in enumerate(range(block_breaks[0][i-1]+1,t+1)):
+                        session.iloc[l, session.columns.get_loc('trial_within_block')] = x
+                if i + 1 == len(block_breaks[0]):
+                    session.iloc[t+1:, session.columns.get_loc('trial_within_block')] = np.arange(len(session)-t -1)
+            df.loc[(df['mouse_name']
+                             ==mouse) & (df['ses']==ses)] =  session
+    return df
 
-def plot_action_opto_block(output,psy_df):
-    '''
-    Parameters
-    ----------
-    output : Output from runPOMDP
-    psy_df : dataframe with real data
-
-    Returns
-    -------
-    Figure model vs real data.
-
-    '''
-    #
-    # neutral block
-    psy_df['action'] = output['action']
-    ax = sns.lineplot(data = psy_df, x = 'signed_contrasts', y = 'action',
-                      hue = 'opto_block', ci=None, legend=False)
-    ax.lines[0].set_linestyle("--")
-    ax.lines[1].set_linestyle("--")
-    ax.lines[2].set_linestyle("--")
-    psy_df['right_choice'] = psy_df['choice'] == -1
-    sns.lineplot(data = psy_df, x = 'signed_contrasts', y = 'right_choice', 
-                 hue = 'opto_block')
-    ax.set_ylabel('Fraction of Right Choices')
-    
 
 
 def session_log_likelihood1(params, model_data):
         output = RunPOMDP(params, model_data)
         negLL = -np.log(np.sum(output['pChoice']))
         return negLL
-
+    
+    
+def session_prob(params, model_data):
+        output = RunPOMDP(params, model_data)
+        prob = np.mean(output['pChoice'])
+        return prob
 
 def print_callback(xs):
     """
@@ -177,7 +165,7 @@ def print_callback(xs):
     
     return(print (xs))
 
-def optimizer_runPOMDP(data, num_fits = 10, initial_guess=[0.1, -1, 1, 1]):
+def optimizer_runPOMDP(data, num_fits = 5, initial_guess=[0.1, -1, 0.5, 0.6]):
     # Accounting variables
     best_NLL = np.Inf
     best_x = [None, None, None, None]
@@ -195,13 +183,32 @@ def optimizer_runPOMDP(data, num_fits = 10, initial_guess=[0.1, -1, 1, 1]):
 		# Run the fit
         res = minimize(session_log_likelihood1, initial_guess, 
                        args= data, method='L-BFGS-B', 
-                       bounds=[(0, None), (None, -0.01), (0.01, 1), 
-                               (0.01, None)])
+                       bounds=[(0, 1), (None, -0.01), (0.01, 1), 
+                               (0.01, 1)])
 		# If this fit is better than the previous best, remember it, otherwise toss
         if res.fun <= best_NLL:
             best_NLL = res.fun
             best_x = res.x
     return best_x, best_NLL
+
+
+
+def cross_validated_optimazation(data,num_fits = 5, initial_guess=[0.1, -1, 0.5, 0.6] ):
+    cvv = np.zeros(len(data['ses'].unique()))
+    cvv = np.nan
+              
+    for x, i in enumerate(data['ses'].unique()):
+        #Train in all session but one, test on that session
+        #train
+        train_data = data.loc[data['ses']!=i]
+        best_x, _ = optimizer_runPOMDP(train_data, num_fits = num_fits, 
+                           initial_guess=initial_guess)
+        #test
+        test_data = data.loc[data['ses']==i]
+        best_x, _ = optimizer_runPOMDP(test_data, num_fits = num_fits, 
+                           initial_guess=initial_guess)
+        cvv[x] = session_log_likelihood1(best_x, test_data)
+    return cvv, best_x
 
 
 ###########################################################
@@ -284,7 +291,7 @@ def simulatePOMDP(params, model_data):
     choices = model_data['choice']
     
     # set run numbers
-    iterN = 1000  # model values are averaged over iterations (odd number)
+    iterN = 10  # model values are averaged over iterations (odd number)
     trialN = len(stimTrials)
     
     all_contrasts = np.array([-0.25  , -0.125 , -0.0625,  0.    ,  0.0625, 0.125 , 0.25  ])
@@ -421,11 +428,26 @@ def simulatePOMDP(params, model_data):
 def q_softmax(Q_L, Q_R, beta):
     p = [np.exp(Q_L / beta), np.exp(Q_R / beta)]
     p = p / (np.exp(Q_L / beta) + np.exp(Q_R / beta))
-    for i,_ in enumerate(p):
-        if p[i] == 0:
-            p=10**-100
+    p[np.where(p==0)] = 10**-100
     return p
-    
+
+
+def q_softmax(Q_L, Q_R, beta):
+	p = [np.exp(Q_L / beta), np.exp(Q_R / beta)]
+	p /= np.sum(p)
+	return p
+
+def q_softmax_bias(Q_L, Q_R, beta, stay,previous_choice):
+    p = [np.exp(Q_L / beta + (stay * previous_choice[0])), np.exp(Q_R / beta + \
+            (stay * previous_choice[1]))]
+    p = p / (np.exp(Q_L / beta + (stay * previous_choice[0])) + \
+             np.exp(Q_R / beta + (stay * previous_choice[0])))
+    p[np.where(p==0)] = 10**-100
+    return p
+
+
+
+
 ######################
 def true_stim_posterior(true_contrast, all_contrasts, beliefSTD):
 	# Compute distribution over perceived contrast

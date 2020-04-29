@@ -8,6 +8,8 @@ Is on dev branch I need to import from the actual folder
 from ibllib import atlas
 import json
 from ibllib.pipes import histology
+import pandas as pd
+
 
 
 with open('/Users/alex/Documents/Postdoc/histology_ibl/temp.json') as f:
@@ -15,16 +17,13 @@ with open('/Users/alex/Documents/Postdoc/histology_ibl/temp.json') as f:
 
 
 
-
-
-
 ins = atlas.Insertion.from_dict(trj)
-regions, insertion_histology = histology.get_brain_regions(ins.xyz)
-regions.keys()
+regions  = histology.get_brain_regions(ins.xyz)[0]
 
-np.save('hist.regions_dop08_18.npy', regions['acronym'])
-np.save('20200318_dop08_regions.npy', regions)
-np.save('20200318_dop08_trj.npy', trj)
+
+np.save('hist.regions_dop04_15.npy', regions['name'])
+np.save('20200115_dop04_regions.npy', regions)
+np.save('20200115_dop04_trj.npy', trj)
 
 
 # To load

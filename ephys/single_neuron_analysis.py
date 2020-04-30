@@ -20,6 +20,7 @@ import sys
 from path import Path
 import random
 import seaborn as sns
+import scipy.stats as stats
 ### Developing test ###
 session_folder = '/Volumes/LaCie/dop_4_ephys_data/2020-01-15/001'
 session = load_behavior(session_folder)
@@ -86,6 +87,10 @@ heatmap_sorted_by_pool_choice(spikeclusters, spiketimes,session, i, epoch,
                            bin_size=0.025)
 heatmap_per_session_stimulus(spikeclusters, spiketimes,session, i, bin_size=0.025)
 heatmap_per_session_choice(spikeclusters, spiketimes,session, i, bin_size=0.025)
+
+sort_non_opto_plot_by_block(spikeclusters, spiketimes,session, i, epoch,
+                           bin_size=0.025)
+
 # Plot heatmaps
 
 def heatmap_sorted_by_pool_choice(spikeclusters, spiketimes,session, i, epoch,
@@ -104,11 +109,11 @@ def heatmap_sorted_by_pool_choice(spikeclusters, spiketimes,session, i, epoch,
     left_choice_trials_left_block = np.intersect1d(np.where(session['choice'] == 1), \
                                     np.where(session['opto_probability_left'] == 1))
     right_choice_trials_left_block = np.intersect1d(np.where(session['choice'] == -1), \
-                                    np.where(session['opto_probability_left'] == 0))
+                                    np.where(session['opto_probability_left'] == 1))
     left_choice_trials_right_block = np.intersect1d(np.where(session['choice'] == 1), \
                                     np.where(session['opto_probability_left'] == 0))
     right_choice_trials_right_block = np.intersect1d(np.where(session['choice'] == -1), \
-                                    np.where(session['opto_probability_left'] == 1))
+                                    np.where(session['opto_probability_left'] == 0))
     
     # Divide by slide block
         
@@ -190,7 +195,117 @@ def heatmap_sorted_by_pool_choice(spikeclusters, spiketimes,session, i, epoch,
     plt.savefig('choice_heatmap_common_order.svg')
     
 
+    
+def sort_non_opto_plot_by_block(spikeclusters, spiketimes,session, i, epoch,
+                           bin_size=0.025):
+    
+    binned_firing_rate = bb.singlecell.calculate_peths(
+            spiketimes, spikeclusters, good_clusters, session[epoch],
+            bin_size=bin_size)[1]
+    
+    # Divide by stimulus side and opto block
+    left_stim_trials_neutral_block = np.intersect1d(np.where(session['contrastLeft'] >= 0), \
+                                    np.where(session['opto_probability_left'] == -1))
+    right_stim_trials_neutral_block = np.intersect1d(np.where(session['contrastRight'] >= 0), \
+                                    np.where(session['opto_probability_left'] == -1))
+    left_stim_trials_left_block = np.intersect1d(np.where(session['contrastLeft'] >= 0), \
+                                    np.where(session['opto_probability_left'] == 1))
+    right_stim_trials_left_block = np.intersect1d(np.where(session['contrastRight'] >= 0), \
+                                    np.where(session['opto_probability_left'] == 1))
+    left_stim_trials_right_block = np.intersect1d(np.where(session['contrastLeft'] >= 0), \
+                                    np.where(session['opto_probability_left'] == 0))
+    right_stim_trials_right_block = np.intersect1d(np.where(session['contrastRight'] >= 0), \
+                                    np.where(session['opto_probability_left'] == 0))
+    
 
+    # Concatenate neutral L and R trials
+    L = binned_firing_rate[left_stim_trials_neutral_block,:,:]
+    R = binned_firing_rate[right_stim_trials_neutral_block,:,:]
+    L_blockL = binned_firing_rate[left_stim_trials_left_block,:,:]
+    R_blockL = binned_firing_rate[right_stim_trials_left_block,:,:]
+    L_blockR = binned_firing_rate[left_stim_trials_right_block,:,:]
+    R_blockR = binned_firing_rate[right_stim_trials_right_block,:,:]
+        
+        
+    # Sort based by neutral block
+    sorte, order = heatmap_append_L_R(L,R, order = None )
+    
+    # Apply sort
+    
+    sorte_left_block = \
+        heatmap_append_L_R(L_blockL,R_blockL,order)
+    sorte_right_block = \
+        heatmap_append_L_R(L_blockR,R_blockR,order)
+    
+    # Plot
+    
+    fig, ax  = plt.subplots(3,2, figsize=(10,17))
+    plt.sca(ax[0,0])
+    sns.heatmap(sorte[:,:int(np.shape(sorte)[1]/2)])
+    plt.axvline(8, 0,1)
+    ax[0,0].set_xlabel('Time from event (ms)')
+    ax[0,0].set_xticklabels(np.arange(-200,500,bin_size*2*1000)
+        , rotation='vertical')
+    ax[0,0].set_ylabel('Neuron Location (depth um)')
+    ax[0,0].set_yticklabels(clusters_depths[order])
+    ax[0,0].set_title("Left" + epoch + "Neutral Block, Aligned to Stimulus")
+    
+    plt.sca(ax[0,1])
+    sns.heatmap(sorte[:,int(np.shape(sorte)[1]/2):])
+    plt.axvline(8, 0,1)
+    ax[0,1].set_xlabel('Time from event (ms)')
+    ax[0,1].set_xticklabels(np.arange(-200,500,bin_size*2*1000)
+        , rotation='vertical')
+    ax[0,1].set_ylabel('Neuron Location')
+    ax[0,1].set_yticklabels(clusters_depths[order_cv])
+    ax[0,1].set_title("Right" + epoch + " Neutral Block, Aligned to Stimulus")
+    
+    
+    plt.sca(ax[1,0])
+    sns.heatmap(sorte_left_block[:,:int(np.shape(sorte_left_block)[1]/2)])
+    plt.axvline(8, 0,1)
+    ax[1,0].set_xlabel('Time from event (ms)')
+    ax[1,0].set_xticklabels(np.arange(-200,500,bin_size*2*1000)
+        , rotation='vertical')
+    ax[1,0].set_ylabel('Neuron Location (depth um)')
+    ax[1,0].set_yticklabels(clusters_depths[order])
+    ax[1,0].set_title("Left" + epoch + " Left Block, Aligned to Stimulus")
+    
+    plt.sca(ax[1,1])
+    sns.heatmap(sorte_left_block[:,int(np.shape(sorte_left_block)[1]/2):])
+    plt.axvline(8, 0,1)
+    ax[1,1].set_xlabel('Time from event (ms)')
+    ax[1,1].set_xticklabels(np.arange(-200,500,bin_size*2*1000)
+        , rotation='vertical')
+    ax[1,1].set_ylabel('Neuron Location')
+    ax[1,1].set_yticklabels(clusters_depths[order])
+    ax[1,1].set_title("Right" + epoch + "Left Block, Aligned to Stimulus")
+    
+    plt.sca(ax[2,0])
+    sns.heatmap(sorte_right_block[:,:int(np.shape(sorte_right_block)[1]/2)])
+    plt.axvline(8, 0,1)
+    ax[2,0].set_xlabel('Time from event (ms)')
+    ax[2,0].set_xticklabels(np.arange(-200,500,bin_size*2*1000)
+        , rotation='vertical')
+    ax[2,0].set_ylabel('Neuron Location')
+    ax[2,0].set_yticklabels(clusters_depths[order])
+    ax[2,0].set_title("Left"+ epoch + "Right Block, Aligned to Stimulus")
+    
+    plt.sca(ax[2,1])
+    sns.heatmap(sorte_right_block[:,int(np.shape(sorte_right_block)[1]/2):])
+    plt.axvline(8, 0,1)
+    ax[2,1].set_xlabel('Time from event (ms)')
+    ax[2,1].set_xticklabels(np.arange(-200,500,bin_size*2*1000)
+        , rotation='vertical')
+    ax[2,1].set_ylabel('Neuron Location')
+    ax[2,1].set_yticklabels(clusters_depths[order])
+    ax[2,1].set_title("Right" + epoch + " Right Block, Aligned to Stimulus")
+    plt.tight_layout()
+
+    plt.savefig(epoch+ ' ' +'_heatmap_common_L_2_R_order.png')
+    plt.savefig(epoch+ ' ' +'_heatmap_common_L_2_R_order.svg')
+    
+    
 
 def heatmap_sorted_by_pool_stimulus(spikeclusters, spiketimes,session, i, epoch,
                            bin_size=0.025):
@@ -208,11 +323,11 @@ def heatmap_sorted_by_pool_stimulus(spikeclusters, spiketimes,session, i, epoch,
     left_stim_trials_left_block = np.intersect1d(np.where(session['contrastLeft'] >= 0), \
                                     np.where(session['opto_probability_left'] == 1))
     right_stim_trials_left_block = np.intersect1d(np.where(session['contrastRight'] >= 0), \
-                                    np.where(session['opto_probability_left'] == 0))
+                                    np.where(session['opto_probability_left'] == 1))
     left_stim_trials_right_block = np.intersect1d(np.where(session['contrastLeft'] >= 0), \
                                     np.where(session['opto_probability_left'] == 0))
     right_stim_trials_right_block = np.intersect1d(np.where(session['contrastRight'] >= 0), \
-                                    np.where(session['opto_probability_left'] == 1))
+                                    np.where(session['opto_probability_left'] == 0))
     
     # Divide by slide block
         
@@ -296,7 +411,7 @@ def heatmap_sorted_by_pool_stimulus(spikeclusters, spiketimes,session, i, epoch,
     
 
 
-def heatmap_per_session_stimulus(spikeclusters, spiketimes,session, i, bin_size=0.025, epoch):
+def heatmap_per_session_stimulus(spikeclusters, spiketimes,session, i, epoch, bin_size=0.025):
 
     #Cross validated plot, get order from half of the data, plot on the other half.
     #The halfs are chosen randomly
@@ -312,11 +427,11 @@ def heatmap_per_session_stimulus(spikeclusters, spiketimes,session, i, bin_size=
     left_stim_trials_left_block = np.intersect1d(np.where(session['contrastLeft'] >= 0), \
                                     np.where(session['opto_probability_left'] == 1))
     right_stim_trials_left_block = np.intersect1d(np.where(session['contrastRight'] >= 0), \
-                                    np.where(session['opto_probability_left'] == 0))
+                                    np.where(session['opto_probability_left'] == 1))
     left_stim_trials_right_block = np.intersect1d(np.where(session['contrastLeft'] >= 0), \
                                     np.where(session['opto_probability_left'] == 0))
     right_stim_trials_right_block = np.intersect1d(np.where(session['contrastRight'] >= 0), \
-                                    np.where(session['opto_probability_left'] == 1))
+                                    np.where(session['opto_probability_left'] == 0))
     
     # Divide by slide block
         
@@ -373,10 +488,10 @@ def heatmap_per_session_stimulus(spikeclusters, spiketimes,session, i, bin_size=
     plt.tight_layout()
     
     
-    plt.savefig('choice_heatmap.png')
-    plt.savefig('choice_heatmap.svg')
+    plt.savefig('stimulus_heatmap.png')
+    plt.savefig('stimulus_heatmap.svg')
     
-def heatmap_per_session_choice(spikeclusters, spiketimes,session, i, bin_size=0.025, epoch):
+def heatmap_per_session_choice(spikeclusters, spiketimes,session, i, epoch, bin_size=0.025):
 
     #Cross validated plot, get order from half of the data, plot on the other half.
     #The halfs are chosen randomly
@@ -392,9 +507,9 @@ def heatmap_per_session_choice(spikeclusters, spiketimes,session, i, bin_size=0.
     left_choice_trials_left_block = np.intersect1d(np.where(session['choice'] == 1), \
                                     np.where(session['opto_probability_left'] == 1))
     right_choice_trials_left_block = np.intersect1d(np.where(session['choice'] == -1), \
-                                    np.where(session['opto_probability_left'] == 0))
+                                    np.where(session['opto_probability_left'] == 1))
     left_choice_trials_right_block = np.intersect1d(np.where(session['choice'] == 1), \
-                                    np.where(session['opto_probability_left'] == 0))
+                                    np.where(session['opto_probability_left'] == 1))
     right_choice_trials_right_block = np.intersect1d(np.where(session['choice'] == -1), \
                                     np.where(session['opto_probability_left'] == 1))
     
@@ -452,8 +567,8 @@ def heatmap_per_session_choice(spikeclusters, spiketimes,session, i, bin_size=0.
     ax[1,1].set_title("Choice Right Side, Right Opto Block")
     plt.tight_layout()
 
-    plt.savefig('stimulus_heatmap.png')
-    plt.savefig('stimulus_heatmap.svg')
+    plt.savefig('choice_heatmap.png')
+    plt.savefig('choice_heatmap.svg')
     
 
 
@@ -485,9 +600,7 @@ def heatmap_cross_validated(binned_firing_rate):
     ## z score and order by training set
     mean_binned_fr =  np.mean(train_set/bin_size, axis =0)
     
-    z_score_binned_spikes = \
-        ((mean_binned_fr.T-mean_binned_fr.mean(axis =1))\
-        /mean_binned_fr.std(axis = 1)).T
+    z_score_binned_spikes = stats.zscore(mean_binned_fr, axis =1)
     
     # Replace np.nan by 0
     z_score_binned_spikes = np.nan_to_num(z_score_binned_spikes)
@@ -496,9 +609,7 @@ def heatmap_cross_validated(binned_firing_rate):
     
     # make heatmap matrix
     mean_binned_fr_test =  np.mean(test_set/bin_size, axis =0)
-    z_score_binned_spikes_test = \
-        ((mean_binned_fr_test.T-mean_binned_fr_test.mean(axis =1))\
-        /mean_binned_fr_test.std(axis = 1)).T
+    z_score_binned_spikes_test =  stats.zscore(mean_binned_fr_test, axis =1)
     z_score_binned_spikes_test = np.nan_to_num(z_score_binned_spikes_test)
         
     sorte = z_score_binned_spikes_test[order.argsort()]
@@ -507,6 +618,41 @@ def heatmap_cross_validated(binned_firing_rate):
     ordered_ids = order.argsort()                     
     
     return sorte, ordered_ids
+
+
+def heatmap_append_L_R(binned_firing_rate1,binned_firing_rate2, order = None ):
+    '''
+    Warning: Without external sorting order, this function does not crossvalidate
+    Given a set of trialsxbinxspikes array, generates a cross validated heatmap
+    
+    Parameters
+    -------
+    binned_firing_rate: trialsxbinxspikes array from bb.singlecell.calculate_peths
+    
+    Returns
+    -------
+    cross validated sorted heatmap
+    
+    '''
+
+    # make heatmap matrix
+    mean_binned_fr_test1 =  np.mean(binned_firing_rate1, axis =0)/bin_size
+    mean_binned_fr_test2 =  np.mean(binned_firing_rate2, axis =0)/bin_size
+    mean_binned_fr_test = np.concatenate((mean_binned_fr_test1,
+                                          mean_binned_fr_test2),axis =1)
+    z_score_binned_spikes_test = stats.zscore(mean_binned_fr_test, axis =1)
+    z_score_binned_spikes_test = np.nan_to_num(z_score_binned_spikes_test)
+    
+    if order is not None:
+        sorte = z_score_binned_spikes_test[order]
+        return sorte
+    else:
+        order = np.argmax(z_score_binned_spikes, 1)
+        sorte = z_score_binned_spikes_test[order.argsort()]
+    
+        return sorte, order.argsort()
+
+
 
 
 def heatmap_w_external_sorting(binned_firing_rate, order = None ):
@@ -525,10 +671,8 @@ def heatmap_w_external_sorting(binned_firing_rate, order = None ):
     '''
 
     # make heatmap matrix
-    mean_binned_fr_test =  np.mean(binned_firing_rate/bin_size, axis =0)
-    z_score_binned_spikes_test = \
-        ((mean_binned_fr_test.T-mean_binned_fr_test.mean(axis =1))\
-        /mean_binned_fr_test.std(axis = 1)).T
+    mean_binned_fr_test =  np.mean(binned_firing_rate, axis =0)/bin_size
+    z_score_binned_spikes_test = stats.zscore(mean_binned_fr_test, axis =1)
     z_score_binned_spikes_test = np.nan_to_num(z_score_binned_spikes_test)
     
     if order is not None:
@@ -1678,16 +1822,5 @@ def early_vs_late_block (spikeclusters, spiketimes,session, i):
     except:
         print('error in early vs late fig')
         
-if __name__ == '__main__':
-     session_folder = sys.argv[0]
-     session = load_behavior(session_folder)
-     clusters_depths, cluster_metrics, \
-     spikeclusters, spiketimes, \
-     good_clusters = load_neural_data(session_folder)
-     session_single_neuron_psth_summary(spikeclusters, spiketimes,session, session_folder)
-    
-     
-   
 
-    
     

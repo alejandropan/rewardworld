@@ -5,14 +5,19 @@ Created on Fri May  1 16:10:19 2020
 
 @author: alex
 """
-from npy2pd import *
+from rew_alf.npy2pd import *
 import numpy as np
 import pandas as pd
 
 
 
 
-def load_behavior_data_from_root(root_data_folder, remove_last_100 = False):
+
+
+
+
+def load_behavior_data_from_root(root_data_folder, ephys=True, dropna=True, 
+                                 remove_last_100 = False):
     
     '''
     
@@ -22,6 +27,8 @@ def load_behavior_data_from_root(root_data_folder, remove_last_100 = False):
     location should be uproot from the virus folder. (str)
     remove_last_100 : Whether to remove the last 100 trials from each session
     since the animal might disengaged (Boolean)
+    ephys : whether this is an ephys folder
+    dropna: drops session where enterie variables are nan
     
     Returns
     -------
@@ -38,12 +45,19 @@ def load_behavior_data_from_root(root_data_folder, remove_last_100 = False):
     
     psy_raw = load_data(root_data_folder)
     
-    if psy_raw.isnull().values.any():
-        psy_raw  = psy_raw.dropna()
-        print ('Warning: sessions deleted due to entire variables with NaN')
-    
-        psy_df  = unpack(psy_raw)
+    if ephys==True:
+        psy_raw = psy_raw.drop(labels='s.probabilityLeft', axis=1)
         
+    if dropna == True:
+        if psy_raw.isnull().values.any():
+            psy_raw  = psy_raw.dropna()
+            print ('Warning: sessions deleted due to entire variables with NaN')
+        
+            psy_df  = unpack(psy_raw)
+        
+    else:
+        psy_df  = unpack(psy_raw)
+    
     if remove_last_100 == True:
         psy_df = remove_last100(psy_df)
     
@@ -77,7 +91,7 @@ def psy_df_to_Q_learning_model_format(psy_dataframe, virus = 'chr2'):
     
     # Select virus and make dataframe
     
-    psy_df = psy_dataframe.loc[psy_df['virus'] == virus].copy()
+    psy_df = psy_dataframe.loc[psy_dataframe['virus'] == virus].copy()
     psy_df = psy_df.reset_index()
     
     # Add opto_side variable (signal what kind of action led to opto in a trial)

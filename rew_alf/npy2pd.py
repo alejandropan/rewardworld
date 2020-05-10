@@ -75,22 +75,27 @@ def session_loader(path,variables):
                     if file.endswith(".npy"):
                         raw_data.append ((os.path.join(root, file)))
         data = {}
+        
         for var in variables:            
-            #list equivalent npys
-            merge = [x for x in raw_data if re.search(var, x)]
-            if not merge:
-                continue
-            dat = []
-            for x, file in enumerate(merge):
-                dat.append(np.load(file))
-            dat = np.concatenate(dat)
-            data [var]  = dat
-            
+           #list equivalent npys
+           # Code below used to merge variables with similar name,
+           # obsolete function in current version, choose first intead
+           # to avoid merger of goCue_trigger_times and goCue_trigger_times_bpod
+           merge = [x for x in raw_data if re.search(var, x)]
+
+           if not merge:
+               continue
+           
+           untrimmed = np.load(merge[0])
+           if (var == 'opto_probability_left' or var == 'opto_dummy' or var == 'hem_stim'):
+                data[var]  = untrimmed[:len(data['choice'])] # these files are not automatically trimmed if ephys_trials do not much bpod trials. The extra trials are at the end [confirmed], this happens when ephys finishes before bpod.
+           else:
+                data [var]  = untrimmed
         return data
     
 def load_data (subject_folder):
     """Generates a dataframe with all available information in project folder
-    INPUT: subjects folder, can include several subjects
+    INPUT: root folder include several subjects and viruses
     OUTPUT:  macro (dataframe per animal per session)"""
     #subject_folder =  '/mnt/s0/Data/Subjects_personal_project/rewblocks8040/'
     viruses = sorted([x for x in (os.listdir (subject_folder)) if ".DS_Store" not in x])
@@ -142,7 +147,7 @@ def unpack (macro):
        flat_list = [item for test in macro[i] for item in test] #Flattens column of each variable
        trial_macro[i] = flat_list
     #trial_macro at this stage might have nan rows that need to be removed. 
-    for trial in range(trial_macro.shape[0]):
+    for trial in range(trial_macro.shape[0]): 
         if np.isnan(trial_macro['contrastLeft'][trial]) & np.isnan(trial_macro['contrastRight'][trial]):
             print('Error in %s trial' %trial)
             raise Exception('Error in trial: {}'.format(trial))

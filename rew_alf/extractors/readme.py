@@ -15,24 +15,27 @@ each session. These are: extrac_me.flag and opto.flag
 2. Run extract.py (in rewardworld) on the root folder (not the folder of an
 individual session). 
 
-3. Run opto extractor (run extact from opto extractor on roor folder). It now runs
-just with the extract_me flag.
 
 For ephys:
     
 Logic of extractor, extract.py (uproot) runs extract_session.py. Extract_session
 detects the type of session. For ephys trials it 1st) Calls laser_ephys_trals (bpod_data)
 it then calls ephys_fpga(fpga data). This process extracts the sync not the KS2 conversion
+finallu sync merge converts to alf. Opto extractor, extracts opto signals from bpod
+
+
+
+Notes:
+
+From extract_session you can see all the  different steps
+    
+ephys_fpga_opto.extract_all has to be run in princeton if not is too slow 
+opto_extractor can be run from laptop is fast
 
 KS2 conversion:
 
-In matlab: 
-
-
-
-from experimental data import sync_merge_ephys
-
 need sync_merge_ephys.flag in probe folder
+then run sync merge ephys in extract_session
 
 """
 

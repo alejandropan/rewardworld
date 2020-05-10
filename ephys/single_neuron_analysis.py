@@ -5,32 +5,87 @@ Created on Tue Mar  3 11:26:44 2020
 
 @author: alex
 """
-
+import os
 import numpy as np
 import pandas as pd
-import npy2pd
+import rew_alf.npy2pd as npy2pd
 import brainbox as bb
 from brainbox.plot import *
 from matplotlib import pyplot as plt
 import matplotlib.patches as mpatches
 import os
 from os import path
-from alf_functions import *
+from rew_alf.alf_functions import *
 import sys
 from path import Path
 import random
 import seaborn as sns
 import scipy.stats as stats
 ### Developing test ###
-session_folder = '/Volumes/LaCie/dop_4_ephys_data/2020-01-15/001'
-session = load_behavior(session_folder)
-clusters_depths, cluster_metrics, \
-spikeclusters, spiketimes, \
-good_clusters = load_neural_data(session_folder)
 
-###
+
+
+
+### collect_paths
+
+session_paths = ['' ]
+
+for i in session_paths:
+    
+    session_folder = i
+    session = load_behavior(session_folder)
+    clusters_depths, cluster_metrics, \
+    spikeclusters, spiketimes, \
+    good_clusters, allen, channel_coord = load_neural_data(session_folder)
+    
+    os.chdir(i)
+    if not os.path.exists('figures'):
+        os.makedirs('figures')
+    os.chdir(i + '/figures')
+    
+    # Heatmaps of session
+    sort_non_opto_plot_by_block_and_subtraction(spikeclusters, spiketimes,session,  'goCue_times', good_clusters,
+                               bin_size=0.025)
+    sort_non_opto_plot_by_block_and_subtraction(spikeclusters, spiketimes,session,  'feedback_times', good_clusters,
+                               bin_size=0.025)
+    
+    # heatmaps per region
+    if 'allen' in globals(): 
+        for region in np.unique(allen):
+            region_goodlusters = np.intersect1d(np.where(allen  == region), good_clusters)
+            sort_non_opto_plot_by_block_and_subtraction(spikeclusters, spiketimes,session,  'goCue_times', region_goodlusters,
+                                       bin_size=0.025, extra_ref = str(region))
+            sort_non_opto_plot_by_block_and_subtraction(spikeclusters, spiketimes,session,  'feedback_times', region_goodlusters,
+                                       bin_size=0.025, extra_ref = str(region))
+    
+    # PSTH and raster per session
+
+    session_single_neuron_psth_summary(spikeclusters, spiketimes,session, session_folder)
+
+
+##############################################################################
+################################ Function ####################################
+##############################################################################
+
+
 
 # Loading data
+
+
+def load_data (root_folder):
+    """Generates a dataframe with all available information in project folder
+    INPUT: root folder include several subjects and viruses
+    OUTPUT:  macro (dataframe per animal per session)"""
+    #root_folder =  '/mnt/s0/Data/Subjects_personal_project/rewblocks8040/'
+    viruses = sorted([x for x in (os.listdir (root_folder)) if ".DS_Store" not in x])
+    for virus in viruses:
+        mice = sorted([x for x in (os.listdir (root_folder + virus +'/')) if ".DS_Store" not in x])
+        for mouse in mice:
+            dates =  sorted([x for x in (os.listdir (root_folder + virus + '/' + mouse)) if ".DS_Store" not in x])
+            df = pd.DataFrame(index=dates, columns = col)
+            for day in dates:
+                #merge sessions from the same day
+                path = root_folder + virus + '/' + mouse + '/' + day +'/'
 
 def load_behavior(session_folder):
     '''
@@ -46,18 +101,18 @@ def load_behavior(session_folder):
     del session['intervals']
     ##Fix opto, opto variable is not the truth
     del session['opto_dummy']
-    session['opto.npy'][:] = 0
-    session['real_opto'] = np.load(session_folder + '/alf/_ibl_trials.laser_epoch_in.npy')
-    session['opto.npy'] = (~np.isnan(session['real_opto']) == 1)*1
+    del session['opto.npy']
     ##
-    session['response_times'] = session['response_times'][:727]
+    session['response_times'] = session['response_times']
     session = pd.DataFrame.from_dict(session)
     session = add_trial_within_block(session)
+    session['real_opto'] = np.load(session_folder + '/alf/_ibl_trials.laser_epoch_in.npy')
+    session['opto.npy'] = (~np.isnan(session['real_opto']) == 1)*1
     session['after_opto'] = session['opto.npy'].shift(periods=1)
     session['after_reward'] = session['feedbackType'].shift(periods=1)
     return session
 
-def load_neural_data(session_folder):
+def load_neural_data(session_folder, histology = True):
     '''
     Parameters
     ----------
@@ -67,26 +122,42 @@ def load_neural_data(session_folder):
     -------
     arrays with cluster measures
     '''
-    clusters_depths = np.load(session_folder + '/alf/probe00/clusters.depths.npy')
-    cluster_metrics = pd.read_csv(session_folder + '/alf/probe00/clusters.metrics.csv')
-    spikeclusters = np.load(session_folder + '/alf/probe00/spikes.clusters.npy')
-    location = np.load()
-    spiketimes = np.load(session_folder + '/alf/probe00/spikes.times.npy')
-    good_clusters = cluster_metrics.loc[cluster_metrics['ks2_label']=='good', 'cluster_id']
-    allen = np.load('/Users/alex/Downloads/hist.regions_dop04_15.npy', allow_pickle=True) #Not stable
-    return clusters_depths, cluster_metrics, spikeclusters, spiketimes, good_clusters, allen
+    
+    if Path(session_folder + '/alf/probe01/').exists() == True:
+        clusters_depths = np.load(session_folder + '/alf/probe00/clusters.depths.npy')
+        cluster_metrics = pd.read_csv(session_folder + '/alf/probe00/clusters.metrics.csv')
+        spikeclusters = np.load(session_folder + '/alf/probe00/spikes.clusters.npy')
+        spiketimes = np.load(session_folder + '/alf/probe00/spikes.times.npy')
+        good_clusters = cluster_metrics.loc[cluster_metrics['ks2_label']=='good', 'cluster_id']
+        clusters_depths = np.append(clusters_depths, np.load(session_folder + '/alf/probe01/clusters.depths.npy'))
+        cluster_metrics = np.append(cluster_metrics, pd.read_csv(session_folder + '/alf/probe01/clusters.metrics.csv'))
+        spikeclusters = np.append(spikeclusters, np.load(session_folder + '/alf/probe01/spikes.clusters.npy'))
+        spiketimes = np.append(spiketimes, np.load(session_folder + '/alf/probe01/spikes.times.npy'))
+        good_clusters = np.append(good_clusters, cluster_metrics.loc[cluster_metrics['ks2_label']=='good', 'cluster_id'])
+        if histology == True:  
+            allen = np.load(session_folder + '/alf/probe00/cluster_location.npy', allow_pickle=True) 
+            allen = np.append(allen, np.load(session_folder + '/alf/probe01/cluster_location.npy', allow_pickle=True))
+            channel_coord = np.load(session_folder + '/alf/probe00/channels_xyz.npy', allow_pickle=True)
+            channel_coord = np.append(channel_coard, np.load(session_folder + '/alf/probe01/channels_xyz.npy', allow_pickle=True))
+            return clusters_depths, cluster_metrics, spikeclusters, spiketimes, good_clusters, allen, channel_coord
+        if histology == False:
+            return clusters_depths, cluster_metrics, spikeclusters, spiketimes, good_clusters
+        
+    else:
+        clusters_depths = np.load(session_folder + '/alf/probe00/clusters.depths.npy')
+        cluster_metrics = pd.read_csv(session_folder + '/alf/probe00/clusters.metrics.csv')
+        spikeclusters = np.load(session_folder + '/alf/probe00/spikes.clusters.npy')
+        spiketimes = np.load(session_folder + '/alf/probe00/spikes.times.npy')
+        good_clusters = cluster_metrics.loc[cluster_metrics['ks2_label']=='good', 'cluster_id']
+        if histology == True:  
+            allen = np.load(session_folder + '/alf/probe00/cluster_location.npy', allow_pickle=True) 
+            channel_coord = np.load(session_folder + '/alf/probe00/channels_xyz.npy', allow_pickle=True)
+            return clusters_depths, cluster_metrics, spikeclusters, spiketimes, good_clusters, allen, channel_coord
+        if histology == False:
+            return clusters_depths, cluster_metrics, spikeclusters, spiketimes, good_clusters
 
 
 
-
-# Run plots
-heatmap_sorted_by_pool_stimulus(spikeclusters, spiketimes,session, i, epoch,
-                           bin_size=0.025)
-
-heatmap_sorted_by_pool_choice(spikeclusters, spiketimes,session, i, epoch,
-                           bin_size=0.025)
-heatmap_per_session_stimulus(spikeclusters, spiketimes,session, i, bin_size=0.025)
-heatmap_per_session_choice(spikeclusters, spiketimes,session, i, bin_size=0.025)
 # Plot heatmaps
 
 def heatmap_sorted_by_pool_stimulus_mistakes_only(spikeclusters, spiketimes,session, i, epoch = 'goCue_times',
@@ -646,11 +717,11 @@ def heatmap_sorted_by_pool_choice(spikeclusters, spiketimes,session, i, epoch,
     
 
     
-def sort_non_opto_plot_by_block(spikeclusters, spiketimes,session, i, epoch,
-                           bin_size=0.025):
+def sort_non_opto_plot_by_block_and_subtraction(spikeclusters, spiketimes,session, epoch, cluster_select,
+                           bin_size=0.025, extra_ref = None):
     
     binned_firing_rate = bb.singlecell.calculate_peths(
-            spiketimes, spikeclusters, good_clusters, session[epoch],
+            spiketimes, spikeclusters, cluster_select, session[epoch],
             bin_size=bin_size)[1]
     
     # Divide by stimulus side and opto block
@@ -689,74 +760,144 @@ def sort_non_opto_plot_by_block(spikeclusters, spiketimes,session, i, epoch,
     
     # Plot
     
-    fig, ax  = plt.subplots(3,2, figsize=(10,17))
+    fig, ax  = plt.subplots(4,3, figsize=(25,30))
     plt.sca(ax[0,0])
-    sns.heatmap(sorte[:,:int(np.shape(sorte)[1]/2)], vmin=-3, vmax=7, cbar_kws={'label': ' mean  z-scored firing rate (Hz)'})
+    sns.heatmap(sorte[:,:int(np.shape(sorte)[1]/2)], vmin=-3, vmax=7, center=0, cmap="bwr", cbar_kws={'label': ' mean  z-scored firing rate (Hz)'})
     plt.axvline(8, 0,1)
     ax[0,0].set_xlabel('Time from event (ms)')
-    ax[0,0].set_xticklabels(np.arange(-200,500,bin_size*2*1000)
+    ax[0,0].set_xticklabels(np.arange(-200,500, bin_size*1000)
         , rotation='vertical')
     ax[0,0].set_ylabel('Neuron Location (depth um)')
     ax[0,0].set_yticklabels(clusters_depths[order])
-    ax[0,0].set_title("Left" + epoch + "Neutral Block, Aligned to Stimulus")
+    ax[0,0].yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
+    ax[0,0].set_title("Left" + epoch + "Neutral Block")
     
     plt.sca(ax[0,1])
-    sns.heatmap(sorte[:,int(np.shape(sorte)[1]/2):], vmin=-3, vmax=7, cbar_kws={'label': ' mean  z-scored firing rate (Hz)'})
+    sns.heatmap(sorte[:,int(np.shape(sorte)[1]/2):], vmin=-3, vmax=7, center=0, cmap="bwr", cbar_kws={'label': ' mean  z-scored firing rate (Hz)'})
     plt.axvline(8, 0,1)
     ax[0,1].set_xlabel('Time from event (ms)')
-    ax[0,1].set_xticklabels(np.arange(-200,500,bin_size*2*1000)
+    ax[0,1].set_xticklabels(np.arange(-200,500, bin_size*1000)
         , rotation='vertical')
     ax[0,1].set_ylabel('Neuron Location')
-    ax[0,1].set_yticklabels(clusters_depths[order_cv])
-    ax[0,1].set_title("Right" + epoch + " Neutral Block, Aligned to Stimulus")
+    ax[0,1].set_yticklabels(clusters_depths[order])
+    ax[0,1].set_title("Right" + epoch + " Neutral Block")
     
     
     plt.sca(ax[1,0])
-    sns.heatmap(sorte_left_block[:,:int(np.shape(sorte_left_block)[1]/2)], vmin=-3, vmax=7, cbar_kws={'label': ' mean  z-scored firing rate (Hz)'})
+    sns.heatmap(sorte_left_block[:,:int(np.shape(sorte_left_block)[1]/2)], vmin=-3, center=0,  cmap="bwr",
+                vmax=7, cbar_kws={'label': ' mean  z-scored firing rate (Hz)'})
     plt.axvline(8, 0,1)
     ax[1,0].set_xlabel('Time from event (ms)')
-    ax[1,0].set_xticklabels(np.arange(-200,500,bin_size*2*1000)
+    ax[1,0].set_xticklabels(np.arange(-200,500, bin_size*1000)
         , rotation='vertical')
     ax[1,0].set_ylabel('Neuron Location (depth um)')
     ax[1,0].set_yticklabels(clusters_depths[order])
-    ax[1,0].set_title("Left" + epoch + " Left Block, Aligned to Stimulus")
+    ax[1,0].set_title("Left" + epoch + " Left Block")
     
     plt.sca(ax[1,1])
-    sns.heatmap(sorte_left_block[:,int(np.shape(sorte_left_block)[1]/2):], vmin=-3, vmax=7, cbar_kws={'label': ' mean  z-scored firing rate (Hz)'})
+    sns.heatmap(sorte_left_block[:,int(np.shape(sorte_left_block)[1]/2):], vmin=-3,  center=0, cmap="bwr",
+                vmax=7, cbar_kws={'label': ' mean  z-scored firing rate (Hz)'})
     plt.axvline(8, 0,1)
     ax[1,1].set_xlabel('Time from event (ms)')
-    ax[1,1].set_xticklabels(np.arange(-200,500,bin_size*2*1000)
+    ax[1,1].set_xticklabels(np.arange(-200,500, bin_size*1000)
         , rotation='vertical')
     ax[1,1].set_ylabel('Neuron Location')
     ax[1,1].set_yticklabels(clusters_depths[order])
-    ax[1,1].set_title("Right" + epoch + "Left Block, Aligned to Stimulus")
+    ax[1,1].set_title("Right" + epoch + "Left Block")
+    
+    plt.sca(ax[1,2])
+    stimulus_delta_left_block =  sorte_left_block[:,int(np.shape(sorte_left_block)[1]/2):] \
+                                - sorte_left_block[:,:int(np.shape(sorte_left_block)[1]/2)]
+    sns.heatmap(stimulus_delta_left_block, vmin=-3, center=1,  cmap="bwr",
+                vmax=7, cbar_kws={'label': ' mean  z-scored firing rate (Hz)'})
+    plt.axvline(8, 0,1)
+    ax[1,2].set_xlabel('Time from event (ms)')
+    ax[1,2].set_xticklabels(np.arange(-200,500, bin_size*1000)
+        , rotation='vertical')
+    ax[1,2].set_ylabel('Neuron Location')
+    ax[1,2].set_yticklabels(clusters_depths[order])
+    ax[1,2].set_title("Delta_side" + epoch + "Left Block")
     
     plt.sca(ax[2,0])
-    sns.heatmap(sorte_right_block[:,:int(np.shape(sorte_right_block)[1]/2)], vmin=-3, vmax=7, cbar_kws={'label': ' mean  z-scored firing rate (Hz)'})
+    sns.heatmap(sorte_right_block[:,:int(np.shape(sorte_right_block)[1]/2)], center=0,  cmap="bwr",
+                vmin=-3, vmax=7, cbar_kws={'label': ' mean  z-scored firing rate (Hz)'})
     plt.axvline(8, 0,1)
     ax[2,0].set_xlabel('Time from event (ms)')
-    ax[2,0].set_xticklabels(np.arange(-200,500,bin_size*2*1000)
+    ax[2,0].set_xticklabels(np.arange(-200,500, bin_size*1000)
         , rotation='vertical')
     ax[2,0].set_ylabel('Neuron Location')
     ax[2,0].set_yticklabels(clusters_depths[order])
-    ax[2,0].set_title("Left"+ epoch + "Right Block, Aligned to Stimulus")
+    ax[2,0].set_title("Left"+ epoch + "Right Block")
     
     plt.sca(ax[2,1])
-    sns.heatmap(sorte_right_block[:,int(np.shape(sorte_right_block)[1]/2):], vmin=-3, vmax=7, cbar_kws={'label': ' mean  z-scored firing rate (Hz)'})
+    sns.heatmap(sorte_right_block[:,int(np.shape(sorte_right_block)[1]/2):], center=0,  cmap="bwr",
+                vmin=-3, vmax=7, cbar_kws={'label': ' mean  z-scored firing rate (Hz)'})
     plt.axvline(8, 0,1)
     ax[2,1].set_xlabel('Time from event (ms)')
-    ax[2,1].set_xticklabels(np.arange(-200,500,bin_size*2*1000)
+    ax[2,1].set_xticklabels(np.arange(-200,500, bin_size*1000)
         , rotation='vertical')
     ax[2,1].set_ylabel('Neuron Location')
     ax[2,1].set_yticklabels(clusters_depths[order])
-    ax[2,1].set_title("Right" + epoch + " Right Block, Aligned to Stimulus")
-    plt.tight_layout()
-
-    plt.savefig(epoch + ' ' +'_heatmap_common_L_2_R_order.png')
-    plt.savefig(epoch+ ' ' +'_heatmap_common_L_2_R_order.svg')
+    ax[2,1].set_title("Right" + epoch + " Right Block")
     
+    plt.sca(ax[2,2])
+    stimulus_delta_right_block = sorte_right_block[:,int(np.shape(sorte_right_block)[1]/2):] \
+                                 - sorte_right_block[:,:int(np.shape(sorte_right_block)[1]/2)]
+    
+    sns.heatmap(stimulus_delta_right_block, vmin=-3, center=0, cmap="bwr",
+                vmax=7, cbar_kws={'label': ' mean  z-scored firing rate (Hz)'})
+    plt.axvline(8, 0,1)
+    ax[2,2].set_xlabel('Time from event (ms)')
+    ax[2,2].set_xticklabels(np.arange(-200,500, bin_size*1000)
+        , rotation='vertical')
+    ax[2,2].set_ylabel('Neuron Location')
+    ax[2,2].set_yticklabels(clusters_depths[order])
+    ax[2,2].set_title("Delta_side" + epoch + "Right Block")
+    
+    plt.sca(ax[3,0])
+    block_delta_right_block = sorte_right_block[:,:int(np.shape(sorte_right_block)[1]/2)] \
+                            - sorte_left_block[:,:int(np.shape(sorte_left_block)[1]/2)]
+    sns.heatmap(block_delta_right_block, vmin=-3, vmax=7, center=0, cmap="bwr", cbar_kws={'label': ' mean  z-scored firing rate (Hz)'})
+    plt.axvline(8, 0,1)
+    ax[3,0].set_xlabel('Time from event (ms)')
+    ax[3,0].set_xticklabels(np.arange(-200,500, bin_size*1000)
+        , rotation='vertical')
+    ax[3,0].set_ylabel('Neuron Location')
+    ax[3,0].set_yticklabels(clusters_depths[order])
+    ax[3,0].set_title("Delta_block"+ epoch + "Right Block")
    
+    plt.sca(ax[3,1])
+    block_delta_left_block = sorte_right_block[:,int(np.shape(sorte_right_block)[1]/2):] \
+                            - sorte_left_block[:,int(np.shape(sorte_left_block)[1]/2):]
+    sns.heatmap(block_delta_left_block, vmin=-3, vmax=7, center=0, cmap="bwr", cbar_kws={'label': ' mean  z-scored firing rate (Hz)'})
+    plt.axvline(8, 0,1)
+    ax[3,1].set_xlabel('Time from event (ms)')
+    ax[3,1].set_xticklabels(np.arange(-200,500, bin_size*1000)
+        , rotation='vertical')
+    ax[3,1].set_ylabel('Neuron Location')
+    ax[3,1].set_yticklabels(clusters_depths[order])
+    ax[3,1].set_title("Delta_block" + epoch + " Right Block")
 
+    plt.sca(ax[3,2])
+    delta_delta = stimulus_delta_right_block - stimulus_delta_left_block
+    sns.heatmap(delta_delta, vmin=-3, vmax=7, center=0, cmap="bwr", cbar_kws={'label': ' mean  z-scored firing rate (Hz)'})
+    plt.axvline(8, 0,1)
+    ax[3,2].set_xlabel('Time from event (ms)')
+    ax[3,2].set_xticklabels(np.arange(-200,500, bin_size*1000)
+        , rotation='vertical')
+    ax[3,2].set_ylabel('Neuron Location')
+    ax[3,2].set_yticklabels(clusters_depths[order])
+    ax[3,2].set_title("Delta_block_delta_stimulus" + epoch + " Right Block")
+    plt.tight_layout()
+    
+    if '/' in extra_ref: # Changes / from e.g layer 2/3 to avoid error at saving
+       l_region = list(extra_ref) 
+       l_region[region.find('/')] = '_'
+       extra_ref = ''.join(l_region)
+
+    plt.savefig(epoch + ' ' + extra_ref +'_heatmap_common_L_2_R_order.png')
+    plt.savefig(epoch + ' ' + extra_ref +'_heatmap_common_L_2_R_order.svg')
+    
 def heatmap_sorted_by_pool_stimulus(spikeclusters, spiketimes,session, i, epoch,
                            bin_size=0.025):
 
@@ -1022,7 +1163,7 @@ def heatmap_per_session_choice(spikeclusters, spiketimes,session, i, epoch, bin_
     
 
 
-def heatmap_cross_validated(binned_firing_rate):
+def heatmap_cross_validated(binned_firing_rate, bin_size=0.025):
     '''
     Given a set of trialsxbinxspikes array, generates a cross validated heatmap
     
@@ -1070,7 +1211,7 @@ def heatmap_cross_validated(binned_firing_rate):
     return sorte, ordered_ids
 
 
-def heatmap_append_L_R(binned_firing_rate1,binned_firing_rate2, order = None ):
+def heatmap_append_L_R(binned_firing_rate1,binned_firing_rate2, order = None , bin_size = 0.025):
     '''
     Warning: Without external sorting order, this function does not crossvalidate
     Given a set of trialsxbinxspikes array, generates a cross validated heatmap
@@ -1105,7 +1246,7 @@ def heatmap_append_L_R(binned_firing_rate1,binned_firing_rate2, order = None ):
 
 
 
-def heatmap_w_external_sorting(binned_firing_rate, order = None ):
+def heatmap_w_external_sorting(binned_firing_rate, order = None, bin_size=0.025):
     '''
     Warning: Without external sorting order, this function does not crossvalidate
     Given a set of trialsxbinxspikes array, generates a cross validated heatmap
@@ -1129,7 +1270,7 @@ def heatmap_w_external_sorting(binned_firing_rate, order = None ):
         sorte = z_score_binned_spikes_test[order]
         return sorte
     else:
-        order = np.argmax(z_score_binned_spikes, 1)
+        order = np.argmax(z_score_binned_spikes_test, 1)
         sorte = z_score_binned_spikes_test[order.argsort()]
     
         return sorte, order.argsort()
@@ -1140,7 +1281,7 @@ def heatmap_w_external_sorting(binned_firing_rate, order = None ):
 
 
 # Ploting PSTH
-
+# ******************************** Handler ************************************#
 def session_single_neuron_psth_summary(spikeclusters, spiketimes,session, session_folder):
     
     if path.exists(path.exists(session_folder + '/figures/')):
@@ -1161,6 +1302,10 @@ def session_single_neuron_psth_summary(spikeclusters, spiketimes,session, sessio
         plt.savefig(session_folder + '/figures/%d_tuning_psth.pdf' %i,dpi=300)
         direct_opto_effect(spikeclusters, spiketimes,session, i)
         plt.savefig(session_folder + '/figures/%d_direct_opto_effect.pdf' %i,dpi=300)
+        raster_plot_cue(spikeclusters, spiketimes,session, i)
+        plt.savefig(session_folder + '/figures/%d_raster_cue.pdf' %i,dpi=300)
+        raster_plot_feedback(spikeclusters, spiketimes,session, i)
+        plt.savefig(session_folder + '/figures/%d_raster_outocome.pdf' %i,dpi=300)
 
 def direct_opto_effect(spikeclusters, spiketimes,session, i):
 
@@ -1909,10 +2054,37 @@ def feedback_opto_vs_non_opto(spikeclusters, spiketimes,session, i):
         blue_patch = mpatches.Patch(color='blue', label='Laser off (1s)')
         green_patch  =  mpatches.Patch(color='green', label='Laser on (1s)')
         plt.legend(handles=[green_patch, blue_patch], loc = 'lower right')
-            
-    except:
-        print('error in feedback after opto figure')
 
+
+def raster_plot_cue(spikeclusters, spiketimes,session, i):
+    try:
+        epoch1 = session['goCue_times']
+        fig, ax = plt.subplots()
+        peri_event_time_histogram(
+                spiketimes, spikeclusters, epoch1, i,  # Everything you need for a basic plot
+                t_before=0.2, t_after=0.5, bin_size=0.01, smoothing=0.025, as_rate=True,
+                include_raster=True, n_rasters=50, error_bars='sem',
+                pethline_kwargs={'color': 'blue', 'lw': 2},
+                errbar_kwargs={'color': 'blue', 'alpha': 0.5},
+                eventline_kwargs={'color': 'black', 'alpha': 0.5},
+                raster_kwargs={'color': 'black', 'lw': 0.5})
+    except:
+        print('not enough trials')
+
+def raster_plot_feedback(spikeclusters, spiketimes,session, i):
+    try:
+        epoch1 = session['feedback_times']
+        fig, ax = plt.subplots()
+        peri_event_time_histogram(
+                spiketimes, spikeclusters, epoch1, i,  # Everything you need for a basic plot
+                t_before=0.2, t_after=0.5, bin_size=0.01, smoothing=0.025, as_rate=True,
+                include_raster=True, n_rasters=50, error_bars='sem',
+                pethline_kwargs={'color': 'blue', 'lw': 2},
+                errbar_kwargs={'color': 'blue', 'alpha': 0.5},
+                eventline_kwargs={'color': 'black', 'alpha': 0.5},
+                raster_kwargs={'color': 'black', 'lw': 0.5})
+    except:
+        print('not enough trials')
 
 def early_vs_late_block (spikeclusters, spiketimes,session, i):
     '''

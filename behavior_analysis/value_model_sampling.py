@@ -10,6 +10,19 @@ def q_softmax(Q_L, Q_R, beta):
 	p /= np.sum(p)
 	return p
 
+def likelihood_ratio(llmin, llmax):
+    return(2*(llmax-llmin))
+
+def aic(LL,n_param):
+    # Calculates Akaike Information Criterion
+    aic =  2*n_param - 2*LL
+    return aic
+    
+def chi2_LLR(L1,L2):
+    LR = likelihood_ratio(L1,L2)
+    p = chi2.sf(LR, 1) # L2 has 1 DoF more than L1
+    return p
+
 def RunPOMDP(params, model_data):
 
     learningRate = params[0]
@@ -35,7 +48,7 @@ def RunPOMDP(params, model_data):
     # initalise Q values for each iteration
     for i in range(iter_n):
         QLL = 1
-        QRL = 0
+        QRL =0
         QLR = 0
         QRR = 1
         # start model
@@ -46,15 +59,10 @@ def RunPOMDP(params, model_data):
                 perceived_stim = np.random.normal(loc = currentStim, scale = beliefNoiseSTD)
                 belief_l = norm.cdf(0, loc = perceived_stim, scale = beliefNoiseSTD)
                 belief_r = 1 - belief_l
-                # calculate Q values
-                QLL = QLL * belief_l
-                QRL = QRL * belief_r
-                QLR = QLR * belief_l
-                QRR = QRR * belief_r
                 
                 # Overal action values
-                QL[trial, i] = QLL + QRL
-                QR[trial, i] = QLR + QRR
+                QL[trial, i] = QLL * belief_l + QRL * belief_r
+                QR[trial, i] = QLR * belief_l + QRR * belief_r
                 
                 #switiching for a softmax
                 pL1[trial,i] , pR1[trial,i]  = q_softmax(QL[trial, i], QR[trial, i], Temperature)
@@ -75,11 +83,11 @@ def RunPOMDP(params, model_data):
                 
                 # calculate the prediction error, and update Q values
                 if choices[trial] == 1:
-                    QLL = QLL + belief_l * learningRate * (rew - Q_chosen)
-                    QRL = QRL + belief_r * learningRate * (rew - Q_chosen)
+                    QLL = QLL + learningRate * (rew - Q_chosen)
+                    QRL = QRL + learningRate * (rew - Q_chosen)
                 else:
-                    QLR = QLR + belief_l * learningRate * (rew - Q_chosen)
-                    QRR = QRR + belief_r * learningRate * (rew - Q_chosen)
+                    QLR = QLR + learningRate * (rew - Q_chosen)
+                    QRR = QRR + learningRate * (rew - Q_chosen)
     end_time = time.time()
     #print(end_time - start_time)
     
@@ -93,23 +101,13 @@ def RunPOMDP(params, model_data):
     output['signed_contrast'] = stimTrials
     return output
 
-
-
-
-output = RunPOMDP(params, model_data1)
-simulate = simulatePOMDP(params, model_data)
-a = psy.loc[psy['mouse_name'] == 'dop_4'].reset_index()
-sns.lineplot(data = a , x = 'signed_contrasts', y = (a['choice']==-1)*1)
-sns.lineplot(data =output, x = 'signed_contrast', y = (output['pL1']>0.5) *1)
-sns.lineplot(data =simulate, x = 'signed_contrast', y = (simulate['action'] >0)*1)
-
 def simulatePOMDP(params, model_data):
 
-    learningRate = 0.5 #params[0]
-    extraRewardVal = 0 #params[1]
-    beliefNoiseSTD = 0.0001#params[2]
+    learningRate = params[0]
+    extraRewardVal =  params[1]
+    beliefNoiseSTD = params[2]
     Temperature = params[3]
-    iter_n = 10000
+    iter_n = 21
     model_data = model_data.drop(model_data[model_data.choice == 0].index)    
     stimTrials = model_data['stimTrials'].to_numpy()
     extraReward = model_data['extraRewardTrials'].to_numpy()
@@ -139,27 +137,15 @@ def simulatePOMDP(params, model_data):
                 perceived_stim = np.random.normal(loc = currentStim, scale = beliefNoiseSTD)
                 belief_l = norm.cdf(0, loc = perceived_stim, scale = beliefNoiseSTD)
                 belief_r = 1 - belief_l
-                # calculate Q values
-                QLL = QLL * belief_l
-                QRL = QRL * belief_r
-                QLR = QLR * belief_l
-                QRR = QRR * belief_r
-                
+  
                 # Overal action values
-                QL[trial, i] = QLL + QRL
-                QR[trial, i] = QLR + QRR
+                QL[trial, i] = QLL * belief_l + QRL * belief_r
+                QR[trial, i] = QLR * belief_l + QRR * belief_r
                 
                 #switiching for a softmax
-                #pL1[trial,i] , pR1[trial,i]  = q_softmax(QL[trial, i], QR[trial, i], Temperature)
+                pL1[trial,i] , pR1[trial,i]  = q_softmax(QL[trial, i], QR[trial, i], Temperature)
             # Make a choice
-                #action[trial,i] = np.random.choice(['left', 'right'], p=[pL1[trial,i], pR1[trial,i]])
-                
-                if  QL[trial, i] >  QR[trial, i]:
-                    action[trial,i] = 'left'
-                elif QR[trial, i] > QL[trial, i]: 
-                    action[trial,i] = 'right'
-                else:
-                    action[trial,i] = np.random.choice(['left', 'right'], p =[0.5,0.5])
+                action[trial,i] = np.random.choice(['left', 'right'], p=[pL1[trial,i], pR1[trial,i]])
                 
                 if (action[trial,i] == 'left'):
                     Q_chosen = QL[trial,i]
@@ -240,11 +226,11 @@ def simulatePOMDP(params, model_data):
                             
                 # calculate the prediction error, and update Q values
                 if action[trial,i] == 'left':
-                        QLL = QLL + belief_l * learningRate * ((reward) - Q_chosen)
-                        QRL = QRL + belief_r * learningRate * ((reward) - Q_chosen)
+                        QLL = QLL +  learningRate * ((reward) - Q_chosen)
+                        QRL = QRL +  learningRate * ((reward) - Q_chosen)
                 else:
-                    QLR = QLR + belief_l * learningRate * ((reward) - Q_chosen)
-                    QRR = QRR + belief_r * learningRate * ((reward) - Q_chosen)
+                    QLR = QLR + learningRate * ((reward) - Q_chosen)
+                    QRR = QRR + learningRate * ((reward) - Q_chosen)
                
     end_time = time.time()
     #print(end_time - start_time)
@@ -259,3 +245,59 @@ def simulatePOMDP(params, model_data):
     output['action'] = np.mean(trial_action,axis =1)
     output['signed_contrast'] = stimTrials
     return output
+
+def optimizer_runPOMDP(data, num_fits = 5, initial_guess=[0.1, -1, 0.5, 0.6]):
+    # Accounting variables
+    best_NLL = np.Inf
+    best_x = [None, None, None, None]
+
+	# Do our fit with several different initializations
+    for i in range(num_fits):
+        print('Starting fit %d' % i)
+        # For every fit other than the first, construct a new initial guess
+        if i != 0:
+            lr_guess = np.random.uniform(0, 1)
+            extraVal_guess = np.random.normal()
+            beliefSTD_guess = np.random.uniform(0.005, 5)
+            beta_guess = np.random.uniform(0.01, 5)
+            initial_guess = [lr_guess, extraVal_guess, beliefSTD_guess, beta_guess]
+		# Run the fit
+        res = minimize(session_log_likelihood1, initial_guess, 
+                       args= data, method='L-BFGS-B', 
+                       bounds=[(0, 1), (-1, 1), (0.01, 1), 
+                               (0.01, 1)])
+		# If this fit is better than the previous best, remember it, otherwise toss
+        if res.fun <= best_NLL:
+            best_NLL = res.fun
+            best_x = res.x
+    return best_x, best_NLL
+
+def session_log_likelihood1(params, model_data):
+        output = RunPOMDP(params, model_data)
+        negLL = -np.log(np.sum(output['pChoice']))
+        return negLL
+    
+# Fit per animal
+
+best_nphr_individual = np.zeros([len(psy.loc[psy['virus'] == 'nphr', 'mouse_name'].unique()),6])
+best_nphr_NLL_individual = np.zeros([len(psy.loc[psy['virus'] == 'nphr', 'mouse_name'].unique()),1])
+best_nphr_accu_individual = np.zeros([len(psy.loc[psy['virus'] == 'nphr', 'mouse_name'].unique()),1])
+best_nphr_accu_individual = np.zeros([len(psy.loc[psy['virus'] == 'nphr', 'mouse_name'].unique()),1])
+
+for i, mouse in enumerate(psy.loc[psy['virus'] == 'nphr', 'mouse_name'].unique()): 
+    model_data_nphr, simulate_data_nphr  = \
+        psy_df_to_Q_learning_model_format(psy.loc[psy['mouse_name'] == mouse], 
+                                                  virus = 'nphr')
+    
+    train_data_nphr = model_data_nphr.iloc[:int(len(model_data_nphr)*0.7),:]
+    test_data_nphr = model_data_nphr.iloc[int(len(model_data_nphr)*0.7):,:]
+    simulate_data_nphr.iloc[int(len(model_data_nphr)*0.7):,:]
+    best_nphr_individual[i,:], best_nphr_NLL_individual[i,:] = optimizer_runPOMDP(train_data_nphr, num_fits = 2, 
+                                initial_guess=[0.1, -1, 0.5, 0.6])
+    
+    
+    output_nphr = RunPOMDP_stay(best_nphr_individual[i,:], test_data_nphr)
+    psy.loc[psy['mouse_name'] == mouse, 'QL'] = output_nphr['QL'].to_numpy()
+    psy.loc[psy['mouse_name'] == mouse, 'QR'] = output_nphr['QR'].to_numpy()
+    psy.loc[psy['mouse_name'] == mouse, 'pChoice'] = output_nphr['pChoice'].to_numpy()
+    best_nphr_accu_individual[i,:] = np.sum(output['pChoice'] > 0.5)/len(output['pChoice'] > 0.5)

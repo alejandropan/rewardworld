@@ -21,6 +21,8 @@ from path import Path
 import random
 import seaborn as sns
 import scipy.stats as stats
+from matplotlib.ticker import FormatStrFormatter
+import matplotlib
 ### Developing test ###
 
 
@@ -28,7 +30,7 @@ import scipy.stats as stats
 
 ### collect_paths
 
-session_paths = ['' ]
+session_paths = ['/Volumes/witten/Alex/recordings_march_2020_dop/nphr/dop_11/2020-03-14/001/']
 
 for i in session_paths:
     
@@ -720,6 +722,8 @@ def heatmap_sorted_by_pool_choice(spikeclusters, spiketimes,session, i, epoch,
 def sort_non_opto_plot_by_block_and_subtraction(spikeclusters, spiketimes,session, epoch, cluster_select,
                            bin_size=0.025, extra_ref = None):
     
+    matplotlib.rcParams.update({'font.size': 22})
+    
     binned_firing_rate = bb.singlecell.calculate_peths(
             spiketimes, spikeclusters, cluster_select, session[epoch],
             bin_size=bin_size)[1]
@@ -760,27 +764,39 @@ def sort_non_opto_plot_by_block_and_subtraction(spikeclusters, spiketimes,sessio
     
     # Plot
     
-    fig, ax  = plt.subplots(4,3, figsize=(25,30))
+    fig, ax  = plt.subplots(4,3, figsize=(25,30), sharex=True)
     plt.sca(ax[0,0])
-    sns.heatmap(sorte[:,:int(np.shape(sorte)[1]/2)], vmin=-3, vmax=7, center=0, cmap="bwr", cbar_kws={'label': ' mean  z-scored firing rate (Hz)'})
+    sns.heatmap(sorte[:,:int(np.shape(sorte)[1]/2)], vmin=-3, vmax=7, center=0, cmap="bwr", 
+                cbar_kws={'label': ' mean  z-scored firing rate (Hz)'})
     plt.axvline(8, 0,1)
     ax[0,0].set_xlabel('Time from event (ms)')
     ax[0,0].set_xticklabels(np.arange(-200,500, bin_size*1000)
         , rotation='vertical')
-    ax[0,0].set_ylabel('Neuron Location (depth um)')
+    ax[0,0].set_ylabel('NEUTRAL BLOCK \nLocation (depth um)', rotation='vertical',x=-0.1,y=0.5)
     ax[0,0].set_yticklabels(clusters_depths[order])
     ax[0,0].yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
-    ax[0,0].set_title("Left" + epoch + "Neutral Block")
+    ax[0,0].set_title("LEFT STIM TRIALS")
     
     plt.sca(ax[0,1])
-    sns.heatmap(sorte[:,int(np.shape(sorte)[1]/2):], vmin=-3, vmax=7, center=0, cmap="bwr", cbar_kws={'label': ' mean  z-scored firing rate (Hz)'})
+    sns.heatmap(sorte[:,int(np.shape(sorte)[1]/2):], vmin=-3, vmax=7, center=0, cmap="bwr",
+                cbar_kws={'label': ' mean  z-scored firing rate (Hz)'})
     plt.axvline(8, 0,1)
     ax[0,1].set_xlabel('Time from event (ms)')
     ax[0,1].set_xticklabels(np.arange(-200,500, bin_size*1000)
         , rotation='vertical')
-    ax[0,1].set_ylabel('Neuron Location')
     ax[0,1].set_yticklabels(clusters_depths[order])
-    ax[0,1].set_title("Right" + epoch + " Neutral Block")
+    ax[0,1].set_title("RIGHT STIM TRIALS")
+    
+    plt.sca(ax[0,2])
+    sns.heatmap((sorte[:,:int(np.shape(sorte)[1]/2)] - sorte[:,int(np.shape(sorte)[1]/2):]), 
+                vmin=-3, vmax=7, center=0, cmap="bwr",
+                cbar_kws={'label': ' mean  z-scored firing rate (Hz)'})
+    plt.axvline(8, 0,1)
+    ax[0,2].set_xlabel('Time from event (ms)')
+    ax[0,2].set_xticklabels(np.arange(-200,500, bin_size*1000)
+        , rotation='vertical')
+    ax[0,2].set_yticklabels(clusters_depths[order])
+    ax[0,2].set_title(r"$\Delta$ LEFT TRIALS - RIGHT TRIALS")
     
     
     plt.sca(ax[1,0])
@@ -790,9 +806,8 @@ def sort_non_opto_plot_by_block_and_subtraction(spikeclusters, spiketimes,sessio
     ax[1,0].set_xlabel('Time from event (ms)')
     ax[1,0].set_xticklabels(np.arange(-200,500, bin_size*1000)
         , rotation='vertical')
-    ax[1,0].set_ylabel('Neuron Location (depth um)')
+    ax[1,0].set_ylabel('LEFT BLOCK \nLocation (depth um)')
     ax[1,0].set_yticklabels(clusters_depths[order])
-    ax[1,0].set_title("Left" + epoch + " Left Block")
     
     plt.sca(ax[1,1])
     sns.heatmap(sorte_left_block[:,int(np.shape(sorte_left_block)[1]/2):], vmin=-3,  center=0, cmap="bwr",
@@ -801,22 +816,18 @@ def sort_non_opto_plot_by_block_and_subtraction(spikeclusters, spiketimes,sessio
     ax[1,1].set_xlabel('Time from event (ms)')
     ax[1,1].set_xticklabels(np.arange(-200,500, bin_size*1000)
         , rotation='vertical')
-    ax[1,1].set_ylabel('Neuron Location')
     ax[1,1].set_yticklabels(clusters_depths[order])
-    ax[1,1].set_title("Right" + epoch + "Left Block")
     
     plt.sca(ax[1,2])
-    stimulus_delta_left_block =  sorte_left_block[:,int(np.shape(sorte_left_block)[1]/2):] \
-                                - sorte_left_block[:,:int(np.shape(sorte_left_block)[1]/2)]
-    sns.heatmap(stimulus_delta_left_block, vmin=-3, center=1,  cmap="bwr",
+    stimulus_delta_left_block =  sorte_left_block[:,:int(np.shape(sorte_left_block)[1]/2)] \
+                                - sorte_left_block[:,int(np.shape(sorte_left_block)[1]/2):]
+    sns.heatmap(stimulus_delta_left_block, vmin=-3, center=0,  cmap="bwr",
                 vmax=7, cbar_kws={'label': ' mean  z-scored firing rate (Hz)'})
     plt.axvline(8, 0,1)
     ax[1,2].set_xlabel('Time from event (ms)')
     ax[1,2].set_xticklabels(np.arange(-200,500, bin_size*1000)
         , rotation='vertical')
-    ax[1,2].set_ylabel('Neuron Location')
     ax[1,2].set_yticklabels(clusters_depths[order])
-    ax[1,2].set_title("Delta_side" + epoch + "Left Block")
     
     plt.sca(ax[2,0])
     sns.heatmap(sorte_right_block[:,:int(np.shape(sorte_right_block)[1]/2)], center=0,  cmap="bwr",
@@ -825,9 +836,8 @@ def sort_non_opto_plot_by_block_and_subtraction(spikeclusters, spiketimes,sessio
     ax[2,0].set_xlabel('Time from event (ms)')
     ax[2,0].set_xticklabels(np.arange(-200,500, bin_size*1000)
         , rotation='vertical')
-    ax[2,0].set_ylabel('Neuron Location')
+    ax[2,0].set_ylabel('RIGHT BLOCK \nLocation (depth um)')
     ax[2,0].set_yticklabels(clusters_depths[order])
-    ax[2,0].set_title("Left"+ epoch + "Right Block")
     
     plt.sca(ax[2,1])
     sns.heatmap(sorte_right_block[:,int(np.shape(sorte_right_block)[1]/2):], center=0,  cmap="bwr",
@@ -836,13 +846,11 @@ def sort_non_opto_plot_by_block_and_subtraction(spikeclusters, spiketimes,sessio
     ax[2,1].set_xlabel('Time from event (ms)')
     ax[2,1].set_xticklabels(np.arange(-200,500, bin_size*1000)
         , rotation='vertical')
-    ax[2,1].set_ylabel('Neuron Location')
     ax[2,1].set_yticklabels(clusters_depths[order])
-    ax[2,1].set_title("Right" + epoch + " Right Block")
     
     plt.sca(ax[2,2])
-    stimulus_delta_right_block = sorte_right_block[:,int(np.shape(sorte_right_block)[1]/2):] \
-                                 - sorte_right_block[:,:int(np.shape(sorte_right_block)[1]/2)]
+    stimulus_delta_right_block =  sorte_right_block[:,:int(np.shape(sorte_right_block)[1]/2)] \
+        - sorte_right_block[:,int(np.shape(sorte_right_block)[1]/2):]
     
     sns.heatmap(stimulus_delta_right_block, vmin=-3, center=0, cmap="bwr",
                 vmax=7, cbar_kws={'label': ' mean  z-scored firing rate (Hz)'})
@@ -850,53 +858,52 @@ def sort_non_opto_plot_by_block_and_subtraction(spikeclusters, spiketimes,sessio
     ax[2,2].set_xlabel('Time from event (ms)')
     ax[2,2].set_xticklabels(np.arange(-200,500, bin_size*1000)
         , rotation='vertical')
-    ax[2,2].set_ylabel('Neuron Location')
     ax[2,2].set_yticklabels(clusters_depths[order])
-    ax[2,2].set_title("Delta_side" + epoch + "Right Block")
     
     plt.sca(ax[3,0])
-    block_delta_right_block = sorte_right_block[:,:int(np.shape(sorte_right_block)[1]/2)] \
-                            - sorte_left_block[:,:int(np.shape(sorte_left_block)[1]/2)]
-    sns.heatmap(block_delta_right_block, vmin=-3, vmax=7, center=0, cmap="bwr", cbar_kws={'label': ' mean  z-scored firing rate (Hz)'})
+    block_delta_right_block =  sorte_left_block[:,:int(np.shape(sorte_left_block)[1]/2)] \
+                                - sorte_right_block[:,:int(np.shape(sorte_right_block)[1]/2)]
+    sns.heatmap(block_delta_right_block, vmin=-3, vmax=7, center=0, cmap="bwr", 
+                cbar_kws={'label': ' mean  z-scored firing rate (Hz)'})
     plt.axvline(8, 0,1)
     ax[3,0].set_xlabel('Time from event (ms)')
     ax[3,0].set_xticklabels(np.arange(-200,500, bin_size*1000)
         , rotation='vertical')
-    ax[3,0].set_ylabel('Neuron Location')
+    ax[3,0].set_ylabel(r'$\Delta$' + ' LEFT BLOCK -  RIGHT BLOCK \nLocation (depth um)')
     ax[3,0].set_yticklabels(clusters_depths[order])
-    ax[3,0].set_title("Delta_block"+ epoch + "Right Block")
    
     plt.sca(ax[3,1])
-    block_delta_left_block = sorte_right_block[:,int(np.shape(sorte_right_block)[1]/2):] \
-                            - sorte_left_block[:,int(np.shape(sorte_left_block)[1]/2):]
-    sns.heatmap(block_delta_left_block, vmin=-3, vmax=7, center=0, cmap="bwr", cbar_kws={'label': ' mean  z-scored firing rate (Hz)'})
+    block_delta_left_block = sorte_left_block[:,int(np.shape(sorte_left_block)[1]/2):] \
+                            - sorte_right_block[:,int(np.shape(sorte_right_block)[1]/2):]
+    sns.heatmap(block_delta_left_block, vmin=-3, vmax=7, center=0, cmap="bwr", 
+                cbar_kws={'label': ' mean  z-scored firing rate (Hz)'})
     plt.axvline(8, 0,1)
     ax[3,1].set_xlabel('Time from event (ms)')
     ax[3,1].set_xticklabels(np.arange(-200,500, bin_size*1000)
         , rotation='vertical')
-    ax[3,1].set_ylabel('Neuron Location')
+    ax[3,1].set_ylabel('Location')
     ax[3,1].set_yticklabels(clusters_depths[order])
-    ax[3,1].set_title("Delta_block" + epoch + " Right Block")
 
     plt.sca(ax[3,2])
-    delta_delta = stimulus_delta_right_block - stimulus_delta_left_block
-    sns.heatmap(delta_delta, vmin=-3, vmax=7, center=0, cmap="bwr", cbar_kws={'label': ' mean  z-scored firing rate (Hz)'})
+    delta_delta =  stimulus_delta_left_block - stimulus_delta_right_block
+    sns.heatmap(delta_delta, vmin=-3, vmax=7, center=0, cmap="bwr", 
+                cbar_kws={'label': ' mean  z-scored firing rate (Hz)'})
     plt.axvline(8, 0,1)
     ax[3,2].set_xlabel('Time from event (ms)')
     ax[3,2].set_xticklabels(np.arange(-200,500, bin_size*1000)
         , rotation='vertical')
-    ax[3,2].set_ylabel('Neuron Location')
     ax[3,2].set_yticklabels(clusters_depths[order])
-    ax[3,2].set_title("Delta_block_delta_stimulus" + epoch + " Right Block")
+    ax[3,2].set_title(r'$\Delta$ STIM SIDE (L-R) $\Delta$ BLOCK (L-R)')
     plt.tight_layout()
     
-    if '/' in extra_ref: # Changes / from e.g layer 2/3 to avoid error at saving
-       l_region = list(extra_ref) 
-       l_region[region.find('/')] = '_'
-       extra_ref = ''.join(l_region)
+    if extra_ref is not None:
+        if '/' in extra_ref: # Changes / from e.g layer 2/3 to avoid error at saving
+           l_region = list(extra_ref) 
+           l_region[region.find('/')] = '_'
+           extra_ref = ''.join(l_region)
 
-    plt.savefig(epoch + ' ' + extra_ref +'_heatmap_common_L_2_R_order.png')
-    plt.savefig(epoch + ' ' + extra_ref +'_heatmap_common_L_2_R_order.svg')
+           plt.savefig(epoch + ' ' + extra_ref +'_heatmap_common_L_2_R_order.png')
+           plt.savefig(epoch + ' ' + extra_ref +'_heatmap_common_L_2_R_order.svg')
     
 def heatmap_sorted_by_pool_stimulus(spikeclusters, spiketimes,session, i, epoch,
                            bin_size=0.025):

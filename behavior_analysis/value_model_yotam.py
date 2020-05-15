@@ -372,7 +372,7 @@ def session_neg_log_likelihood_stay_and_bias(params, *data, pregen_all_posterior
 	for i in range(num_trials):
 		trial_data = [true_contrasts[i], choices[i], rewards[i], lasers[i]]
 		previous_trial = choices[i-1]
-		trial_num
+		trial_num = i
 		if i == 0:
 			[true_contrasts[i], choices[i], rewards[i], lasers[i]]
 			trial_LL, newQ = trial_log_likelihood_bias(params[:5], trial_data, 
@@ -392,7 +392,7 @@ def session_neg_log_likelihood_stay_and_bias(params, *data, pregen_all_posterior
 		return -LL
 
 # Optimize several times with different initializations and return the best fit parameters, and negative log likelihood
-def optimizer(data, num_fits = 20, initial_guess=[0.1, 1, 0, 1]):
+def optimizer(data, num_fits = 5, initial_guess=[0.1, 1, 0, 1]):
 	# Accounting variables
 	best_NLL = np.Inf
 	best_x = [None, None, None, None]
@@ -411,7 +411,7 @@ def optimizer(data, num_fits = 20, initial_guess=[0.1, 1, 0, 1]):
 			initial_guess = [lr_guess, beliefSTD_guess, extraVal_guess, beta_guess]
 
 		# Run the fit
-		res = so.minimize(session_neg_log_likelihood, initial_guess, args=data, method='L-BFGS-B', bounds=[(0, 1), (0.01, 1), (-5, -0.001), (0.01, 1)])
+		res = so.minimize(session_neg_log_likelihood, initial_guess, args=data, method='L-BFGS-B', bounds=[(0, 1), (0.01, 1), (-5, 5), (0.01, 1)])
 
 		# If this fit is better than the previous best, remember it, otherwise toss
 		buffer_x[i,:] = res.x
@@ -423,7 +423,7 @@ def optimizer(data, num_fits = 20, initial_guess=[0.1, 1, 0, 1]):
 
 	return best_x, best_NLL, buffer_NLL, buffer_x
 
-def optimizer_bias(data, num_fits = 20, initial_guess=[0.1, 1, 0, 1, 0]):
+def optimizer_bias(data, num_fits = 5, initial_guess=[0.1, 1, 0, 1, 0]):
 	# Accounting variables
 	best_NLL = np.Inf
 	best_x = [None, None, None, None, None]
@@ -443,7 +443,7 @@ def optimizer_bias(data, num_fits = 20, initial_guess=[0.1, 1, 0, 1, 0]):
 			initial_guess = [lr_guess, beliefSTD_guess, extraVal_guess, beta_guess,bias]
 
 		# Run the fit
-		res = so.minimize(session_neg_log_likelihood_bias, initial_guess, args=data, method='L-BFGS-B', bounds=[(0, 1), (0.01, 1), (-5, -0.001), (0.01, 1), 
+		res = so.minimize(session_neg_log_likelihood_bias, initial_guess, args=data, method='L-BFGS-B', bounds=[(0, 1), (0.01, 1), (-5, 5), (0.01, 1), 
                                                                                                      (-100,100)])
 
 		# If this fit is better than the previous best, remember it, otherwise toss
@@ -456,7 +456,7 @@ def optimizer_bias(data, num_fits = 20, initial_guess=[0.1, 1, 0, 1, 0]):
 
 	return best_x, best_NLL, buffer_NLL, buffer_x
 
-def optimizer_stay(data, num_fits = 20, initial_guess=[0.1, 1, 0, 1, 1]):
+def optimizer_stay(data, num_fits = 5, initial_guess=[0.1, 1, 0, 1, 1]):
 	# Accounting variables
 	best_NLL = np.Inf
 	best_x = [None, None, None, None, None]
@@ -476,7 +476,7 @@ def optimizer_stay(data, num_fits = 20, initial_guess=[0.1, 1, 0, 1, 1]):
 			initial_guess = [lr_guess, beliefSTD_guess, extraVal_guess, beta_guess, stay]
 
 		# Run the fit
-		res = so.minimize(session_neg_log_likelihood_stay, initial_guess, args=data, method='L-BFGS-B', bounds=[(0, 1), (0.01, 1), (-5, -0.001), (0.01, 1), 
+		res = so.minimize(session_neg_log_likelihood_stay, initial_guess, args=data, method='L-BFGS-B', bounds=[(0, 1), (0.01, 1), (-5, 5), (0.01, 1), 
                                                                                                      (-100,100)])
 
 		# If this fit is better than the previous best, remember it, otherwise toss
@@ -489,7 +489,7 @@ def optimizer_stay(data, num_fits = 20, initial_guess=[0.1, 1, 0, 1, 1]):
 
 	return best_x, best_NLL, buffer_NLL, buffer_x
 
-def optimizer_stay_and_bias(data, num_fits = 20, initial_guess=[0.1, 1, 0, 1, 0, 1]):
+def optimizer_stay_and_bias(data, num_fits = 5, initial_guess=[0.1, 1, 0, 1, 0, 1]):
 	# Accounting variables
 	best_NLL = np.Inf
 	best_x = [None, None, None, None, None, None]
@@ -510,7 +510,7 @@ def optimizer_stay_and_bias(data, num_fits = 20, initial_guess=[0.1, 1, 0, 1, 0,
 			initial_guess = [lr_guess, beliefSTD_guess, extraVal_guess, beta_guess, bias, stay]
 
 		# Run the fit
-		res = so.minimize(session_neg_log_likelihood_stay_and_bias, initial_guess, args=data, method='L-BFGS-B', bounds=[(0, 1), (0.01, 1), (-5, -0.001), (0.01, 1), 
+		res = so.minimize(session_neg_log_likelihood_stay_and_bias, initial_guess, args=data, method='L-BFGS-B', bounds=[(0, 1), (0.01, 1), (-5, 5), (0.01, 1), 
                                                                                                      (-100,100),  (-100,100)])
 
 		# If this fit is better than the previous best, remember it, otherwise toss
@@ -602,11 +602,18 @@ def simulation_QL_QR(Q, perceived_contrast, all_contrasts, beliefSTD):
 
 	return Q_L, Q_R
 
-def generate_data(data, all_contrasts, learning_rate=0.3, beliefSTD=0.1, extraVal=1, beta=0.2, is_verbose=False):
+def generate_data(data, all_contrasts, learning_rate=0.3, beliefSTD=0.1, 
+                  extraVal=1, beta=0.2, is_verbose=False, propagate_errors = False):
 	rewards = []
 	true_contrasts = []
 	choices = []
 	lasers = []
+    
+	if propagate_errors == False:
+		prop = 3
+	else:
+		prop = 4
+
 
 	# Simulate the POMDP model
 	Q = np.zeros((len(all_contrasts), 2))
@@ -639,7 +646,7 @@ def generate_data(data, all_contrasts, learning_rate=0.3, beliefSTD=0.1, extraVa
 		rewards.append(reward)
 		
 		# Add laser value on the correct condition
-		if choice == data[4][t]:
+		if choice == data[prop][t]:
 			reward += extraVal
 			lasers.append(1)
 		else:
@@ -657,11 +664,17 @@ def generate_data(data, all_contrasts, learning_rate=0.3, beliefSTD=0.1, extraVa
 
 	return rewards, true_contrasts, choices, lasers
 
-def generate_data_bias(data, all_contrasts, learning_rate=0.3, beliefSTD=0.1, extraVal=1, beta=0.2, bias = 0, is_verbose=False):
+def generate_data_bias(data, all_contrasts, learning_rate=0.3, beliefSTD=0.1, 
+                       extraVal=1, beta=0.2, bias = 0, is_verbose=False, propagate_errors = False):
 	rewards = []
 	true_contrasts = []
 	choices = []
 	lasers = []
+
+	if propagate_errors == False:
+		prop = 3
+	else:
+		prop = 4
 
 	# Simulate the POMDP model
 	Q = np.zeros((len(all_contrasts), 2))
@@ -694,7 +707,7 @@ def generate_data_bias(data, all_contrasts, learning_rate=0.3, beliefSTD=0.1, ex
 		rewards.append(reward)
 		
 		# Add laser value on the correct condition
-		if choice == data[4][t]:
+		if choice == data[prop][t]:
 			reward += extraVal
 			lasers.append(1)
 		else:
@@ -712,11 +725,17 @@ def generate_data_bias(data, all_contrasts, learning_rate=0.3, beliefSTD=0.1, ex
 
 	return rewards, true_contrasts, choices, lasers
 
-def generate_data_stay(data, all_contrasts, learning_rate=0.3, beliefSTD=0.1, extraVal=1, beta=0.2, stay = 1, is_verbose=False):
+def generate_data_stay(data, all_contrasts, learning_rate=0.3, beliefSTD=0.1, 
+                       extraVal=1, beta=0.2, stay = 1, is_verbose=False, propagate_errors = False):
 	rewards = []
 	true_contrasts = []
 	choices = []
 	lasers = []
+    
+	if propagate_errors == False:
+		prop = 3
+	else:
+		prop = 4
 
 	# Simulate the POMDP model
 	Q = np.zeros((len(all_contrasts), 2))
@@ -734,11 +753,11 @@ def generate_data_stay(data, all_contrasts, learning_rate=0.3, beliefSTD=0.1, ex
 
 		# Make a decision and store it
 		Q_L, Q_R = simulation_QL_QR(Q, trial_contrast, all_contrasts, beliefSTD)
-		if trial_num == 0:
+		if t == 0:
 		    (l_stay, r_stay) = [0,0]
 		else:
 		    previous_choice= [0,0]
-		    previous_choice[previous_trial] = 1
+		    previous_choice[choices[t-1]]= 1
 		    (l_stay, r_stay) = previous_choice
 		choice_dist = softmax_stay(Q_L, Q_R, beta,l_stay, r_stay, stay)
 		choice = np.random.choice(2, p=choice_dist)
@@ -755,7 +774,7 @@ def generate_data_stay(data, all_contrasts, learning_rate=0.3, beliefSTD=0.1, ex
 		rewards.append(reward)
 		
 		# Add laser value on the correct condition
-		if choice == data[4][t]:
+		if choice == data[prop][t]:
 			reward += extraVal
 			lasers.append(1)
 		else:
@@ -774,11 +793,17 @@ def generate_data_stay(data, all_contrasts, learning_rate=0.3, beliefSTD=0.1, ex
 	return rewards, true_contrasts, choices, lasers
 
 def generate_data_stay_and_bias(data, all_contrasts, learning_rate=0.3, beliefSTD=0.1, 
-                                extraVal=1, beta=0.2, bias = 0, stay = 1, is_verbose=False):
+                                extraVal=1, beta=0.2, bias = 0, stay = 1, is_verbose=False,
+                                propagate_errors = False):
 	rewards = []
 	true_contrasts = []
 	choices = []
 	lasers = []
+    
+	if propagate_errors == False:
+		prop = 3
+	else:
+		prop = 4
 
 	# Simulate the POMDP model
 	Q = np.zeros((len(all_contrasts), 2))
@@ -796,11 +821,11 @@ def generate_data_stay_and_bias(data, all_contrasts, learning_rate=0.3, beliefST
 
 		# Make a decision and store it
 		Q_L, Q_R = simulation_QL_QR(Q, trial_contrast, all_contrasts, beliefSTD)
-		if trial_num == 0:
+		if t == 0:
 		    (l_stay, r_stay) = [0,0]
 		else:
 		    previous_choice= [0,0]
-		    previous_choice[previous_trial] = 1
+		    previous_choice[choices[t-1]] = 1
 		    (l_stay, r_stay) = previous_choice
 		choice_dist = softmax_stay_bias(Q_L, Q_R, beta, bias, l_stay, r_stay, stay)
 		choice = np.random.choice(2, p=choice_dist)
@@ -817,7 +842,7 @@ def generate_data_stay_and_bias(data, all_contrasts, learning_rate=0.3, beliefST
 		rewards.append(reward)
 		
 		# Add laser value on the correct condition
-		if choice == data[4][t]:
+		if choice == data[prop][t]:
 			reward += extraVal
 			lasers.append(1)
 		else:
@@ -870,46 +895,79 @@ if __name__ == '__main__':
 	# print(x)
 
 	# Load Alex's actual data
+    psy = load_behavior_data_from_root('/Volumes/witten/Alex/recordings_march_2020_dop/')
+
+    train_set_size = 1
+    cross_validate = False
+     
     all_contrasts = np.array([-0.25  , -0.125 , -0.0625,  0.    ,  0.0625, 0.125 , 0.25  ])
     best_nphr_individual = np.zeros([len(psy.loc[psy['virus'] == 'nphr', 'mouse_name'].unique()),4])
     best_nphr_NLL_individual = np.zeros([len(psy.loc[psy['virus'] == 'nphr', 'mouse_name'].unique()),1])
     model_parameters = pd.DataFrame()
     modelled_data = pd.DataFrame()
-    for i, mouse in enumerate(psy.loc[psy['virus'] == 'nphr', 'mouse_name'].unique()): 
+    for i, mouse in enumerate(psy['mouse_name'].unique()): 
         model_data_nphr, simulate_data_nphr  = \
             psy_df_to_Q_learning_model_format(psy.loc[psy['mouse_name'] == mouse], 
-                                                      virus = 'nphr')
+                                              virus = psy.loc[psy['mouse_name'] == mouse, 'virus'].unique()[0])
+        
+        
         obj = transform_model_struct_2_POMDP(model_data_nphr, simulate_data_nphr)
         
+        virus = psy.loc[psy['mouse_name'] == mouse, 'virus'].unique()[0]
+        
         opto = obj['extraRewardTrials'].to_numpy()
-    	lasers = []
+        lasers = []
         for i in range(len(opto)):
             try:
                 lasers.append(int(opto[i][0]))
             except:
                 lasers.append(int(opto[i]))
     
-    	choices = list(obj['choice'].to_numpy())
-    	contrasts = list(obj['stimTrials'].to_numpy())
-    	rewards = list(obj['reward'].to_numpy())
-    	laser_side = list(obj['laser_side'].to_numpy())
+        choices = list(obj['choice'].to_numpy())
+        contrasts = list(obj['stimTrials'].to_numpy())
+        rewards = list(obj['reward'].to_numpy())
+        laser_side = list(obj['laser_side'].to_numpy())
     
-    	data = (rewards[:int(len(rewards)*0.7)], contrasts[:int(len(rewards)*0.7)], choices[:int(len(rewards)*0.7)], lasers[:int(len(rewards)*0.7)])
-    	simulate_data = (rewards[:int(len(rewards)*0.7)], contrasts[:int(len(rewards)*0.7)], choices[:int(len(rewards)*0.7)], 
-                      lasers[:int(len(rewards)*0.7)], laser_side[:int(len(rewards)*0.7)])
         
-        data_test = (rewards[int(len(rewards)*0.7):], contrasts[int(len(rewards)*0.7):], choices[int(len(rewards)*0.7):], lasers[int(len(rewards)*0.7):])
-    	simulate_data_test = (rewards[int(len(rewards)*0.7):], contrasts[int(len(rewards)*0.7):], choices[int(len(rewards)*0.7):], 
-                      lasers[int(len(rewards)*0.7):], laser_side[int(len(rewards)*0.7):])
+        data = (rewards[:int(len(rewards)*train_set_size)],
+                contrasts[:int(len(rewards)*train_set_size)], 
+                choices[:int(len(rewards)*train_set_size)], 
+                lasers[:int(len(rewards)*train_set_size)])
+        simulate_data = (rewards[:int(len(rewards)*train_set_size)], 
+                         contrasts[:int(len(rewards)*train_set_size)], 
+                         choices[:int(len(rewards)*train_set_size)], 
+                      lasers[:int(len(rewards)*train_set_size)], 
+                      laser_side[:int(len(rewards)*train_set_size)])
         
-    	(best_x, train_NLL, buffer_NLL, buffer_x) = optimizer(data, initial_guess=[0.3, 0.01, -1, 0.2])
-        (best_x_bias, train_NLL_bias, buffer_NLL_bias, buffer_x_bias) = optimizer_bias(data, initial_guess=[0.3, 0.01, -1, 0.2, 0])
-        (best_x_stay, train_NLL_stay, buffer_NLL_stay, buffer_x_stay) = optimizer_stay(data, initial_guess=[0.3, 0.01, -1, 0.2,1])
+        if cross_validate == True:
+            
+            data_test = (rewards[int(len(rewards)*train_set_size):], 
+                         contrasts[int(len(rewards)*train_set_size):], 
+                         choices[int(len(rewards)*train_set_size):], 
+                         lasers[int(len(rewards)*train_set_size):])
+            simulate_data_test = (rewards[int(len(rewards)*train_set_size):], 
+                                  contrasts[int(len(rewards)*train_set_size):], 
+                                  choices[int(len(rewards)*train_set_size):], 
+                          lasers[int(len(rewards)*train_set_size):], 
+                          laser_side[int(len(rewards)*train_set_size):])
+        else:
+            data_test = data
+            simulate_data_test = simulate_data
+        
+        (best_x, train_NLL, buffer_NLL, buffer_x) = optimizer(data, 
+                           initial_guess=[0.3, 0.01, -1, 0.2])
+        (best_x_bias, train_NLL_bias, buffer_NLL_bias, 
+         buffer_x_bias) = optimizer_bias(data, initial_guess=[0.3, 0.01, -1, 0.2, 0])
+        (best_x_stay, train_NLL_stay, buffer_NLL_stay, 
+         buffer_x_stay) = optimizer_stay(data, initial_guess=[0.3, 0.01, -1, 0.2,1])
         (best_x_bias_stay, train_NLL_bias_stay, 
-        buffer_NLL_bias_stay, buffer_x_bias_stay) = optimizer_stay_and_bias(data, initial_guess=[0.3, 0.01, -1, 0.2, 0, 1])
+        buffer_NLL_bias_stay, buffer_x_bias_stay) = optimizer_stay_and_bias(data, 
+                                    initial_guess=[0.3, 0.01, -1, 0.2, 0, 1])
         
-        cv_aic = aic((session_neg_log_likelihood(best_x, *data_test, pregen_all_posteriors=True))*-1, 4)
-        cv_aic_bias = aic((session_neg_log_likelihood_bias(best_x_bias, *data_test, pregen_all_posteriors=True))*-1,5)
+        cv_aic = aic((session_neg_log_likelihood(best_x, 
+                                                 *data_test, pregen_all_posteriors=True))*-1, 4)
+        cv_aic_bias = aic((session_neg_log_likelihood_bias(best_x_bias, 
+                                                           *data_test, pregen_all_posteriors=True))*-1,5)
         cv_aic_stay = aic((session_neg_log_likelihood_stay(best_x_stay, *data_test, pregen_all_posteriors=True))*-1,5)
         cv_aic_bias_stay = aic((session_neg_log_likelihood_stay_and_bias(best_x_bias_stay, *data_test, pregen_all_posteriors=True))*-1,6)
         
@@ -932,13 +990,14 @@ if __name__ == '__main__':
         model_parameters_mouse = pd.DataFrame()
         model_parameters_mouse['model_name'] = 'standard', 'w_bias', 'w_stay', 'w_bias_n_stay'
         model_parameters_mouse['x'] = best_x, best_x_bias, best_x_stay, best_x_bias_stay
-        model_parameters_mouse['LL'] = (best_NLL * -1), (best_NLL_bias  * -1), (best_NLL_stay  * -1), (best_NLL_bias_stay  * -1)
+        model_parameters_mouse['LL'] = (cv_LL/len(data_test[0])), (cv_LL_bias/len(data_test[0])), (cv_LL_stay/len(data_test[0])), (cv_LL_bias_stay/len(data_test[0]))
         model_parameters_mouse['aic'] = cv_aic, cv_aic_bias, cv_aic_stay, cv_aic_bias_stay
-        model_parameters_mouse['LLR_p_values'] =  np.nan, bias_vs_x, bias_stay_vs_x, bias_stay_vs_x
+        model_parameters_mouse['LLR_p_values_cv'] =  np.nan, bias_vs_x, bias_stay_vs_x, bias_stay_vs_x
+        model_parameters_mouse['accu'] = cv_acc, cv_acc_bias, cv_acc_stay, cv_acc_bias_stay
         
-        sim_data = generate_data(simulate_data_test, all_contrasts, learning_rate=x[0], beliefSTD=x[1], extraVal=x[2], beta=x[3])
+        sim_data = generate_data(simulate_data_test, all_contrasts, learning_rate=best_x[0], beliefSTD=best_x[1], extraVal=best_x[2], beta=best_x[3])
         sim_data = pd.DataFrame(sim_data)
-        sim_data_bias =  generate_data_bias(simulate_data_test, all_contrasts, learning_rate=x[0], 
+        sim_data_bias =  generate_data_bias(simulate_data_test, all_contrasts, learning_rate=best_x_bias[0], 
                                        beliefSTD=best_x_bias[1], extraVal=best_x_bias[2], beta=best_x_bias[3], bias=best_x_bias[4])
         sim_data_stay =  generate_data_stay(simulate_data_test, all_contrasts, learning_rate=best_x_stay[0], 
                                        beliefSTD=best_x_stay[1], extraVal=best_x_stay[2], beta=best_x_stay[3], stay=best_x_stay[4])
@@ -947,49 +1006,144 @@ if __name__ == '__main__':
                                        bias = best_x_bias_stay[4], stay = best_x_bias_stay[5])
         
         sim_data = sim_data.rename(columns={0: "rewards", 1: "signed_contrast", 2: "simulated_choices", 3: "model"})
-    	sim_data = np.array(sim_data)
-    	sim_data = pd.DataFrame(sim_data).T
-    	sim_data['laser_side'] = laser_side[int(len(rewards)*0.7):]
-    	sim_data['real_choice'] = choices[int(len(rewards)*0.7):]
+        sim_data = np.array(sim_data)
+        sim_data = pd.DataFrame(sim_data).T
+        sim_data['laser_side'] = laser_side[:int(len(rewards)*train_set_size)]
+        sim_data['real_choice'] = choices[:int(len(rewards)*train_set_size)]
         sim_data['choices_w_bias'] =  sim_data_bias[2]
         sim_data['choices_w_stay'] = sim_data_stay[2]
         sim_data['choices_w_bias_n_stay'] = sim_data_stay_and_bias[2]
         sim_data['mouse_name']  = mouse
+        sim_data['virus']  = virus
+       
+        # Concatenate with general dataframes
+        
+        model_parameters_mouse['mouse'] = mouse
+        model_parameters_mouse['virus'] = virus
         
         # Concatenate with general dataframes
         model_parameters = pd.concat([model_parameters, model_parameters_mouse])
         modelled_data = pd.concat([modelled_data, sim_data])
 
 
-###### Plotting
+modelled_data = modelled_data.rename(columns={0: "rewards", 
+   1: "signed_contrast", 2: "choices_standard", 3: "laser_trials"})
+
+###############################################################################
+################################# Figures #####################################
+###############################################################################
+
+## Model comparison requires data from the simple model
+
+fig,  ax = plt.subplots(3,2, figsize = [20,20])
+sns.set(font_scale=1.5)
+plt.sca(ax[0,0])
+sns.pointplot(data = model_parameters_complex, x = 'model_name', y = 'LL', 
+              hue ='virus', ci = 68, label='large')
+ax[0,0].set_xlabel('Model Type')
+ax[0,0].set_ylabel('Average LL')
+plt.sca(ax[0,1])
+sns.pointplot(data = model_parameters_complex, x = 'model_name', 
+              y = 'LL', hue ='virus', ci = None, alpha=0.02)
+sns.pointplot(data = model_parameters_simple, x = 'model_name', 
+              y = 'LL', hue ='virus', ci = 68)
+ax[0,1].lines[0].set_linestyle("--")
+ax[0,1].lines[1].set_linestyle("--")
+ax[0,1].set_xlabel('Model Type')
+ax[0,1].set_ylabel('Average LL')
+plt.sca(ax[1,0])
+sns.pointplot(data = model_parameters_complex, x = 'model_name', 
+              y = 'aic', hue ='virus', ci = 68)
+ax[1,0].set_xlabel('Model Type')
+ax[1,0].set_ylabel('AIC')
+plt.sca(ax[1,1])
+sns.pointplot(data = model_parameters_complex, x = 'model_name', 
+              y = 'aic', hue ='virus', ci = None, alpha=0.02)
+sns.pointplot(data = model_parameters_simple, x = 'model_name', 
+              y = 'aic', hue ='virus', ci = 68)
+ax[1,1].lines[0].set_linestyle("--")
+ax[1,1].lines[1].set_linestyle("--")
+ax[1,1].set_xlabel('Model Type')
+ax[1,1].set_ylabel('AIC')
+plt.sca(ax[2,0])
+sns.pointplot(data = model_parameters_complex, x = 'model_name', 
+              y = 'accu', hue ='virus', ci = 68)
+ax[2,0].set_xlabel('Model Type')
+ax[2,0].set_ylabel('Accuracy')
+plt.sca(ax[2,1])
+sns.pointplot(data = model_parameters_complex, x = 'model_name',
+              y = 'accu', hue ='virus', ci = None, alpha=0.02)
+sns.pointplot(data = model_parameters_simple, x = 'model_name', 
+              y = 'accu', hue ='virus', ci = 68)
+ax[2,1].lines[0].set_linestyle("--")
+ax[2,1].lines[1].set_linestyle("--")
+ax[2,1].set_xlabel('Model Type')
+ax[2,1].set_ylabel('Accuracy')
+plt.tight_layout()
+
+## Comparison of parameters across animals
+
+
+ax = sns.lineplot(data= sim_data, x = 'signed_contrast', 
+                  y = 'simulated_choices', hue = 'laser_side', ci = 0)
+ax.lines[0].set_linestyle("--")
+ax.lines[1].set_linestyle("--")
+ax.lines[2].set_linestyle("--")
+sns.lineplot(data= sim_data, x = 'signed_contrast', 
+             y = 'real_choice', hue = 'laser_side', ci = 68)
+
+def boxplot_model_parameters_per_mouse(model_parameters, 
+                                       model_type= 'w_bias_n_stay', 
+                                       save = True):
+    '''
+    Notes: Plots learned parameters across virus
+    '''
+    fig, ax =  plt.subplots()
+    sns.set(style='white')
+    model = model_parameters.loc[model_parameters['model_name'] == model_type, 
+                                 ['x', 'virus']]
+    params = [r'$\alpha$', r'$\theta$', r'$\psi$',
+              r'$\tau$', r'$\gamma$', r'$\phi$']
+    mod = pd.DataFrame(columns = ['params', 'virus'])
+    for i in range(len(model)):
+        temp_mod = pd.DataFrame(model['x'].iloc[i])
+        temp_mod['params'] = params[:len(temp_mod)]
+        temp_mod['virus'] = model.iloc[i,1]
+        mod = mod.append(temp_mod)
+    sns.swarmplot(data = mod,  x = 'params', y = 0,  hue = 'virus', 
+                  palette = ['dodgerblue', 'orange'], split = False)
+    ax.axhline(0, ls='--', color = 'k')
+    ax.set_xlabel('Model Parameter')
+    ax.set_ylabel('Fitted Coef')
+    sns.despine()
+    if save == True:
+         plt.savefig('learned_parameters.pdf', dpi =300)
+    
+def model_psychometrics(modelled_data, model_type= 'w_bias_n_stay', 
+                        perform_inlet = True,   save = True):
+    '''
+    Notes: Plots psychometrics
+    '''
+    
+    sns.set(style='white')
+    num_mice  = len(modelled_data['mouse_name'].unique())
+    fig, ax =  plt.subplots(1, num_mice, figsize = (40,10), sharey=True)
+    mice = modelled_data['mouse_name'].unique()
+    for i in range(num_mice):
+        plt.sca(ax[i])
+        # Plot real data on trials that have simulation
+        mouse_data = modelled_data.loc[modelled_data['mouse_name'] == mice[i]]
+        temp_data  = mouse_data.loc[mouse_data['choices_'+model_type].notnull()]
+        sns.lineplot(data = temp_data, x = 'signed_contrast', y = 'real_choice',
+                     hue = 'laser_side', palette = ['k','b','g'], ci =68, legend=None)
+        # Plot model data with dash line
+        sns.lineplot(data = temp_data, x = 'signed_contrast', y = 'choices_'+model_type,
+                     hue = 'laser_side', palette = ['k','b','g'], ci =0, legend=None)
+        ax[i].lines[3].set_linestyle("--")
+        ax[i].lines[4].set_linestyle("--")
+        ax[i].lines[5].set_linestyle("--")
+        ax[i].set_ylabel('Fraction of Choices', fontsize =20)
+        ax[i].set_xlabel('Signed Contrast', fontsize =20)
+        ax[i].set_title(mice[i], fontsize =20)
+    sns.despine()  
         
-        ax = sns.lineplot(data= sim_data, x = 'signed_contrast', y = 'simulated_choices', hue = 'laser_side', ci = 0)
-        ax.lines[0].set_linestyle("--")
-        ax.lines[1].set_linestyle("--")
-        ax.lines[2].set_linestyle("--")
-        sns.lineplot(data= sim_data, x = 'signed_contrast', y = 'real_choice', hue = 'laser_side', ci = 68)
-        
-        ax = sns.lineplot(data= sim_data, x = 'signed_contrast', y = 'choices_w_bias', hue = 'laser_side', ci = 0)
-        ax.lines[0].set_linestyle("--")
-        ax.lines[1].set_linestyle("--")
-        ax.lines[2].set_linestyle("--")
-        sns.lineplot(data= sim_data, x = 'signed_contrast', y = 'real_choice', hue = 'laser_side', ci = 68)
-        
-        ax = sns.lineplot(data= sim_data, x = 'signed_contrast', y = 'choices_w_bias', hue = 'laser_side', ci = 0)
-        ax.lines[0].set_linestyle("--")
-        ax.lines[1].set_linestyle("--")
-        ax.lines[2].set_linestyle("--")
-        sns.lineplot(data= sim_data, x = 'signed_contrast', y = 'real_choice', hue = 'laser_side', ci = 68)
-        
-        ax = sns.lineplot(data= sim_data, x = 'signed_contrast', y = 'choices_w_bias_n_stay', hue = 'laser_side', ci = 0)
-        ax.lines[0].set_linestyle("--")
-        ax.lines[1].set_linestyle("--")
-        ax.lines[2].set_linestyle("--")
-        sns.lineplot(data= sim_data, x = 'signed_contrast', y = 'real_choice', hue = 'laser_side', ci = 68)
-
-
-
-
-
-
-

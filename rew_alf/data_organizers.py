@@ -70,7 +70,7 @@ def load_behavior_data_from_root(root_data_folder, ephys=True, dropna=True,
     return psy_df
     
     
-def psy_df_to_Q_learning_model_format(psy_dataframe, virus = 'chr2'):
+def psy_df_to_Q_learning_model_format(psy_dataframe, virus = None):
 
     '''
     

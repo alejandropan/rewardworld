@@ -722,7 +722,7 @@ def compute_QL_QR(Q, trial_contrast, contrast_posterior):
 	return Q_L, Q_R
 
 
-def normal_ (x, loc, scale):
+def normal_pdf (x, loc, scale):
 	factor = 1 / (np.sqrt(2 * np.pi) * scale)
 	power = -0.5 * (((x - loc) / scale) ** 2)
  

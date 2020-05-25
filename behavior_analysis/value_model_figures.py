@@ -99,7 +99,7 @@ def plot_q_trial_whole_dataset(psy_df):
     palette ={'R':'g','L':'b','non_opto':'k'}
     plt.sca(ax[0,0])
     psy_chr2 = psy_select.loc[psy_select['virus']=='chr2']
-    sns.lineplot(data = psy_chr2, x = 'trial_within_block', y = 'QR',
+    sns.lineplot(data = psy_chr2, x = 'trial_within_block', y = 'QRQL',
                      hue = 'opto_block', palette = palette, ci=68)
     plt.xlim(0,50)
     plt.title('VTA-ChR2')
@@ -107,31 +107,13 @@ def plot_q_trial_whole_dataset(psy_df):
     ax[0,0].set_ylabel('QR')
     
     plt.sca(ax[0,1])
-    psy_chr2 = psy_select.loc[psy_select['virus']=='chr2']
-    sns.lineplot(data = psy_chr2, x = 'trial_within_block', y = 'QL',
-                     hue = 'opto_block', palette = palette, ci=68)
-    plt.xlim(0,50)
-    plt.title('VTA-ChR2')
-    ax[0,1].set_xlabel('Trial in block')
-    ax[0,1].set_ylabel('QL')
-    
-    plt.sca(ax[1,0])
-    psy_chr2 = psy_select.loc[psy_select['virus']=='nphr']
-    sns.lineplot(data = psy_chr2, x = 'trial_within_block', y = 'QR',
-                     hue = 'opto_block', palette = palette, ci=68)
-    plt.xlim(0,50)
-    plt.title('VTA-NphR')
-    ax[1,0].set_xlabel('Trial in block')
-    ax[1,0].set_ylabel('QR')
-    
-    plt.sca(ax[1,1])
     psy_chr2 = psy_select.loc[psy_select['virus']=='nphr']
     sns.lineplot(data = psy_chr2, x = 'trial_within_block', y = 'QL',
                      hue = 'opto_block', palette = palette, ci=68)
     plt.xlim(0,50)
     plt.title('VTA-NpHR')
-    ax[1,1].set_xlabel('Trial in block')
-    ax[1,1].set_ylabel('QL')
+    ax[0,1].set_xlabel('Trial in block')
+    ax[0,1].set_ylabel('QL')
     plt.tight_layout()
     
     plt.savefig('q_across_trials.svg')

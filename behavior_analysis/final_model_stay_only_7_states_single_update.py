@@ -754,7 +754,7 @@ def trial_log_likelihood_stay(params, trial_data, Q, all_contrasts, all_posterio
 
 	# Update Q-values according to the aggregate reward + laser value
 	for i in range(len(all_contrasts)):
-		Q[i, trial_choice] += contrast_posterior[i] * learning_rate * (received_reward - Q_chosen)
+		Q[i, trial_choice] += learning_rate * (received_reward - Q_chosen)
 
 	if retrieve_Q==True:
 		return LL, Q, Q_L, Q_R, choice_dist[1]
@@ -994,7 +994,7 @@ def generate_data_stay(data, all_contrasts, learning_rate=0.3, beliefSTD=0.1,
 
 		contrast_posterior = simulation_contrast_distribution(perceived_contrast, beliefSTD, all_contrasts)
 		for i in range(len(all_contrasts)):
-			Q[i, choice] += learning_rate * (reward - Q_chosen)   * contrast_posterior[i] 
+			Q[i, choice] += learning_rate * (reward - Q_chosen)   
 
 	return rewards, true_contrasts, choices, lasers
 

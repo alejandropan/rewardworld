@@ -29,6 +29,42 @@ from matplotlib.lines import Line2D
 
 
 
+def model_choice_raw_prob(psy, mouse, save = True):
+    '''
+    Notes: Plots psychometrics
+    '''
+    sns.set(style='white', font_scale = 2, rc={"lines.linewidth": 2.5})
+    fig, ax =  plt.subplots( figsize = (10,10))
+    plt.sca(ax)
+    psy_select = psy.loc[psy['mouse_name'] == mouse].copy()
+    psy_select['choice'] = psy_select['choice'] * -1
+    psy_select.loc[psy_select['choice'] == -1, 'choice'] = 0
+    sns.lineplot(data = psy_select, x = 'signed_contrasts', y = 'choice',
+                     hue = 'opto_block', hue_order = ['non_opto','L','R'],
+                     palette = ['k','b','g'], ci =68, legend=None)
+    # Plot model data with dash line
+    sns.lineplot(data = psy_select, x = 'signed_contrasts', y = psy_select['pRight'],
+                     hue = 'opto_block', hue_order = ['non_opto','L','R'],
+                     palette = ['k','b','g'], ci =0, legend=None)
+    ax.lines[3].set_linestyle("--")
+    ax.lines[4].set_linestyle("--")
+    ax.lines[5].set_linestyle("--")
+    ax.set_ylabel('Fraction of Choices', fontsize =20)
+    ax.set_xlabel('Signed Contrast', fontsize =20)
+    ax.set_xlim(-0.3,0.3)
+    ax2 = ax.twinx()  # instantiate a second axes that shares the same x-axis
+    ax2.tick_params(axis='y', labelcolor='k')
+    ax2.set_ylabel('pRight', color='k', fontsize =20)  # we alread
+    ax.set_title(mouse, fontsize =20)
+    lines = [Line2D([0], [0], color='black', linewidth=1.5, linestyle='-'), 
+    Line2D([0], [0], color='black', linewidth=1.5, linestyle='--')]
+    labels = ['Real Data', 'Model']
+    ax.axvline(0.3, ls='--', color = 'k')
+    plt.legend(lines, labels)
+    sns.despine()
+    if save == True:
+         plt.savefig('model_choice_prob_raw'+mouse+'.png', dpi =300)
+
 
       
 def plot_qr_trial_whole_dataset(psy_df, save= True):
@@ -1075,10 +1111,10 @@ def generate_data_stay(data, all_contrasts, learning_rate=0.3,
 		perceived_contrast = np.random.choice(all_contrasts, p=perceived_contrast_distribution)
         
 		contrast_posterior = [0,0]
-		contrast_posterior[0] = norm.cdf(0, loc = trial_contrast, scale = beliefSTD)
+		contrast_posterior[0] = norm.cdf(0, loc = perceived_contrast, scale = beliefSTD)
 		contrast_posterior[1] = 1 - contrast_posterior[0]
         
-		Q_L, Q_R = compute_QL_QR(Q, trial_contrast, contrast_posterior)
+		Q_L, Q_R = compute_QL_QR(Q, perceived_contrast, contrast_posterior)
 
 		if t == 0:
 		    (l_stay, r_stay) = [0,0]
@@ -1293,10 +1329,11 @@ psy['argmax_choice'] = (psy['pRight']>0.5)*1
 
 for mouse in mice:
     model_choice_prob(psy, mouse, save = False)
+    model_choice_raw_prob(psy, mouse, save = False)
 
 
 boxplot_model_parameters_per_mouse(model_parameters, 
-                                       model_type= 'w_bias', 
+                                       model_type= 'w_stay', 
                                        save = True)
 plot_q_trial_whole_dataset(psy)
 plot_q_trial_whole_dataset_per_mouse(psy)

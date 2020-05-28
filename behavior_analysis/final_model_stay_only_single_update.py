@@ -25,115 +25,11 @@ import seaborn as sns
 from scipy.stats.distributions import chi2
 from scipy.stats import norm
 import random
-from matplotlib.lines import Line2D
 
 
 
 
       
-def plot_qr_trial_whole_dataset(psy_df, save= True):
-    psy_select = psy_df.copy()
-    sns.set(style = 'white')
-    fig, ax = plt.subplots(1,2, figsize = [10,5], sharey =True)
-    palette ={'R':'g','L':'b','non_opto':'k'}
-    plt.sca(ax[0])
-    psy_chr2 = psy_select.loc[psy_select['virus']=='chr2']
-    sns.lineplot(data = psy_chr2, x = 'trial_within_block', 
-                 y = psy_chr2['QR'],
-                     hue = 'opto_block', palette = palette, ci=68)
-    plt.xlim(0,50)
-    plt.title('VTA-ChR2')
-    ax[0].set_xlabel('Trial in block')
-    ax[0].set_ylabel('QR')
-    
-    plt.sca(ax[1])
-    psy_chr2 = psy_select.loc[psy_select['virus']=='nphr']
-    sns.lineplot(data = psy_chr2, x = 'trial_within_block', 
-                 y =  psy_chr2['QR'],
-                     hue = 'opto_block', palette = palette, ci=68)
-    plt.xlim(0,50)
-    plt.title('VTA-NpHR')
-    ax[1].set_xlabel('Trial in block')
-    plt.tight_layout()
-    sns.despine()
-    
-    if save ==True:
-        plt.savefig('qr_across_trials.svg', dpi =300)
-        plt.savefig('qr_across_trials.jpeg',  dpi =300)
-
-
-def plot_ql_trial_whole_dataset(psy_df, save= True):
-    psy_select = psy_df.copy()
-    sns.set(style = 'white')
-    fig, ax = plt.subplots(1,2, figsize = [10,5], sharey =True)
-    palette ={'R':'g','L':'b','non_opto':'k'}
-    plt.sca(ax[0])
-    psy_chr2 = psy_select.loc[psy_select['virus']=='chr2']
-    sns.lineplot(data = psy_chr2, x = 'trial_within_block', 
-                 y = psy_chr2['QR'],
-                     hue = 'opto_block', palette = palette, ci=68)
-    plt.xlim(0,50)
-    plt.title('VTA-ChR2')
-    ax[0].set_xlabel('Trial in block')
-    ax[0].set_ylabel('QL')
-    
-    plt.sca(ax[1])
-    psy_chr2 = psy_select.loc[psy_select['virus']=='nphr']
-    sns.lineplot(data = psy_chr2, x = 'trial_within_block', 
-                 y =  psy_chr2['QL'],
-                     hue = 'opto_block', palette = palette, ci=68)
-    plt.xlim(0,50)
-    plt.title('VTA-NpHR')
-    ax[1].set_xlabel('Trial in block')
-    plt.tight_layout()
-    sns.despine()
-    
-    if save ==True:
-        plt.savefig('ql_across_trials.svg', dpi =300)
-        plt.savefig('ql_across_trials.jpeg',  dpi =300)
-    
-
-def plot_choice_trial_from_model(psy_df, save= True):
-    psy_select = psy_df.copy()
-    sns.set(style = 'white')
-    #Get index for trials of block start
-    index = psy_select.loc[psy['trial_within_block'] == 0, 'index']
-    index = index[1:].to_numpy() # Exclude first (trial index-10 does not exits)
-    for i in range(10):
-        for idx in index-(i+1):
-            psy_select.loc[psy_select['index'] == idx, 'trial_within_block'] = \
-                -(i+1)
-            psy_select.loc[psy_select['index'] == idx, 'opto_block'] = \
-                psy_select.loc[psy_select['index'] == idx+(i+1), 'opto_block'].to_numpy()[0]
-    
-    fig, ax = plt.subplots(1,2, figsize = [10,5], sharey =True)
-    palette ={'R':'g','L':'b','non_opto':'k'}
-    plt.sca(ax[0])
-    psy_chr2 = psy_select.loc[psy_select['virus']=='chr2']
-    sns.lineplot(data = psy_chr2, x = 'trial_within_block', y = 'pRight',
-                     hue = 'opto_block', palette = palette, ci=68)
-    plt.xlim(-10,50)
-    plt.ylim(0,1)
-    plt.title('VTA-ChR2')
-    ax[0].set_xlabel('Trial in block')
-    ax[0].set_ylabel('pRight')
-    
-    plt.sca(ax[1])
-    psy_chr2 = psy_select.loc[psy_select['virus']=='nphr']
-    sns.lineplot(data = psy_chr2, x = 'trial_within_block', y = 'pRight',
-                     hue = 'opto_block', palette = palette, ci=68)
-    plt.xlim(-10,50)
-    plt.ylim(0,1)
-    plt.title('VTA-NpHR')
-    ax[1].set_xlabel('Trial in block')
-    plt.tight_layout()
-    sns.despine()
-    
-    if save ==True:
-        plt.savefig('plot_choice_trial_from_model.svg', dpi =300)
-        plt.savefig('plot_choice_trial_from_model.jpeg',  dpi =300)     
-
-       
 def plot_qr_trial_whole_dataset(psy_df, save= True):
     psy_select = psy_df.copy()
     sns.set(style = 'white')
@@ -194,6 +90,7 @@ def plot_ql_trial_whole_dataset(psy_df, save= True):
     if save ==True:
         plt.savefig('ql_across_trials.svg', dpi =300)
         plt.savefig('ql_across_trials.jpeg',  dpi =300)
+
 
     
 def model_performance(model_parameters, modelled_data, model_type= 'w_stay', save = True):
@@ -257,11 +154,11 @@ def simulate_and_plot(modelled_data, model_parameters,
     mice = modelled_data['mouse_name'].unique()
     for mouse in mice:
         data_pd = modelled_data.loc[modelled_data['mouse_name'] == mouse, 
-                    ['real_rewards', 'signed_contrast', 'real_choice', 'laser',
+                    ['real_rewards', 'signed_contrast', 'real_choice', 'laser_trials',
                      'laser_side']]
         
         # -1 to 0 for laser
-        data_pd.loc[data_pd['laser_trials'] == -1, 'laser'] = 0 
+        data_pd.loc[data_pd['laser_trials'] == -1, 'laser_trials'] = 0 
         # Make data into the right format
         data_np = data_pd.to_numpy()
         array_of_tuples = map(tuple, data_np.T)
@@ -323,10 +220,10 @@ def calculate_QL_QR(modelled_data, model_parameters,
     modelled_data['QR'] = np.nan
     for mouse in mice:
         data_pd = modelled_data.loc[modelled_data['mouse_name'] == mouse, 
-                    ['real_rewards', 'signed_contrast', 'real_choice', 'laser']]
+                    ['real_rewards', 'signed_contrast', 'real_choice', 'laser_trials']]
         
         # -1 to 0 for laser
-        data_pd.loc[data_pd['laser'] == -1, 'laser'] = 0 
+        data_pd.loc[data_pd['laser_trials'] == -1, 'laser_trials'] = 0 
         # Make data into the right format
         data_np = data_pd.to_numpy()
         array_of_tuples = map(tuple, data_np.T)
@@ -602,7 +499,7 @@ def plot_q_trial_whole_dataset_per_mouse(psy_df, save=True):
         sns.lineplot(data = psy_mouse, x = 'trial_within_block', y = 'QRQL',
                          hue = 'opto_block', palette = palette, ci=68)
         plt.xlim(-10,50)
-        plt.ylim(-2,2)
+        plt.ylim(-1,1)
         plt.title('VTA-'+str(psy_select.loc[psy_select['mouse_name']==mouse,
                                             'virus'].unique()) + '-' +
                                                                   str(mouse))
@@ -810,7 +707,6 @@ def trial_log_likelihood_stay(params, trial_data, Q, all_contrasts, all_posterio
 	# Get relevant parameters
 	trial_contrast, trial_choice, reward, laser = trial_data
 	learning_rate, beliefSTD, extraVal, beta, stay = params
-	Q =  Q.copy()
 
 	# Compute the log-likelihood of the actual mouse choice
 	if all_posteriors is None:
@@ -844,7 +740,7 @@ def trial_log_likelihood_stay(params, trial_data, Q, all_contrasts, all_posterio
 
 	# Update Q-values according to the aggregate reward + laser value
 	for i in range(2):
-		Q[i, trial_choice] += contrast_posterior[i] * learning_rate * (received_reward - Q_chosen)
+		Q[i, trial_choice] += learning_rate * (received_reward - Q_chosen)
 
 	if retrieve_Q==True:
 		return LL, Q, Q_L, Q_R, choice_dist[1] #  choice_dist[1] = pChoice_right
@@ -865,7 +761,7 @@ def session_neg_log_likelihood_stay(params, *data, pregen_all_posteriors=True, a
 		pRight = []
 
 	# Generate the possible contrast list
-	all_contrasts = np.array([-0.25, -0.125, -0.0625, 0, 0.0625, 0.125, 0.25])
+	all_contrasts = np.array([-0.25, -0.125, -0.6125, 0, 0.6125, 0.125, 0.25])
 	num_contrasts = len(all_contrasts)
 
 	# If True, generate all posterior distributions ahead of time to save time
@@ -893,9 +789,6 @@ def session_neg_log_likelihood_stay(params, *data, pregen_all_posteriors=True, a
 			    trial_LL, newQ, Q_Lt, Q_Rt, pright = trial_log_likelihood_stay(params, 
                                             [true_contrasts[i], choices[i], rewards[i], lasers[i]], 
                                             Q, all_contrasts, all_posteriors, choices[i-1], i, retrieve_Q=retrieve_Q)
-
-			if (i != 0) & (np.sum(Q, axis=0)[0] != np.sum(newQ, axis=0)[0]) & (np.sum(Q, axis=0)[1] != np.sum(newQ, axis=0)[1]):
-				print('Warning, double update error in trial %d'%i)
 			LL += trial_LL
 			Q = newQ
             
@@ -1078,7 +971,7 @@ def generate_data_stay(data, all_contrasts, learning_rate=0.3,
 		contrast_posterior[0] = norm.cdf(0, loc = trial_contrast, scale = beliefSTD)
 		contrast_posterior[1] = 1 - contrast_posterior[0]
         
-		Q_L, Q_R = compute_QL_QR(Q, trial_contrast, contrast_posterior)
+		Q_L, Q_R = compute_QL_QR(Q, perceived_contrast, contrast_posterior)
 
 		if t == 0:
 		    (l_stay, r_stay) = [0,0]
@@ -1124,7 +1017,7 @@ def generate_data_stay(data, all_contrasts, learning_rate=0.3,
 		contrast_posterior[1] = 1 - contrast_posterior[0]
 
 		for i in range(2):
-			Q[i, choice] += contrast_posterior[i] * learning_rate * (reward - Q_chosen)
+			Q[i, choice] +=  learning_rate * (reward - Q_chosen)
 
 	return rewards, true_contrasts, choices, lasers
 
@@ -1155,7 +1048,7 @@ def chi2_LLR(L1,L2):
 if __name__ == '__main__':
 	# Test the fitting procedure by fitting on arbitrarily generated data
 	# num_trials = 30000
-	all_contrasts = np.array([-0.25, -0.125, -0.0625, 0, 0.0625, 0.125, 0.25])
+	all_contrasts = np.array([-0.6125, -0.25, -0.125, 0, 0.125, 0.25, 0.6125])
 
 	# data = generate_data(num_trials, all_contrasts)
 	# x, NLL = optimizer(data, initial_guess=[0.3, 0.1, 1, 0.2])
@@ -1273,7 +1166,7 @@ if __name__ == '__main__':
 # Analysis
 
 modelled_data = modelled_data.rename(columns={0: "rewards", 
-   1: "signed_contrast", 2: "choices_standard", 3: "model_laser"})
+   1: "signed_contrast", 2: "choices_standard", 3: "laser_trials"})
 
 modelled_data = calculate_QL_QR(modelled_data, model_parameters, 
                     model_type= 'w_stay')
@@ -1323,8 +1216,8 @@ plot_choice_40_trials(psy, 15, 'dop_9', save =True)
 plot_choice_40_trials(psy, 10, 'dop_11', save =True)
 plot_choice_40_trials(psy, 19, 'dop_4', save =True)
 
-plot_choice_trial_from_model(psy, save= True)
 
 plot_qr_trial_whole_dataset(psy, save= True)
 plot_ql_trial_whole_dataset(psy, save= True)
+
 

@@ -372,7 +372,7 @@ def model_choice_raw_prob(psy, mouse, save = True):
     if save == True:
          plt.savefig('model_choice_prob_raw'+mouse+'.png', dpi =300)
 
-    
+      
 def model_performance(model_parameters, modelled_data, model_type= 'w_stay', save = True):
     '''
     Notes: Plots model accuracy and performance
@@ -383,16 +383,7 @@ def model_performance(model_parameters, modelled_data, model_type= 'w_stay', sav
     mice = modelled_data['mouse_name'].unique()
     mod_param  = model_parameters.loc[model_parameters['model_name'] == model_type]
     ideal = modelled_data.copy()
-    ideal['choices'] = np.sign(ideal['signed_contrast']).to_numpy()
-    ideal.loc[(ideal['choices']==0) & (ideal['real_rewards']==1), 'choices'] = \
-        ideal.loc[(ideal['choices']==0) & (ideal['real_rewards']==1), 'real_choice']
-    ideal.loc[(ideal['choices']==0) & (ideal['real_rewards']==0), 'choices'] = \
-        ideal.loc[(ideal['choices']==0) & (ideal['real_rewards']==0), 'real_choice']*-1
-    ideal['choices'] = (ideal['choices']>0) * 1
-    ideal['dev_from_optimal_model'] = abs(ideal['choices'] - ideal['choices_standard'])
-    ideal['dev_from_optimal_real'] = abs(ideal['choices'] - ideal['real_choice'])
-    ideal  = 1 - ideal.groupby('mouse_name').mean()
-    ideal['virus'] = 'nan'
+    ideal = ideal.groupby('mouse_name').mean()
     for mouse in mice:
         ideal.loc[ideal.index == mouse, 'virus'] = \
             model_parameters.loc[model_parameters['mouse'] == mouse, 'virus'][0]
@@ -407,17 +398,17 @@ def model_performance(model_parameters, modelled_data, model_type= 'w_stay', sav
     ax[0].set_title('Model Accuracy')
     ax[0].set_xlabel('Virus')
     plt.sca(ax[1])
-    sns.barplot(data=ideal, x = 'virus', y = 'dev_from_optimal_model', palette = ['dodgerblue', 'orange'],
+    sns.barplot(data=ideal, x = 'virus', y = 'rewards', palette = ['dodgerblue', 'orange'],
                  order=['chr2','nphr'])
-    sns.swarmplot(data=ideal, x = 'virus', y = 'dev_from_optimal_model', color='k', order=['chr2','nphr'])
+    sns.swarmplot(data=ideal, x = 'virus', y = 'rewards', color='k', order=['chr2','nphr'])
     ax[1].set_ylim(0,1)
     ax[1].set_title('Model Performance')
     ax[1].set_ylabel('Task Performance (%)')
     ax[1].set_xlabel('Virus')
     plt.sca(ax[2])
-    sns.barplot(data=ideal, x = 'virus', y = 'dev_from_optimal_real', palette = ['dodgerblue', 'orange'],
+    sns.barplot(data=ideal, x = 'virus', y = 'real_rewards', palette = ['dodgerblue', 'orange'],
                  order=['chr2','nphr'])
-    sns.swarmplot(data=ideal, x = 'virus', y = 'dev_from_optimal_real', color='k', order=['chr2','nphr'])
+    sns.swarmplot(data=ideal, x = 'virus', y = 'real_rewards', color='k', order=['chr2','nphr'])
     ax[2].set_ylim(0,1)
     ax[2].set_ylabel('Task Performance (%)')
     ax[2].set_title('Mouse Performance')
@@ -1045,7 +1036,17 @@ if __name__ == '__main__':
     best_nphr_NLL_individual = np.zeros([len(psy.loc[psy['virus'] == 'nphr', 'mouse_name'].unique()),1])
     model_parameters = pd.DataFrame()
     modelled_data = pd.DataFrame()
-    for i, mouse in enumerate(mice): 
+    
+
+# Analysis
+
+modelled_data = modelled_data.rename(columns={0: "rewards", 
+   1: "signed_contrast", 2: "choices_standard", 3: "laser_model"})
+
+modelled_data = calculate_QL_QR(modelled_data, model_parameters, 
+                    model_type= 'w_stay')
+
+# Calculate a few thingsfor i, mouse in enumerate(mice): 
         model_data_nphr, simulate_data_nphr  = \
             psy_df_to_Q_learning_model_format(psy.loc[psy['mouse_name'] == mouse], 
                                               virus = psy.loc[psy['mouse_name'] == mouse, 'virus'].unique()[0])
@@ -1141,15 +1142,15 @@ if __name__ == '__main__':
         model_parameters = pd.concat([model_parameters, model_parameters_mouse])
         modelled_data = pd.concat([modelled_data, sim_data])
 
+
 # Analysis
 
 modelled_data = modelled_data.rename(columns={0: "rewards", 
-   1: "signed_contrast", 2: "choices_standard", 3: "laser_model"})
+   1: "signed_contrast", 2: "choices_standard", 3: "model_laser"})
 
 modelled_data = calculate_QL_QR(modelled_data, model_parameters, 
                     model_type= 'w_stay')
 
-# Calculate a few things
 psy['QL'] = np.nan
 psy['QR'] = np.nan
 psy['QRQL'] = np.nan

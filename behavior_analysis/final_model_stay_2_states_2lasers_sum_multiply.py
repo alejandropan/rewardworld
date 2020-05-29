@@ -152,11 +152,11 @@ def simulate_and_plot(modelled_data, model_parameters,
     mice = modelled_data['mouse_name'].unique()
     for mouse in mice:
         data_pd = modelled_data.loc[modelled_data['mouse_name'] == mouse, 
-                    ['real_rewards', 'signed_contrast', 'real_choice', 'laser_trials',
+                    ['real_rewards', 'signed_contrast', 'real_choice', 'laser',
                      'laser_side']]
         
         # -1 to 0 for laser
-        data_pd.loc[data_pd['laser_trials'] == -1, 'laser_trials'] = 0 
+        data_pd.loc[data_pd['laser'] == -1, 'laser'] = 0 
         # Make data into the right format
         data_np = data_pd.to_numpy()
         array_of_tuples = map(tuple, data_np.T)
@@ -175,7 +175,7 @@ def simulate_and_plot(modelled_data, model_parameters,
 
         # Calculate Q values
         if model_type == 'standard':
-           sim_data = generate_data(data_m, all_contrasts, learning_rate=params[0], 
+           sim_data =   ` generate_data(data_m, all_contrasts, learning_rate=params[0], 
                                                beliefSTD=params[1], extraVal=params[2], 
                                                beta=params[3], stay=params[4])   
         
@@ -1171,7 +1171,7 @@ if __name__ == '__main__':
 # Analysis
 
 modelled_data = modelled_data.rename(columns={0: "rewards", 
-   1: "signed_contrast", 2: "choices_standard", 3: "laser_trials"})
+   1: "signed_contrast", 2: "choices_standard", 3: "trials"})
 
 modelled_data = calculate_QL_QR(modelled_data, model_parameters, 
                     model_type= 'w_stay')

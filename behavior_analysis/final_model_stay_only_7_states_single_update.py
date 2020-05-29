@@ -383,16 +383,7 @@ def model_performance(model_parameters, modelled_data, model_type= 'w_stay', sav
     mice = modelled_data['mouse_name'].unique()
     mod_param  = model_parameters.loc[model_parameters['model_name'] == model_type]
     ideal = modelled_data.copy()
-    ideal['choices'] = np.sign(ideal['signed_contrast']).to_numpy()
-    ideal.loc[(ideal['choices']==0) & (ideal['real_rewards']==1), 'choices'] = \
-        ideal.loc[(ideal['choices']==0) & (ideal['real_rewards']==1), 'real_choice']
-    ideal.loc[(ideal['choices']==0) & (ideal['real_rewards']==0), 'choices'] = \
-        ideal.loc[(ideal['choices']==0) & (ideal['real_rewards']==0), 'real_choice']*-1
-    ideal['choices'] = (ideal['choices']>0) * 1
-    ideal['dev_from_optimal_model'] = abs(ideal['choices'] - ideal['choices_standard'])
-    ideal['dev_from_optimal_real'] = abs(ideal['choices'] - ideal['real_choice'])
-    ideal  = 1 - ideal.groupby('mouse_name').mean()
-    ideal['virus'] = 'nan'
+    ideal = ideal.groupby('mouse_name').mean()
     for mouse in mice:
         ideal.loc[ideal.index == mouse, 'virus'] = \
             model_parameters.loc[model_parameters['mouse'] == mouse, 'virus'][0]
@@ -407,17 +398,17 @@ def model_performance(model_parameters, modelled_data, model_type= 'w_stay', sav
     ax[0].set_title('Model Accuracy')
     ax[0].set_xlabel('Virus')
     plt.sca(ax[1])
-    sns.barplot(data=ideal, x = 'virus', y = 'dev_from_optimal_model', palette = ['dodgerblue', 'orange'],
+    sns.barplot(data=ideal, x = 'virus', y = 'rewards', palette = ['dodgerblue', 'orange'],
                  order=['chr2','nphr'])
-    sns.swarmplot(data=ideal, x = 'virus', y = 'dev_from_optimal_model', color='k', order=['chr2','nphr'])
+    sns.swarmplot(data=ideal, x = 'virus', y = 'rewards', color='k', order=['chr2','nphr'])
     ax[1].set_ylim(0,1)
     ax[1].set_title('Model Performance')
     ax[1].set_ylabel('Task Performance (%)')
     ax[1].set_xlabel('Virus')
     plt.sca(ax[2])
-    sns.barplot(data=ideal, x = 'virus', y = 'dev_from_optimal_real', palette = ['dodgerblue', 'orange'],
+    sns.barplot(data=ideal, x = 'virus', y = 'real_rewards', palette = ['dodgerblue', 'orange'],
                  order=['chr2','nphr'])
-    sns.swarmplot(data=ideal, x = 'virus', y = 'dev_from_optimal_real', color='k', order=['chr2','nphr'])
+    sns.swarmplot(data=ideal, x = 'virus', y = 'real_rewards', color='k', order=['chr2','nphr'])
     ax[2].set_ylim(0,1)
     ax[2].set_ylabel('Task Performance (%)')
     ax[2].set_title('Mouse Performance')

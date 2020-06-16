@@ -25,71 +25,9 @@ import seaborn as sns
 from scipy.stats.distributions import chi2
 from scipy.stats import norm
 import random
-from matplotlib.lines import Line2D
 
 
 
-      
-def plot_qr_trial_whole_dataset(psy_df, save= True):
-    psy_select = psy_df.copy()
-    sns.set(style = 'white')
-    fig, ax = plt.subplots(1,2, figsize = [10,5], sharey =True)
-    palette ={'R':'g','L':'b','non_opto':'k'}
-    plt.sca(ax[0])
-    psy_chr2 = psy_select.loc[psy_select['virus']=='chr2']
-    sns.lineplot(data = psy_chr2, x = 'trial_within_block', 
-                 y = psy_chr2['QR'],
-                     hue = 'opto_block', palette = palette, ci=68)
-    plt.xlim(0,50)
-    plt.title('VTA-ChR2')
-    ax[0].set_xlabel('Trial in block')
-    ax[0].set_ylabel('QR')
-    
-    plt.sca(ax[1])
-    psy_chr2 = psy_select.loc[psy_select['virus']=='nphr']
-    sns.lineplot(data = psy_chr2, x = 'trial_within_block', 
-                 y =  psy_chr2['QR'],
-                     hue = 'opto_block', palette = palette, ci=68)
-    plt.xlim(0,50)
-    plt.title('VTA-NpHR')
-    ax[1].set_xlabel('Trial in block')
-    plt.tight_layout()
-    sns.despine()
-    
-    if save ==True:
-        plt.savefig('qr_across_trials.svg', dpi =300)
-        plt.savefig('qr_across_trials.jpeg',  dpi =300)
-
-
-def plot_ql_trial_whole_dataset(psy_df, save= True):
-    psy_select = psy_df.copy()
-    sns.set(style = 'white')
-    fig, ax = plt.subplots(1,2, figsize = [10,5], sharey =True)
-    palette ={'R':'g','L':'b','non_opto':'k'}
-    plt.sca(ax[0])
-    psy_chr2 = psy_select.loc[psy_select['virus']=='chr2']
-    sns.lineplot(data = psy_chr2, x = 'trial_within_block', 
-                 y = psy_chr2['QR'],
-                     hue = 'opto_block', palette = palette, ci=68)
-    plt.xlim(0,50)
-    plt.title('VTA-ChR2')
-    ax[0].set_xlabel('Trial in block')
-    ax[0].set_ylabel('QL')
-    
-    plt.sca(ax[1])
-    psy_chr2 = psy_select.loc[psy_select['virus']=='nphr']
-    sns.lineplot(data = psy_chr2, x = 'trial_within_block', 
-                 y =  psy_chr2['QL'],
-                     hue = 'opto_block', palette = palette, ci=68)
-    plt.xlim(0,50)
-    plt.title('VTA-NpHR')
-    ax[1].set_xlabel('Trial in block')
-    plt.tight_layout()
-    sns.despine()
-    
-    if save ==True:
-        plt.savefig('ql_across_trials.svg', dpi =300)
-        plt.savefig('ql_across_trials.jpeg',  dpi =300)
     
 def model_performance(model_parameters, modelled_data, model_type= 'w_stay', save = True):
     '''
@@ -152,11 +90,11 @@ def simulate_and_plot(modelled_data, model_parameters,
     mice = modelled_data['mouse_name'].unique()
     for mouse in mice:
         data_pd = modelled_data.loc[modelled_data['mouse_name'] == mouse, 
-                    ['real_rewards', 'signed_contrast', 'real_choice', 'laser',
+                    ['real_rewards', 'signed_contrast', 'real_choice', 'laser_trials',
                      'laser_side']]
         
         # -1 to 0 for laser
-        data_pd.loc[data_pd['laser'] == -1, 'laser'] = 0 
+        data_pd.loc[data_pd['laser_trials'] == -1, 'laser_trials'] = 0 
         # Make data into the right format
         data_np = data_pd.to_numpy()
         array_of_tuples = map(tuple, data_np.T)
@@ -175,7 +113,7 @@ def simulate_and_plot(modelled_data, model_parameters,
 
         # Calculate Q values
         if model_type == 'standard':
-           sim_data =   ` generate_data(data_m, all_contrasts, learning_rate=params[0], 
+           sim_data = generate_data(data_m, all_contrasts, learning_rate=params[0], 
                                                beliefSTD=params[1], extraVal=params[2], 
                                                beta=params[3], stay=params[4])   
         
@@ -705,6 +643,8 @@ def trial_log_likelihood_stay(params, trial_data, Q, all_contrasts, all_posterio
 	# Get relevant parameters
 	trial_contrast, trial_choice, reward, laser = trial_data
 	learning_rate, beliefSTD, extraVal, beta, stay, extraVal_nowater_guess = params
+	extraVal_nowater_guess = extraVal
+    
 
 	# Compute the log-likelihood of the actual mouse choice
 	if all_posteriors is None:
@@ -733,7 +673,7 @@ def trial_log_likelihood_stay(params, trial_data, Q, all_contrasts, all_posterio
 	# Laser-modulation
 	if laser == 1:
 		if reward ==1:
-			received_reward = reward + extraVal
+			received_reward = (reward * extraVal) + extraVal_nowater_guess
 		else:
 			received_reward = extraVal_nowater_guess
 	else:
@@ -762,7 +702,7 @@ def session_neg_log_likelihood_stay(params, *data, pregen_all_posteriors=True, a
 		pRight = []
 
 	# Generate the possible contrast list
-	all_contrasts = np.array([-0.25, -0.125, -0.0625, 0, 0.0625, 0.125, 0.25])
+	all_contrasts = np.array([-0.25, -0.125, -0.06125, 0, 0.06125, 0.125, 0.25])
 	num_contrasts = len(all_contrasts)
 
 	# If True, generate all posterior distributions ahead of time to save time
@@ -838,7 +778,7 @@ def session_neg_log_likelihood_stay(params, *data, pregen_all_posteriors=True, a
 
 # Optimize several times with different initializations and return the best fit parameters, and negative log likelihood
 
-def optimizer_stay(data, num_fits = 10, initial_guess=[0.1, 1, 0, 1, 1,1]):
+def optimizer_stay(data, num_fits = 4, initial_guess=[0.1, 1, 0, 1, 1,0]):
 	# Accounting variables
 	best_NLL = np.Inf
 	best_x = [None, None, None, None, None]
@@ -974,7 +914,7 @@ def generate_data_stay(data, all_contrasts, learning_rate=0.3,
 		contrast_posterior[0] = norm.cdf(0, loc = trial_contrast, scale = beliefSTD)
 		contrast_posterior[1] = 1 - contrast_posterior[0]
         
-		Q_L, Q_R = compute_QL_QR(Q, trial_contrast, contrast_posterior)
+		Q_L, Q_R = compute_QL_QR(Q, perceived_contrast, contrast_posterior)
 
 		if t == 0:
 		    (l_stay, r_stay) = [0,0]
@@ -1010,7 +950,7 @@ def generate_data_stay(data, all_contrasts, learning_rate=0.3,
 			if reward == 0:
 			    reward = extraVal_nowater
 			else:
-			    reward += extraVal*data[prop][t]
+			    reward += extraVal*data[prop][t] + extraVal_nowater
 			    lasers.append(data[prop][t])
 		# Learn (update Q-values)
 		if choice == 0:
@@ -1054,6 +994,7 @@ def chi2_LLR(L1,L2):
 if __name__ == '__main__':
 	# Test the fitting procedure by fitting on arbitrarily generated data
 	# num_trials = 30000
+	all_contrasts = np.array([-0.06125, -0.25, -0.125, 0, 0.125, 0.25, 0.06125])
 
 	# data = generate_data(num_trials, all_contrasts)
 	# x, NLL = optimizer(data, initial_guess=[0.3, 0.1, 1, 0.2])
@@ -1171,7 +1112,7 @@ if __name__ == '__main__':
 # Analysis
 
 modelled_data = modelled_data.rename(columns={0: "rewards", 
-   1: "signed_contrast", 2: "choices_standard", 3: "trials"})
+   1: "signed_contrast", 2: "choices_standard", 3: "model_laser"})
 
 modelled_data = calculate_QL_QR(modelled_data, model_parameters, 
                     model_type= 'w_stay')
@@ -1191,6 +1132,9 @@ psy['argmax_choice'] = (psy['pRight']>0.5)*1
 
 for mouse in mice:
     model_choice_prob(psy, mouse, save = False)
+
+
+x = [ 0.26135564,  0.06616882 ,-0.31146699 , 0.4896031 ,  0.43651519]
 
 
 boxplot_model_parameters_per_mouse(model_parameters, 
@@ -1222,5 +1166,21 @@ plot_choice_40_trials(psy, 10, 'dop_11', save =True)
 plot_choice_40_trials(psy, 19, 'dop_4', save =True)
 
 
+# Plot comparison with 2 state model single laser
+# Manually change variable to enter singeel laser
+model_comparison_single = model_parameters.copy()
+model_comparsion_double = model_parameters.copy()
+
+model_comparison_single['type'] = 'single'
+model_comparsion_double['type'] = 'double'
+model = pd.concat([model_comparison_single, model_comparsion_double])
 
 
+sns.swarmplot(data =model, x = 'type', y = 'accu', hue ='virus')
+plt.ylabel('Accuracy%')
+
+sns.swarmplot(data =model, x = 'type', y = model['LL'], hue ='virus')
+plt.ylabel('LL')
+
+sns.swarmplot(data =model, x = 'type', y = model['aic'], hue ='virus')
+plt.ylabel('AIC')

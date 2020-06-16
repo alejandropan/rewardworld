@@ -25,8 +25,7 @@ import seaborn as sns
 from scipy.stats.distributions import chi2
 from scipy.stats import norm
 import random
-
-
+from matplotlib.lines import Line2D
 
     
 def model_performance(model_parameters, modelled_data, model_type= 'w_stay', save = True):
@@ -90,11 +89,11 @@ def simulate_and_plot(modelled_data, model_parameters,
     mice = modelled_data['mouse_name'].unique()
     for mouse in mice:
         data_pd = modelled_data.loc[modelled_data['mouse_name'] == mouse, 
-                    ['real_rewards', 'signed_contrast', 'real_choice', 'laser_trials',
+                    ['real_rewards', 'signed_contrast', 'real_choice', 'laser',
                      'laser_side']]
         
         # -1 to 0 for laser
-        data_pd.loc[data_pd['laser_trials'] == -1, 'laser_trials'] = 0 
+        data_pd.loc[data_pd['laser'] == -1, 'laser'] = 0 
         # Make data into the right format
         data_np = data_pd.to_numpy()
         array_of_tuples = map(tuple, data_np.T)
@@ -156,10 +155,10 @@ def calculate_QL_QR(modelled_data, model_parameters,
     modelled_data['QR'] = np.nan
     for mouse in mice:
         data_pd = modelled_data.loc[modelled_data['mouse_name'] == mouse, 
-                    ['real_rewards', 'signed_contrast', 'real_choice', 'laser_trials']]
+                    ['real_rewards', 'signed_contrast', 'real_choice', 'laser']]
         
         # -1 to 0 for laser
-        data_pd.loc[data_pd['laser_trials'] == -1, 'laser_trials'] = 0 
+        data_pd.loc[data_pd['laser'] == -1, 'laser'] = 0 
         # Make data into the right format
         data_np = data_pd.to_numpy()
         array_of_tuples = map(tuple, data_np.T)
@@ -643,6 +642,8 @@ def trial_log_likelihood_stay(params, trial_data, Q, all_contrasts, all_posterio
 	# Get relevant parameters
 	trial_contrast, trial_choice, reward, laser = trial_data
 	learning_rate, beliefSTD, extraVal, beta, stay, extraVal_nowater_guess = params
+	extraVal_nowater_guess = extraVal
+    
 
 	# Compute the log-likelihood of the actual mouse choice
 	if all_posteriors is None:
@@ -776,7 +777,7 @@ def session_neg_log_likelihood_stay(params, *data, pregen_all_posteriors=True, a
 
 # Optimize several times with different initializations and return the best fit parameters, and negative log likelihood
 
-def optimizer_stay(data, num_fits = 10, initial_guess=[0.1, 1, 0, 1, 1,1]):
+def optimizer_stay(data, num_fits = 4, initial_guess=[0.1, 1, 0, 1, 1,0]):
 	# Accounting variables
 	best_NLL = np.Inf
 	best_x = [None, None, None, None, None]
@@ -884,7 +885,7 @@ def generate_data_stay(data, all_contrasts, learning_rate=0.3,
                        beliefSTD=0.1, extraVal=1, beta=0.2, 
                        stay = 1, extraVal_nowater = 1, is_verbose=False, 
                        propagate_errors = True):
-	
+    
 	rewards = []
 	true_contrasts = []
 	choices = []
@@ -909,10 +910,10 @@ def generate_data_stay(data, all_contrasts, learning_rate=0.3,
 		perceived_contrast = np.random.choice(all_contrasts, p=perceived_contrast_distribution)
         
 		contrast_posterior = [0,0]
-		contrast_posterior[0] = norm.cdf(0, loc = trial_contrast, scale = beliefSTD)
+		contrast_posterior[0] = norm.cdf(0, loc = perceived_contrast, scale = beliefSTD)
 		contrast_posterior[1] = 1 - contrast_posterior[0]
         
-		Q_L, Q_R = compute_QL_QR(Q, trial_contrast, contrast_posterior)
+		Q_L, Q_R = compute_QL_QR(Q, perceived_contrast, contrast_posterior)
 
 		if t == 0:
 		    (l_stay, r_stay) = [0,0]
@@ -1110,7 +1111,7 @@ if __name__ == '__main__':
 # Analysis
 
 modelled_data = modelled_data.rename(columns={0: "rewards", 
-   1: "signed_contrast", 2: "choices_standard", 3: "laser_trials"})
+   1: "signed_contrast", 2: "choices_standard", 3: "model_laser"})
 
 modelled_data = calculate_QL_QR(modelled_data, model_parameters, 
                     model_type= 'w_stay')
@@ -1161,5 +1162,21 @@ plot_choice_40_trials(psy, 10, 'dop_11', save =True)
 plot_choice_40_trials(psy, 19, 'dop_4', save =True)
 
 
+# Plot comparison with 2 state model single laser
+# Manually change variable to enter singeel laser
+model_comparison_single = model_parameters.copy()
+model_comparsion_double = model_parameters.copy()
+
+model_comparison_single['type'] = 'single'
+model_comparsion_double['type'] = 'double'
+model = pd.concat([model_comparison_single, model_comparsion_double])
 
 
+sns.swarmplot(data =model, x = 'type', y = 'accu', hue ='virus')
+plt.ylabel('Accuracy%')
+
+sns.swarmplot(data =model, x = 'type', y = model['LL'], hue ='virus')
+plt.ylabel('LL')
+
+sns.swarmplot(data =model, x = 'type', y = model['aic'], hue ='virus')
+plt.ylabel('AIC')

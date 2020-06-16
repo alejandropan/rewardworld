@@ -27,7 +27,39 @@ from scipy.stats import norm
 import random
 from matplotlib.lines import Line2D
 
-
+def save_Q(psy, root = '/Volumes/witten/Alex/recordings_march_2020_dop'):
+    '''
+    Params:
+    root: root folder for ephys sessions
+    psy: dataframe with all the data
+    Description:
+    Save QL QR QL0 and QR0 files, QL0 and QR0 files are Q values in the absence 
+    of laser
+    '''
+    viruses = psy['virus'].unique()
+    for virus in viruses:
+        byvirus = psy.loc[psy['virus'] == virus]
+        mice = byvirus['mouse_name'].unique()
+        for mouse in mice:
+            bymouse = byvirus.loc[byvirus['mouse_name'] == mouse]
+            mouse_path = os.path.join(root, virus, mouse )
+            # First check if mouse has ephys data
+            if os.path.exists(mouse_path):
+                dates = glob.glob(path.join(mouse_path,  '*'))
+                # Get all ephys dates
+                for d in dates:
+                    sessions = glob.glob(path.join(d, '*'))
+                    if len(sessions)>1:
+                        print('No current support for 2 sessions in a day')
+                        continue
+                    for ses in sessions:
+                        alf  =  os.path.join(ses, 'alf')
+                        date = d[-10:]
+                        Q_files = ['QL', 'QR', 'QLO', 'QR0']
+                        for Q in Q_files:
+                            qfile = os.path.join(alf,Q+'.npy')
+                            np.save(qfile, bymouse.loc[bymouse['ses'] == date, 
+                                                     Q].to_numpy())
 
 def model_choice_raw_prob(psy, mouse, save = True):
     '''
@@ -350,7 +382,7 @@ def simulate_and_plot(modelled_data, model_parameters,
     return modelled_data
 
 def calculate_QL_QR(modelled_data, model_parameters, 
-                    model_type= 'w_stay'):
+                    model_type= 'w_stay', zero = False):
     # Also calculates pRight
     
     ACC = []
@@ -373,6 +405,8 @@ def calculate_QL_QR(modelled_data, model_parameters,
         data = [data0, data1, data2[0], data2[1]]
         params = model_parameters.loc[(model_parameters['mouse'] == mouse)
         & (model_parameters['model_name'] == model_type), 'x'].copy().tolist()[0]
+        if zero ==  True:
+            params[2] = 0
         # Calculate Q values
         if model_type == 'standard':
             _,_,Q_L,Q_R =  session_neg_log_likelihood(params, *data, 
@@ -392,15 +426,24 @@ def calculate_QL_QR(modelled_data, model_parameters,
         
         # Return Q values to matrix
         ACC.append(acc)
-        modelled_data.loc[modelled_data['mouse_name'] == mouse, 
-                    'QL'] = Q_L
-        modelled_data.loc[modelled_data['mouse_name'] == mouse, 
-                    'QR'] = Q_R
-        modelled_data.loc[modelled_data['mouse_name'] == mouse, 
-                    'pRight'] = pRight
-    # Calculate QR-QL
-    modelled_data['QRQL'] = modelled_data['QR'].to_numpy() - \
-        modelled_data['QL'].to_numpy()
+        if zero == True:
+            modelled_data.loc[modelled_data['mouse_name'] == mouse, 
+                        'QL0'] = Q_L
+            modelled_data.loc[modelled_data['mouse_name'] == mouse, 
+                        'QR0'] = Q_R
+            modelled_data.loc[modelled_data['mouse_name'] == mouse, 
+                        'pRight0'] = pRight
+               
+        else:
+            modelled_data.loc[modelled_data['mouse_name'] == mouse, 
+                        'QL'] = Q_L
+            modelled_data.loc[modelled_data['mouse_name'] == mouse, 
+                        'QR'] = Q_R
+            modelled_data.loc[modelled_data['mouse_name'] == mouse, 
+                        'pRight'] = pRight
+            # Calculate QR-QL
+            modelled_data['QRQL'] = modelled_data['QR'].to_numpy() - \
+                modelled_data['QL'].to_numpy()
         
     return modelled_data
 

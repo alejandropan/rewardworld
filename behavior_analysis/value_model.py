@@ -30,7 +30,7 @@ from behavior_analysis.value_model_figures import *
 # Notes - 2 iterations nphr no stay -8.424181138661481
 # Right choices are -1, left choices 1
 # Load the data
-psy = load_behavior_data_from_root('/Volumes/witten/Alex/recordings_march_2020_dop/')
+psy = load_behavior_data_from_root('/Volumes/witten/Alex/recordings_march_2020_dop/', include_0 = False)
 
 #****************************************************************************#
 #****************************************************************************#

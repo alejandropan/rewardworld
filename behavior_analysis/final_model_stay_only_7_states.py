@@ -553,9 +553,7 @@ def simulate_and_plot(modelled_data, model_parameters,
         data_pd = modelled_data.loc[modelled_data['mouse_name'] == mouse, 
                     ['real_rewards', 'signed_contrast', 'real_choice', 'laser',
                      'laser_side']]
-        
-        # -1 to 0 for laser
-        data_pd.loc[data_pd['laser'] == -1, 'laser'] = 0 
+                
         # Make data into the right format
         data_np = data_pd.to_numpy()
         array_of_tuples = map(tuple, data_np.T)
@@ -596,12 +594,10 @@ def simulate_and_plot(modelled_data, model_parameters,
         sim_data = pd.DataFrame(sim_data)
         sim_data = np.array(sim_data)
         sim_data = pd.DataFrame(sim_data).T
-        sim_data['laser'] = data_m[3]
         sim_data['laser_side'] = data_m[4]
         sim_data['real_choice'] = data_m[2]
         sim_data['mouse_name']  = mouse
-        sim_data['real_rewards']  = data_m[0]
-        sim_data = sim_data.rename(columns={0: "rewards", 1: "signed_contrast", 2: "simulated_choices", 3: "model_laser"})
+        sim_data = sim_data.rename(columns={0: "simulated_rewards", 1: "signed_contrast", 2: "simulated_choices", 3: "model_laser"})
         
         model_psychometrics(sim_data, data_pd, mouse, save = True)
         

@@ -17,7 +17,7 @@ import pandas as pd
 
 
 def load_behavior_data_from_root(root_data_folder, ephys=True, dropna=True, 
-                                 remove_last_100 = False):
+                                 remove_last_100 = False, include_0 = False):
     
     '''
     
@@ -64,7 +64,8 @@ def load_behavior_data_from_root(root_data_folder, ephys=True, dropna=True,
     psy_df = opto_block_assigner(psy_df)
     psy_df = add_signed_contrasts(psy_df)
     psy_df = add_trial_within_block(psy_df)
-    psy_df = psy_df.drop(psy_df[psy_df['choice'] == 0].index)
+    if include_0 == False:
+        psy_df = psy_df.drop(psy_df[psy_df['choice'] == 0].index)
     psy_df = psy_df.reset_index()
     
     return psy_df

@@ -26,8 +26,52 @@ from scipy.stats.distributions import chi2
 from scipy.stats import norm
 import random
 from matplotlib.lines import Line2D
+import os
+import glob
+from os import path
 
 
+
+
+def save_Q(psy, root = '/Volumes/witten/Alex/recordings_march_2020_dop'):
+    '''
+    Params:
+    root: root folder for ephys sessions
+    psy: dataframe with all the data
+    Description:
+    Save QL QR QL0 and QR0 files, QL0 and QR0 files are Q values in the absence 
+    of laser
+    '''
+    viruses = psy['virus'].unique()
+    for virus in viruses:
+        byvirus = psy.loc[psy['virus'] == virus]
+        mice = byvirus['mouse_name'].unique()
+        for mouse in mice:
+            bymouse = byvirus.loc[byvirus['mouse_name'] == mouse]
+            mouse_path = os.path.join(root, virus, mouse )
+            # First check if mouse has ephys data
+            if os.path.exists(mouse_path):
+                dates = glob.glob(path.join(mouse_path,  '*'))
+                # Get all ephys dates
+                for d in dates:
+                    sessions = glob.glob(path.join(d, '*'))
+                    if len(sessions)>1:
+                        print('No current support for 2 sessions in a day' 
+                              + mouse + d)
+                    for ses in sessions:
+                        alf  =  os.path.join(ses, 'alf')
+                        date = d[-10:]
+                        Q_files = ['QL', 'QR', 'QL0', 'QR0', 'ITIQL', 'ITIQR', 
+                                   'ITIQL0', 'ITIQR0']
+                        for Q in Q_files:
+                            qfile = os.path.join(alf,Q+'.npy')
+                            file = bymouse.loc[bymouse['ses'] == date, 
+                                                     Q].to_numpy()
+                            if len(np.load(os.path.join(alf,'_ibl_trials.choice.npy'))) != len(file):
+                                print('uniqual number of Q and t' 
+                                      + mouse + ses)
+                            else:
+                                np.save(qfile, file)
 
 def model_choice_raw_prob(psy, mouse, save = True):
     '''
@@ -289,7 +333,7 @@ def simulate_and_plot(modelled_data, model_parameters,
                      'laser_side']]
         
         # -1 to 0 for laser
-        data_pd.loc[data_pd['laser_trials'] == -1, 'laser'] = 0 
+        data_pd.loc[data_pd['laser'] == -1, 'laser'] = 0 
         # Make data into the right format
         data_np = data_pd.to_numpy()
         array_of_tuples = map(tuple, data_np.T)
@@ -342,13 +386,11 @@ def simulate_and_plot(modelled_data, model_parameters,
     return modelled_data
 
 def calculate_QL_QR(modelled_data, model_parameters, 
-                    model_type= 'w_stay'):
+                    model_type= 'w_stay', zero = False, retrieve_ITIQ = False):
     # Also calculates pRight
     
     ACC = []
     mice = modelled_data['mouse_name'].unique()
-    modelled_data['QL'] = np.nan
-    modelled_data['QR'] = np.nan
     for mouse in mice:
         data_pd = modelled_data.loc[modelled_data['mouse_name'] == mouse, 
                     ['real_rewards', 'signed_contrast', 'real_choice', 'laser']]
@@ -363,39 +405,79 @@ def calculate_QL_QR(modelled_data, model_parameters,
         data0 = tuple(tuple(map(int, data[0]))) 
         data1  = data[1]
         data = [data0, data1, data2[0], data2[1]]
-        params = model_parameters.loc[(model_parameters['mouse'] == mouse)
-        & (model_parameters['model_name'] == model_type), 'x'].copy().tolist()[0]
+        params0 = model_parameters.loc[(model_parameters['mouse'] == mouse)
+        & (model_parameters['model_name'] == model_type), 'x'].copy()
+        params1 = params0.tolist()[0].copy()
+        
+        if zero ==  True:
+            params1[2] = 0
         # Calculate Q values
         if model_type == 'standard':
-            _,_,Q_L,Q_R =  session_neg_log_likelihood(params, *data, 
+            _,_,Q_L,Q_R =  session_neg_log_likelihood(params1, *data, 
             pregen_all_posteriors=True, accu=True, retrieve_Q=True)
         
         if model_type == 'w_bias':
-            _,_,Q_L,Q_R = session_neg_log_likelihood_bias(params, 
+            _,_,Q_L,Q_R = session_neg_log_likelihood_bias(params1, 
         *data, pregen_all_posteriors=True, accu=True, retrieve_Q=True)
         
         if model_type == 'w_stay':
-            _,acc,Q_L,Q_R, pRight = session_neg_log_likelihood_stay(params, 
-        *data, pregen_all_posteriors=True, accu=True, retrieve_Q=True)
+            _,acc,Q_L,Q_R, pRight = session_neg_log_likelihood_stay(params1, 
+                *data, pregen_all_posteriors=True, accu=True, retrieve_Q=True, 
+                retrieve_ITIQ=retrieve_ITIQ)
         
         if model_type == 'w_bias_n_stay':
-            _,_,Q_L,Q_R = session_neg_log_likelihood_stay_and_bias(params, 
+            _,_,Q_L,Q_R = session_neg_log_likelihood_stay_and_bias(params1, 
                 *data, pregen_all_posteriors=True, accu=True, retrieve_Q=True)
         
         # Return Q values to matrix
         ACC.append(acc)
-        modelled_data.loc[modelled_data['mouse_name'] == mouse, 
-                    'QL'] = Q_L
-        modelled_data.loc[modelled_data['mouse_name'] == mouse, 
-                    'QR'] = Q_R
-        modelled_data.loc[modelled_data['mouse_name'] == mouse, 
-                    'pRight'] = pRight
-    # Calculate QR-QL
-    modelled_data['QRQL'] = modelled_data['QR'].to_numpy() - \
-        modelled_data['QL'].to_numpy()
+        if (zero == True) & (retrieve_ITIQ==False):
+            print('zero no ITI')
+            modelled_data.loc[modelled_data['mouse_name'] == mouse, 
+                        'QL0'] = Q_L
+            modelled_data.loc[modelled_data['mouse_name'] == mouse, 
+                        'QR0'] = Q_R
+            modelled_data.loc[modelled_data['mouse_name'] == mouse, 
+                        'pRight0'] = pRight
+            modelled_data['QRQL0'] = modelled_data['QR0'].to_numpy() - \
+                modelled_data['QL0'].to_numpy()
+               
+        elif (zero == False) & (retrieve_ITIQ==False):
+            print('standard')
+            modelled_data.loc[modelled_data['mouse_name'] == mouse, 
+                        'QL'] = Q_L
+            modelled_data.loc[modelled_data['mouse_name'] == mouse, 
+                        'QR'] = Q_R
+            modelled_data.loc[modelled_data['mouse_name'] == mouse, 
+                        'pRight'] = pRight
+            # Calculate QR-QL
+            modelled_data['QRQL'] = modelled_data['QR'].to_numpy() - \
+                modelled_data['QL'].to_numpy()
+        
+        elif (zero == True) & (retrieve_ITIQ==True):
+            print('zero with ITI')
+            modelled_data.loc[modelled_data['mouse_name'] == mouse, 
+                        'ITIQL0'] = Q_L
+            modelled_data.loc[modelled_data['mouse_name'] == mouse, 
+                        'ITIQR0'] = Q_R
+            modelled_data.loc[modelled_data['mouse_name'] == mouse, 
+                        'ITIpRight0'] = pRight
+            modelled_data['ITIQRQL0'] = modelled_data['ITIQR0'].to_numpy() - \
+                modelled_data['ITIQL0'].to_numpy()
+               
+        elif (zero == False) & (retrieve_ITIQ==True):
+            print('standard ITI')
+            modelled_data.loc[modelled_data['mouse_name'] == mouse, 
+                        'ITIQL'] = Q_L
+            modelled_data.loc[modelled_data['mouse_name'] == mouse, 
+                        'ITIQR'] = Q_R
+            modelled_data.loc[modelled_data['mouse_name'] == mouse, 
+                        'ITIpRight'] = pRight
+            # Calculate QR-QL
+            modelled_data['ITIQRQL'] = modelled_data['ITIQR'].to_numpy() - \
+                modelled_data['ITIQL'].to_numpy()
         
     return modelled_data
-
 
 
 def boxplot_model_parameters_per_mouse(model_parameters, 
@@ -834,7 +916,7 @@ def softmax_stay(Q_L, Q_R, beta, l_stay, r_stay, stay):
 	return p
 
 def trial_log_likelihood_stay(params, trial_data, Q, all_contrasts, all_posteriors, 
-                              previous_trial, trial_num, retrieve_Q = False):
+                              previous_trial, trial_num, retrieve_Q = False, retrieve_ITIQ = False):
 	# Get relevant parameters
 	trial_contrast, trial_choice, reward, laser = trial_data
 	learning_rate, beliefSTD, extraVal, beta, stay = params
@@ -874,14 +956,21 @@ def trial_log_likelihood_stay(params, trial_data, Q, all_contrasts, all_posterio
 	for i in range(2):
 		Q[i, trial_choice] += contrast_posterior[i] * learning_rate * (received_reward - Q_chosen)
 
+	if retrieve_ITIQ == True:
+		Q_L = np.sum(Q, axis=0)[0]
+		Q_R = np.sum(Q, axis=0)[1]
+
+
 	if retrieve_Q==True:
 		return LL, Q, Q_L, Q_R, choice_dist[1] #  choice_dist[1] = pChoice_right
+    
 	else:
 		return LL, Q
 
 
 
-def session_neg_log_likelihood_stay(params, *data, pregen_all_posteriors=True, accu=False, retrieve_Q =  False):
+def session_neg_log_likelihood_stay(params, *data, pregen_all_posteriors=True, 
+                                    accu=False, retrieve_Q =  False, retrieve_ITIQ = False):
 	# Unpack the arguments
 	learning_rate, beliefSTD, extraVal, beta, stay = params
 	rewards, true_contrasts, choices, lasers = data
@@ -916,11 +1005,13 @@ def session_neg_log_likelihood_stay(params, *data, pregen_all_posteriors=True, a
 			if i == 0:
 			    trial_LL, newQ, Q_Lt, Q_Rt, pright = trial_log_likelihood_stay(params, 
                                             [true_contrasts[i], choices[i], rewards[i], lasers[i]], 
-                                            Q, all_contrasts, all_posteriors, np.nan, i, retrieve_Q=retrieve_Q)
+                                            Q, all_contrasts, all_posteriors, 
+                                            np.nan, i, retrieve_Q=retrieve_Q, retrieve_ITIQ=retrieve_ITIQ)
 			else:
 			    trial_LL, newQ, Q_Lt, Q_Rt, pright = trial_log_likelihood_stay(params, 
                                             [true_contrasts[i], choices[i], rewards[i], lasers[i]], 
-                                            Q, all_contrasts, all_posteriors, choices[i-1], i, retrieve_Q=retrieve_Q)
+                                            Q, all_contrasts, all_posteriors, 
+                                            choices[i-1], i, retrieve_Q=retrieve_Q, retrieve_ITIQ=retrieve_ITIQ)
 
 			if (i != 0) & (np.sum(Q, axis=0)[0] != np.sum(newQ, axis=0)[0]) & (np.sum(Q, axis=0)[1] != np.sum(newQ, axis=0)[1]):
 				print('Warning, double update error in trial %d'%i)
@@ -972,7 +1063,7 @@ def session_neg_log_likelihood_stay(params, *data, pregen_all_posteriors=True, a
 
 # Optimize several times with different initializations and return the best fit parameters, and negative log likelihood
 
-def optimizer_stay(data, num_fits = 10, initial_guess=[0.1, 1, 0, 1, 1]):
+def optimizer_stay(data, num_fits = 4, initial_guess=[0.1, 1, 0, 1, 1]):
 	# Accounting variables
 	best_NLL = np.Inf
 	best_x = [None, None, None, None, None]
@@ -1103,7 +1194,7 @@ def generate_data_stay(data, all_contrasts, learning_rate=0.3,
 		perceived_contrast = np.random.choice(all_contrasts, p=perceived_contrast_distribution)
         
 		contrast_posterior = [0,0]
-		contrast_posterior[0] = norm.cdf(0, loc = perceived_contrast, scale = beliefSTD)
+		contrast_posterior[0] = norm.cdf(0, loc = trial_contrast, scale = beliefSTD)
 		contrast_posterior[1] = 1 - contrast_posterior[0]
         
 		Q_L, Q_R = compute_QL_QR(Q, perceived_contrast, contrast_posterior)
@@ -1148,7 +1239,7 @@ def generate_data_stay(data, all_contrasts, learning_rate=0.3,
 			Q_chosen = Q_R
         
 		contrast_posterior = [0,0]
-		contrast_posterior[0] = norm.cdf(0, loc = perceived_contrast, scale = beliefSTD)
+		contrast_posterior[0] = norm.cdf(0, loc = trial_contrast, scale = beliefSTD)
 		contrast_posterior[1] = 1 - contrast_posterior[0]
 
 		for i in range(2):
@@ -1305,16 +1396,40 @@ modelled_data = modelled_data.rename(columns={0: "rewards",
 
 modelled_data = calculate_QL_QR(modelled_data, model_parameters, 
                     model_type= 'w_stay')
+modelled_data = calculate_QL_QR(modelled_data, model_parameters, 
+                    model_type= 'w_stay', zero=True)
+modelled_data = calculate_QL_QR(modelled_data, model_parameters, 
+                    model_type= 'w_stay', zero=True, retrieve_ITIQ=  True)
+modelled_data = calculate_QL_QR(modelled_data, model_parameters, 
+                    model_type= 'w_stay', zero=False, retrieve_ITIQ=  True)
 
 # Calculate a few things
 psy['QL'] = np.nan
 psy['QR'] = np.nan
+psy['QL0'] = np.nan
+psy['QR0'] = np.nan
 psy['QRQL'] = np.nan
+psy['QRQL0'] = np.nan
 psy['pRight'] = np.nan
+psy['pRight0'] = np.nan
+psy['ITIQL'] = np.nan
+psy['ITIQR'] = np.nan
+psy['ITIQL0'] = np.nan
+psy['ITIQR0'] = np.nan
+psy['ITIQRQL'] = np.nan
+psy['ITIpRight'] = np.nan
+psy['ITIpRight0'] = np.nan
+psy['ITIQRQL'] = np.nan
+psy['ITIQRQL0'] = np.nan
+
 for i, mouse in enumerate(mice):
-    psy.loc[psy['mouse_name'] == mouse, ['QL', 'QR', 'QRQL','pRight']] =\
+    psy.loc[psy['mouse_name'] == mouse, ['QL', 'QR', 'QRQL','pRight', 'QL0', 'QR0', 'pRight0', 'QRQL0',
+                                         'ITIQL', 'ITIQR', 'ITIQL0', 'ITIQR0', 'ITIQRQL', 'ITIpRight',
+                                         'ITIpRight0', 'ITIQRQL', 'ITIQRQL0']] =\
     modelled_data.loc[modelled_data['mouse_name'] == mouse,
-                          ['QL', 'QR', 'QRQL', 'pRight']].to_numpy()
+                          ['QL', 'QR', 'QRQL','pRight', 'QL0', 'QR0', 'pRight0', 'QRQL0',
+                                         'ITIQL', 'ITIQR', 'ITIQL0', 'ITIQR0', 'ITIQRQL', 'ITIpRight',
+                                         'ITIpRight0', 'ITIQRQL', 'ITIQRQL0']].to_numpy()
 
 psy['argmax_choice'] = (psy['pRight']>0.5)*1
 
@@ -1345,7 +1460,6 @@ sns.lineplot(data = sim_data, x =1 , y= 'real_choice', hue = 'laser_side')
 
 
 
-
 plot_choice_40_trials(psy, 1, 'dop_7', save =True)
 plot_choice_40_trials(psy, 4, 'dop_8', save =True)
 plot_choice_40_trials(psy, 15, 'dop_9', save =True)
@@ -1357,3 +1471,16 @@ plot_choice_trial_from_model(psy, save= True)
 plot_qr_trial_whole_dataset(psy, save= True)
 plot_ql_trial_whole_dataset(psy, save= True)
 
+
+save_Q(psy, root = '/Volumes/witten/Alex/recordings_march_2020_dop')
+
+
+
+all_contrasts = np.array([-0.25  , -0.125 , -0.0625,  0.    ,  0.0625, 0.125 , 0.25  ])
+
+
+norm.cdf(0, loc = -0.25, scale = 0.12*2)
+
+a= 0
+for j,i in enumerate(all_contrasts):
+    a += simulation_contrast_distribution( -0.25, 0.12, all_contrasts)[j] * norm.cdf(0,loc=i, scale=0.12)

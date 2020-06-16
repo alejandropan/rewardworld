@@ -23,14 +23,312 @@ import seaborn as sns
 import scipy.stats as stats
 from matplotlib.ticker import FormatStrFormatter
 import matplotlib
-### Developing test ###
+from matplotlib.lines import Line2D
+from scipy.stats import mannwhitneyu
+from scipy.signal import convolve, gaussian
 
+### Developing test ###
 
 
 
 ### collect_paths
 
-session_paths = ['/Volumes/witten/Alex/recordings_march_2020_dop/nphr/dop_11/2020-03-14/001/']
+
+# Analysis for ChR2 Sessions need to be in the same order 
+
+session_paths = ['/Volumes/witten/Alex/recordings_march_2020_dop/chr2/dop_8/2020-03-14/001',
+                 '/Volumes/witten/Alex/recordings_march_2020_dop/chr2/dop_8/2020-03-15/002',
+                 '/Volumes/witten/Alex/recordings_march_2020_dop/chr2/dop_8/2020-03-17/001',
+                 '/Volumes/witten/Alex/recordings_march_2020_dop/chr2/dop_8/2020-03-18/001',
+                 '/Volumes/witten/Alex/recordings_march_2020_dop/chr2/dop_8/2020-03-19/001',
+                 '/Volumes/witten/Alex/recordings_march_2020_dop/chr2/dop_9/2020-03-17/001',
+                 '/Volumes/witten/Alex/recordings_march_2020_dop/chr2/dop_9/2020-03-18/001',
+                 '/Volumes/witten/Alex/recordings_march_2020_dop/chr2/dop_9/2020-03-19/001']
+
+
+# Analysis for NphR Sessions need to be in the same order 
+
+session_paths = ['/Volumes/witten/Alex/recordings_march_2020_dop/nphr/dop_4/2020-01-16/002',
+                 '/Volumes/witten/Alex/recordings_march_2020_dop/nphr/dop_4/2020-01-17/001',
+                 '/Volumes/witten/Alex/recordings_march_2020_dop/nphr/dop_11/2020-03-14/001',
+                 '/Volumes/witten/Alex/recordings_march_2020_dop/nphr/dop_11/2020-03-15/001',
+                 '/Volumes/witten/Alex/recordings_march_2020_dop/nphr/dop_11/2020-03-16/001',
+                 '/Volumes/witten/Alex/recordings_march_2020_dop/nphr/dop_11/2020-03-19/001']
+
+
+
+
+for j,i in enumerate(session_paths):
+    
+    if j == 0:
+        session_folder = i
+        session = load_behavior(session_folder)
+        clusters_depths, cluster_metrics, \
+        spikeclusters, spiketimes, \
+        good_clusters, allen, channel_coord = load_neural_data(session_folder)
+        gen_clusters_depths = clusters_depths[np.unique(spikeclusters)] #Limit allen variable to cluster that actually fire
+        gen_cluster_metrics = cluster_metrics['ks2_label'][np.unique(spikeclusters)] #Limit allen variable to cluster that actually fire
+        gen_spikeclusters = spikeclusters
+        gen_spiketimes = spiketimes
+        gen_good_clusters = good_clusters
+        #Limit allen variable to cluster that actually fire
+        allen  = allen[np.unique(spikeclusters)]
+        gen_allen = allen
+        gen_channel_coord = channel_coord 
+        assert len(np.unique(spikeclusters)) == len(allen)
+        
+        
+    else:
+        session_folder = i
+        session = pd.concat([session,load_behavior(session_folder)])
+        clusters_depths, cluster_metrics, \
+        spikeclusters, spiketimes, \
+        good_clusters, allen, channel_coord = load_neural_data(session_folder)
+        
+        gen_clusters_depths = np.append(gen_clusters_depths, clusters_depths[np.unique(spikeclusters)]) #Limit allen variable to cluster that actually fire)
+        gen_cluster_metrics = np.append(gen_cluster_metrics, cluster_metrics['ks2_label'][np.unique(spikeclusters)]) #Limit allen variable to cluster that actually fire
+        gen_spikeclusters = np.append(gen_spikeclusters, (spikeclusters + (j * 10000)))
+        gen_spiketimes = np.append(gen_spiketimes, spiketimes)
+        gen_good_clusters = np.append(gen_good_clusters, (good_clusters + (j * 10000)))
+        allen  = allen[np.unique(spikeclusters)] #Limit allen variable to cluster that actually fire
+        gen_allen = np.append(gen_allen, allen)
+        gen_channel_coord = np.append(gen_channel_coord, channel_coord, axis = 0)
+        assert len(np.unique(spikeclusters)) == len(allen)
+
+    
+# Pool regions
+keys = np.unique(gen_allen)
+pooled_region = np.zeros(len(keys))
+pooled_region[:] = str('nan')
+
+pooler = pd.DataFrame(np.transpose([keys, pooled_region]))    
+pooler.iloc[:,1] = 'void'
+print('Manually cluster areas')
+    
+# rename regions
+pooled_allen = []
+for i in range(len(gen_allen)):
+    pooled_allen.append(pooler.loc[pooler[0] == gen_allen[i],1].tolist())
+
+pooled_allen = np.array(pooled_allen)
+
+session  = session.reset_index()
+session = session.rename(columns={'index':'idx_per_session'})
+session = session.reset_index()
+session = session.rename(columns={'index':'idx'})
+
+for j, region in enumerate(np.unique(pooled_allen)):
+    region_clusters_quality = gen_cluster_metrics[np.where(pooled_allen  == region)[0]] 
+    region_clusters = np.unique(gen_spikeclusters)[np.where(pooled_allen  == region)[0]]
+    region_goodlusters = region_clusters[region_clusters_quality=='good']
+    print(str(len(region_goodlusters)) + ' ' + region)
+    
+    sort_non_opto_plot_by_block_and_subtraction_per_region(gen_spikeclusters, gen_spiketimes,session, 
+                                       'goCue_times', region_goodlusters, gen_clusters_depths,
+                                       bin_size=0.025, extra_ref = str(region), smoothing_win = 0.05)
+    sort_non_opto_plot_by_block_and_subtraction_per_region(gen_spikeclusters, gen_spiketimes,session,  
+                                       'feedback_times', region_goodlusters,gen_clusters_depths,
+                                       bin_size=0.025, extra_ref = str(region),
+                                       threeclass = 'feedbackType', fourthclass = -1, smoothing_win = 0.05)
+    sort_non_opto_plot_by_block_and_subtraction_per_region(gen_spikeclusters, gen_spiketimes,session,  
+                                       'feedback_times', region_goodlusters,gen_clusters_depths,
+                                       bin_size=0.025, extra_ref = str(region),
+                                       threeclass = 'feedbackType', fourthclass = 1, smoothing_win = 0.05)
+    
+    
+    comparisons_str = ['neutral_side_selective_total',
+                       'left_block_side_selective', 
+                       'right_block_side_selective',
+                       'l_trials_block_selective', 
+                       'r_trials_block_selective']
+    
+    s_fr_neurons = significant_firing_rate_neurons(gen_spiketimes, gen_spikeclusters, 
+                                                   'goCue_times', region_goodlusters,
+                                     session, comparisons = len(comparisons_str))
+    
+    
+    if j == 0: # Start dataframe in first iteration
+        FR_regions = pd.DataFrame(columns=['Region', 'Count', 'Type',
+                                           'Region_Total'])
+        FR_regions['Region'] = np.sort(list(np.unique(pooled_allen))*len(comparisons_str)) 
+    
+    FR_regions.loc[(FR_regions['Region']==region), 'Type'] = comparisons_str
+    FR_regions.loc[(FR_regions['Region']==region) & 
+                       (FR_regions['Type']==comparisons_str[0]), 'Count'] = s_fr_neurons[0]
+    FR_regions.loc[(FR_regions['Region']==region) &
+                       (FR_regions['Type']==comparisons_str[1]), 'Count'] = s_fr_neurons[1]
+    FR_regions.loc[(FR_regions['Region']==region) &
+                       (FR_regions['Type']==comparisons_str[2]), 'Count'] = s_fr_neurons[2]
+    FR_regions.loc[(FR_regions['Region']==region) &
+                       (FR_regions['Type']==comparisons_str[3]), 'Count'] = s_fr_neurons[3]
+    FR_regions.loc[(FR_regions['Region']==region) &
+                       (FR_regions['Type']==comparisons_str[4]), 'Count'] = s_fr_neurons[4]
+        
+    FR_regions.loc[FR_regions['Region']==region, 'Region_Total'] = len(region_goodlusters)
+
+    
+FR_regions['Percentage'] = FR_regions['Count']/FR_regions['Region_Total']
+
+FR_regions_plots  = FR_regions.loc[FR_regions['Region'] != 'Other']
+
+g = sns.FacetGrid(FR_regions_plots, col='Type', height =5, aspect = 1.2)
+g.map(sns.barplot, 'Percentage', 'Region', color=".3", ci=None)
+
+# Analysis of firing rate across regions
+def significant_firing_rate_neurons (gen_spiketimes, gen_spikeclusters, epoch, region_goodlusters,
+                                     session, comparisons = 4, bin_size = 0.025):
+    '''
+    Returns number of neurons in a region with a signficant
+    difference in firing rates 500ms after epoch
+    '''
+    
+    
+    binned_firing_rate = bb.singlecell.calculate_peths(
+                gen_spiketimes, gen_spikeclusters, region_goodlusters, session[epoch],
+                bin_size=bin_size)[1]
+    
+    
+    cluster_session = np.floor(region_goodlusters/10000)
+    
+    
+    # Divide by stimulus side and opto block
+    
+    left_stim_trials_neutral_block = np.intersect1d(np.where(session['contrastLeft'] >= 0), \
+                                    np.where(session['opto_probability_left'] == -1))
+    right_stim_trials_neutral_block = np.intersect1d(np.where(session['contrastRight'] >= 0), \
+                                    np.where(session['opto_probability_left'] == -1))
+    left_stim_trials_left_block = np.intersect1d(np.where(session['contrastLeft'] >= 0), \
+                                    np.where(session['opto_probability_left'] == 1))
+    right_stim_trials_left_block = np.intersect1d(np.where(session['contrastRight'] >= 0), \
+                                    np.where(session['opto_probability_left'] == 1))
+    left_stim_trials_right_block = np.intersect1d(np.where(session['contrastLeft'] >= 0), \
+                                    np.where(session['opto_probability_left'] == 0))
+    right_stim_trials_right_block = np.intersect1d(np.where(session['contrastRight'] >= 0), \
+                                    np.where(session['opto_probability_left'] == 0))
+    
+    L = binned_firing_rate[left_stim_trials_neutral_block,:,:]
+    R = binned_firing_rate[right_stim_trials_neutral_block,:,:]
+    L_blockL = binned_firing_rate[left_stim_trials_left_block,:,:]
+    R_blockL = binned_firing_rate[right_stim_trials_left_block,:,:]
+    L_blockR = binned_firing_rate[left_stim_trials_right_block,:,:]
+    R_blockR = binned_firing_rate[right_stim_trials_right_block,:,:]
+    
+    
+    
+    neutral_side_selective = average_fr_2_con_multi_session(L, R, 
+                                       left_stim_trials_neutral_block, 
+                                       right_stim_trials_neutral_block, session, 
+                                       cluster_session,
+                                       comparisons = comparisons)
+     
+    left_block_side_selective = average_fr_2_con_multi_session(L_blockL, R_blockL, 
+                                       left_stim_trials_left_block, 
+                                       right_stim_trials_left_block, session,
+                                       cluster_session,
+                                       comparisons = comparisons)
+     
+    right_block_side_selective = average_fr_2_con_multi_session(L_blockR, R_blockR, 
+                                       left_stim_trials_right_block, 
+                                       right_stim_trials_right_block, session,
+                                       cluster_session,
+                                       comparisons = comparisons)
+    
+    l_trials_block_selective = average_fr_2_con_multi_session(L_blockL, L_blockR, 
+                                       left_stim_trials_left_block, 
+                                       left_stim_trials_right_block, session,
+                                       cluster_session,
+                                       comparisons = comparisons)
+    
+    r_trials_block_selective = average_fr_2_con_multi_session(R_blockL, R_blockR, 
+                                       right_stim_trials_left_block, 
+                                       right_stim_trials_right_block, session,
+                                       cluster_session,
+                                       comparisons = comparisons)
+    
+    
+    return neutral_side_selective, left_block_side_selective, right_block_side_selective, \
+        l_trials_block_selective, r_trials_block_selective
+
+    
+def average_fr_2_con_multi_session(binned_firing_rate1, binned_firing_rate2, 
+                                       index_1, index_2, session, cluster_session, comparisons=4):
+        '''
+        "Returns total number of units with a significantly different firing rate between conditions
+        in range of 500 ms after epoch""
+        binned_firing_rate1: binned firing rate for condition 1
+        binned_firing_rate2: binned firing rate for condition 2
+        index_1: trials for condition 1
+        index_2: trials for condition 2
+        session: pooled behavior data
+        comparisons: Number of comparison, standard is 4 (2 blocks, 2 choices)
+        '''
+        # mean_binned_fr_test1 = None
+        # mean_binned_fr_test2 = None
+        significant = 0
+        counter_session = 0
+        for mouse in session['mouse_name'].unique():
+            for ses in session.loc[session['mouse_name'] == mouse, 'ses'].unique():
+                # First number from cluster determines session
+                
+                cluster_in_session = np.where(cluster_session == counter_session)
+                if np.size(cluster_in_session) == 0:
+                    counter_session += 1
+                    continue
+                
+                counter_session += 1
+                
+                m_ses = session.loc[(session['mouse_name'] == mouse) & 
+                                    (session['ses'] == ses)]
+                trials_in_session = m_ses['idx'].to_numpy()
+                trials_in_sess_in_var1 = np.intersect1d(trials_in_session, index_1)
+                tvar1 = (index_1[:, None] == trials_in_sess_in_var1).argmax(axis=0)
+    
+                trials_in_sess_in_var2 = np.intersect1d(trials_in_session, index_2)
+                tvar2 = (index_2[:, None] == trials_in_sess_in_var2).argmax(axis=0)
+                
+                
+                binned_firing_rate1_select = binned_firing_rate1[:, cluster_in_session[0],:]
+                binned_firing_rate2_select = binned_firing_rate2[:, cluster_in_session[0],:]
+                
+                for i in range(len(cluster_in_session[0])):
+                    
+                    c1 = np.mean(binned_firing_rate1_select[tvar1, i, 7:], axis = 1)/bin_size
+                    c2 = np.mean(binned_firing_rate2_select[tvar2, i, 7:],axis = 1)/bin_size
+                    if(np.sum(c1) == 0)  & (np.sum(c2) == 0):
+                        continue
+                    else:
+                        _, p = mannwhitneyu(c1, 
+                                            c2)
+                    if p<(0.05/comparisons): #Significance with Bonferroni
+                        significant += 1
+                #mean_N_binned_fr_test1 =  np.mean(binned_firing_rate1_select[tvar1, :,:], axis =0)/bin_size
+                #mean_N_binned_fr_test2 =  np.mean(binned_firing_rate2_select[tvar2, :,:], axis =0)/bin_size
+                
+                #if mean_binned_fr_test1 is None:
+                #    mean_binned_fr_test1 = mean_N_binned_fr_test1
+                
+                #else:
+                #    mean_binned_fr_test1 = np.concatenate((mean_binned_fr_test1,
+                #                                          mean_N_binned_fr_test1) , axis = 0)
+                #if mean_binned_fr_test2 is None:
+                #    mean_binned_fr_test2 = mean_N_binned_fr_test2
+                
+                #else:
+                #    mean_binned_fr_test2 = np.concatenate((mean_binned_fr_test2,
+                #                                          mean_N_binned_fr_test2) , axis = 0)
+                    
+                #z_score_binned_spikes_test1 = stats.zscore(mean_binned_fr_test1, axis =1)
+                #z_score_binned_spikes_test1 = np.nan_to_num(z_score_binned_spikes_test1)
+                #z_score_binned_spikes_test2 = np.nan_to_num(z_score_binned_spikes_test2)    
+                #z_score_binned_spikes_test2 = stats.zscore(mean_binned_fr_test2, axis =1)
+                
+        return significant# z_score_binned_spikes_test1, z_score_binned_spikes_test2
+
+    
+
+
+
+# Analysis for individial sessions
 
 for i in session_paths:
     
@@ -46,18 +344,22 @@ for i in session_paths:
     os.chdir(i + '/figures')
     
     # Heatmaps of session
-    sort_non_opto_plot_by_block_and_subtraction(spikeclusters, spiketimes,session,  'goCue_times', good_clusters,
+    sort_non_opto_plot_by_block_and_subtraction(spikeclusters, spiketimes,session, 
+                               'goCue_times', good_clusters,gen_clusters_depths,
                                bin_size=0.025)
-    sort_non_opto_plot_by_block_and_subtraction(spikeclusters, spiketimes,session,  'feedback_times', good_clusters,
+    sort_non_opto_plot_by_block_and_subtraction(spikeclusters, spiketimes,session,  
+                               'feedback_times', good_clusters,gen_clusters_depths,
                                bin_size=0.025)
     
     # heatmaps per region
     if 'allen' in globals(): 
         for region in np.unique(allen):
             region_goodlusters = np.intersect1d(np.where(allen  == region), good_clusters)
-            sort_non_opto_plot_by_block_and_subtraction(spikeclusters, spiketimes,session,  'goCue_times', region_goodlusters,
+            sort_non_opto_plot_by_block_and_subtraction(spikeclusters, spiketimes,session,  
+                        'goCue_times', region_goodlusters,gen_clusters_depths,
                                        bin_size=0.025, extra_ref = str(region))
-            sort_non_opto_plot_by_block_and_subtraction(spikeclusters, spiketimes,session,  'feedback_times', region_goodlusters,
+            sort_non_opto_plot_by_block_and_subtraction(spikeclusters, spiketimes,session,  
+                                    'feedback_times', region_goodlusters,gen_clusters_depths,
                                        bin_size=0.025, extra_ref = str(region))
     
     # PSTH and raster per session
@@ -130,17 +432,19 @@ def load_neural_data(session_folder, histology = True):
         cluster_metrics = pd.read_csv(session_folder + '/alf/probe00/clusters.metrics.csv')
         spikeclusters = np.load(session_folder + '/alf/probe00/spikes.clusters.npy')
         spiketimes = np.load(session_folder + '/alf/probe00/spikes.times.npy')
-        good_clusters = cluster_metrics.loc[cluster_metrics['ks2_label']=='good', 'cluster_id']
+        cluster_channels = np.load(session_folder + '/alf/probe00/clusters.channels.npy')
         clusters_depths = np.append(clusters_depths, np.load(session_folder + '/alf/probe01/clusters.depths.npy'))
-        cluster_metrics = np.append(cluster_metrics, pd.read_csv(session_folder + '/alf/probe01/clusters.metrics.csv'))
+        cluster_metrics = pd.concat([cluster_metrics, pd.read_csv(session_folder + '/alf/probe01/clusters.metrics.csv')])
         spikeclusters = np.append(spikeclusters, np.load(session_folder + '/alf/probe01/spikes.clusters.npy'))
         spiketimes = np.append(spiketimes, np.load(session_folder + '/alf/probe01/spikes.times.npy'))
-        good_clusters = np.append(good_clusters, cluster_metrics.loc[cluster_metrics['ks2_label']=='good', 'cluster_id'])
+        good_clusters = cluster_metrics.loc[cluster_metrics['ks2_label']=='good', 'cluster_id']
+        cluster_channels = np.append(cluster_channels, np.load(session_folder + '/alf/probe01/clusters.channels.npy'))
         if histology == True:  
             allen = np.load(session_folder + '/alf/probe00/cluster_location.npy', allow_pickle=True) 
             allen = np.append(allen, np.load(session_folder + '/alf/probe01/cluster_location.npy', allow_pickle=True))
+            allen  = allen[cluster_channels]
             channel_coord = np.load(session_folder + '/alf/probe00/channels_xyz.npy', allow_pickle=True)
-            channel_coord = np.append(channel_coard, np.load(session_folder + '/alf/probe01/channels_xyz.npy', allow_pickle=True))
+            channel_coord = np.concatenate([channel_coord, np.load(session_folder + '/alf/probe01/channels_xyz.npy', allow_pickle=True)])
             return clusters_depths, cluster_metrics, spikeclusters, spiketimes, good_clusters, allen, channel_coord
         if histology == False:
             return clusters_depths, cluster_metrics, spikeclusters, spiketimes, good_clusters
@@ -151,8 +455,10 @@ def load_neural_data(session_folder, histology = True):
         spikeclusters = np.load(session_folder + '/alf/probe00/spikes.clusters.npy')
         spiketimes = np.load(session_folder + '/alf/probe00/spikes.times.npy')
         good_clusters = cluster_metrics.loc[cluster_metrics['ks2_label']=='good', 'cluster_id']
+        cluster_channels = np.load(session_folder + '/alf/probe00/clusters.channels.npy')
         if histology == True:  
-            allen = np.load(session_folder + '/alf/probe00/cluster_location.npy', allow_pickle=True) 
+            allen = np.load(session_folder + '/alf/probe00/cluster_location.npy', allow_pickle=True)
+            allen  = allen[cluster_channels]
             channel_coord = np.load(session_folder + '/alf/probe00/channels_xyz.npy', allow_pickle=True)
             return clusters_depths, cluster_metrics, spikeclusters, spiketimes, good_clusters, allen, channel_coord
         if histology == False:
@@ -719,7 +1025,7 @@ def heatmap_sorted_by_pool_choice(spikeclusters, spiketimes,session, i, epoch,
     
 
     
-def sort_non_opto_plot_by_block_and_subtraction(spikeclusters, spiketimes,session, epoch, cluster_select,
+def sort_non_opto_plot_by_block_and_subtraction(spikeclusters, spiketimes,session, epoch, cluster_select, cluster_depths,
                            bin_size=0.025, extra_ref = None):
     
     matplotlib.rcParams.update({'font.size': 22})
@@ -902,8 +1208,8 @@ def sort_non_opto_plot_by_block_and_subtraction(spikeclusters, spiketimes,sessio
            l_region[region.find('/')] = '_'
            extra_ref = ''.join(l_region)
 
-           plt.savefig(epoch + ' ' + extra_ref +'_heatmap_common_L_2_R_order.png')
-           plt.savefig(epoch + ' ' + extra_ref +'_heatmap_common_L_2_R_order.svg')
+           plt.savefig(epoch + '_' + extra_ref +'_heatmap_common_L_2_R_order.png')
+           plt.savefig(epoch + '_' + extra_ref +'_heatmap_common_L_2_R_order.svg')
     
 def heatmap_sorted_by_pool_stimulus(spikeclusters, spiketimes,session, i, epoch,
                            bin_size=0.025):
@@ -1089,7 +1395,7 @@ def heatmap_per_session_stimulus(spikeclusters, spiketimes,session, i, epoch, bi
     plt.savefig('stimulus_heatmap.png')
     plt.savefig('stimulus_heatmap.svg')
     
-def heatmap_per_session_choice(spikeclusters, spiketimes,session, i, epoch, bin_size=0.025,):
+def heatmap_per_session_choice(spikeclusters, spiketimes,session, i, epoch, bin_size=0.025):
 
     #Cross validated plot, get order from half of the data, plot on the other half.
     #The halfs are chosen randomly
@@ -1247,6 +1553,180 @@ def heatmap_append_L_R(binned_firing_rate1,binned_firing_rate2, order = None , b
     else:
         order = np.argmax(z_score_binned_spikes_test, 1)
         sorte = z_score_binned_spikes_test[order.argsort()]
+    
+        return sorte, order.argsort()
+
+
+
+
+
+def heatmap_append_L_R_pooled_session(binned_firing_rate1,binned_firing_rate2, 
+                                      index_1, index_2, session, cluster_session, order = None , bin_size = 0.025):
+    '''
+    Heatmap function that allows for several sessions and animals for same region
+    Warning: Without external sorting order, this function does not crossvalidate
+    Given a set of trialsxbinxspikes array, generates a cross validated heatmap
+    
+    Parameters
+    -------
+    binned_firing_rate: trialsxbinxspikes array from bb.singlecell.calculate_peths
+    session : dataframe with session information
+    index_1 and  index_2:  index to relate binned firing rate1 and 2 to dataframe with pooled
+    behavior
+    
+    Returns
+    -------
+    cross validated sorted heatmap
+    
+    '''
+
+    # make heatmap matrix
+    mean_binned_fr_test = None
+    counter_session = 0
+    for mouse in session['mouse_name'].unique():
+        for ses in session.loc[session['mouse_name'] == mouse, 'ses'].unique():
+            # First number from cluster determines session
+            
+            cluster_in_session = np.where(cluster_session == counter_session)
+            if np.size(cluster_in_session) == 0:
+                counter_session += 1
+                continue
+            
+            counter_session += 1
+            
+            m_ses = session.loc[(session['mouse_name'] == mouse) & 
+                                (session['ses'] == ses)]
+            trials_in_session = m_ses['idx'].to_numpy()
+            trials_in_sess_in_var1 = np.intersect1d(trials_in_session, index_1)
+            tvar1 = (index_1[:, None] == trials_in_sess_in_var1).argmax(axis=0)
+
+            trials_in_sess_in_var2 = np.intersect1d(trials_in_session, index_2)
+            tvar2 = (index_2[:, None] == trials_in_sess_in_var2).argmax(axis=0)
+            
+            
+            binned_firing_rate1_select = binned_firing_rate1[:, cluster_in_session[0],:]
+            binned_firing_rate2_select = binned_firing_rate2[:, cluster_in_session[0],:]
+
+            
+            mean_binned_fr_test1 =  np.mean(binned_firing_rate1_select[tvar1, :,:], axis =0)/bin_size
+            mean_binned_fr_test2 =  np.mean(binned_firing_rate2_select[tvar2, :,:], axis =0)/bin_size
+            mean_binned_fr_test_temp = np.concatenate((mean_binned_fr_test1,
+                                                  mean_binned_fr_test2),axis =1)
+            if mean_binned_fr_test is None:
+                mean_binned_fr_test = mean_binned_fr_test_temp
+            
+            else:
+                mean_binned_fr_test = np.concatenate((mean_binned_fr_test,
+                                                      mean_binned_fr_test_temp) , axis = 0)
+        
+    z_score_binned_spikes_test = stats.zscore(mean_binned_fr_test, axis =1)
+    z_score_binned_spikes_test = np.nan_to_num(z_score_binned_spikes_test)
+        
+    
+    if order is not None:
+        sorte = z_score_binned_spikes_test[order]
+        return sorte
+    else:
+        order = np.argmax(z_score_binned_spikes_test, 1)
+        sorte = z_score_binned_spikes_test[order.argsort()]
+    
+        return sorte, order.argsort()
+
+
+
+
+
+def mean_binned_firing_rate(binned_firing_rate1,
+                                      index_1, session, cluster_session, 
+                                      order=None , bin_size = 0.025,
+                                      smoothing=0):
+    '''
+    UNDER deveelopment
+    Heatmap function that allows for several sessions and animals for same region
+    Warning: Without external sorting order, this function does not crossvalidate
+    Given a set of trialsxbinxspikes array, generates a cross validated heatmap
+    
+    Parameters
+    -------
+    binned_firing_rate: trialsxbinxspikes array from bb.singlecell.calculate_peths
+    session : dataframe with session information
+    index_1 :  index to relate binned firing rate1 to dataframe with pooled
+    behavior
+    
+    Returns
+    -------
+    cross validated sorted heatmap
+    
+    '''
+
+    # Create convolution window
+    if smoothing != 0:
+        n_bins = np.shape(binned_firing_rate1)[2]
+        window = gaussian(n_bins, std=smoothing/ bin_size)
+        window /= np.sum(window)
+
+    # make heatmap matrix
+    mean_binned_fr_test = None
+    counter_session = 0
+    for mouse in session['mouse_name'].unique():
+        for ses in session.loc[session['mouse_name'] == mouse, 'ses'].unique():
+            # First number from cluster determines session
+            
+            cluster_in_session = np.where(cluster_session == counter_session)
+            if np.size(cluster_in_session) == 0:
+                counter_session += 1
+                continue
+            
+            counter_session += 1
+            
+            m_ses = session.loc[(session['mouse_name'] == mouse) & 
+                                (session['ses'] == ses)]
+            trials_in_session = m_ses['idx'].to_numpy()
+            trials_in_sess_in_var1 = np.intersect1d(trials_in_session, index_1)
+            tvar1 = (index_1[:, None] == trials_in_sess_in_var1).argmax(axis=0)
+            
+            
+            binned_firing_rate1_select = binned_firing_rate1[:, cluster_in_session[0],:]
+            binned_firing_rate1_select = binned_firing_rate1_select[tvar1, :,:]
+            
+            if smoothing != 0:  
+                for i in range(np.shape(binned_firing_rate1_select)[0]):
+                    for j in range(np.shape(binned_firing_rate1_select)[1]):
+                        binned_firing_rate1_select[i,j,:] = convolve(binned_firing_rate1_select[i,j,:], window,
+                                                mode='same', method='auto')
+            
+            mean_binned_fr_test_temp = np.mean(binned_firing_rate1_select, axis=0)/bin_size
+            # Trim to standard size -0.2 to +0.5
+            
+            if smoothing != 0:  
+                to_trim = int(smoothing/bin_size)
+                mean_binned_fr_test_temp = mean_binned_fr_test_temp[:, to_trim:-to_trim]
+            
+            if mean_binned_fr_test is None:
+                mean_binned_fr_test = mean_binned_fr_test_temp
+            
+            else:
+                mean_binned_fr_test = np.concatenate((mean_binned_fr_test,
+                                                      mean_binned_fr_test_temp) , axis = 0)
+            
+
+    return mean_binned_fr_test
+            
+
+def z_score_and_order(concatenated_mean_firing_rates, window, order = None ):
+   
+    z_score_binned_spikes_test = stats.zscore(concatenated_mean_firing_rates, axis =1)
+    z_score_binned_spikes_test = np.nan_to_num(z_score_binned_spikes_test)
+    
+    z_score_binned_spikes_test_select= z_score_binned_spikes_test[:,
+                                                window[0]:window[1]]
+    
+    if order is not None:
+        sorte = z_score_binned_spikes_test_select[order]
+        return sorte
+    else:
+        order = np.argmax(z_score_binned_spikes_test_select, 1)
+        sorte = z_score_binned_spikes_test_select[order.argsort()]
     
         return sorte, order.argsort()
 
@@ -2452,4 +2932,276 @@ def early_vs_late_block (spikeclusters, spiketimes,session, i):
         print('error in early vs late fig')
         
 
+
+
+
     
+def sort_non_opto_plot_by_block_and_subtraction_per_region(spikeclusters, spiketimes,session, 
+                           epoch, cluster_select, clusters_depths,
+                           bin_size=0.025, extra_ref = None, threeclass = None,
+                           fourthclass = None, smoothing_win = 0):
+    
+    #Selecta bigger window note pre_time and postdime.  Smooths and the cuts edges to standard -200 to +500 window
+    
+    
+    matplotlib.rcParams.update({'font.size': 22})
+    
+    binned_firing_rate = bb.singlecell.calculate_peths(
+            spiketimes, spikeclusters, cluster_select, session[epoch],
+            bin_size=bin_size,  smoothing = 0, pre_time= round(0.2 + smoothing_win, 3), 
+            post_time=round(0.5 + smoothing_win, 3))[1]
+    
+    # Cluster are added 10000 in every session to identify them when pooling, this
+    # retrieves session identity
+    cluster_session = np.floor(cluster_select/10000)
+
+    
+    # Divide by stimulus side and opto block
+    if epoch=='goCue_times':
+        left_stim_trials_neutral_block = np.intersect1d(np.where(session['contrastLeft'] >= 0), \
+                                        np.where(session['opto_probability_left'] == -1))
+        right_stim_trials_neutral_block = np.intersect1d(np.where(session['contrastRight'] >= 0), \
+                                        np.where(session['opto_probability_left'] == -1))
+        left_stim_trials_left_block = np.intersect1d(np.where(session['contrastLeft'] >= 0), \
+                                        np.where(session['opto_probability_left'] == 1))
+        right_stim_trials_left_block = np.intersect1d(np.where(session['contrastRight'] >= 0), \
+                                        np.where(session['opto_probability_left'] == 1))
+        left_stim_trials_right_block = np.intersect1d(np.where(session['contrastLeft'] >= 0), \
+                                        np.where(session['opto_probability_left'] == 0))
+        right_stim_trials_right_block = np.intersect1d(np.where(session['contrastRight'] >= 0), \
+                                        np.where(session['opto_probability_left'] == 0))
+        if threeclass != None:
+            left_stim_trials_neutral_block = np.intersect1d(left_stim_trials_neutral_block, \
+                                            np.where(session[threeclass] == fourthclass))
+            right_stim_trials_neutral_block = np.intersect1d(right_stim_trials_neutral_block, \
+                                            np.where(session[threeclass] == fourthclass))
+            left_stim_trials_left_block = np.intersect1d(left_stim_trials_left_block, \
+                                            np.where(session[threeclass] == fourthclass))
+            right_stim_trials_left_block = np.intersect1d(right_stim_trials_left_block, \
+                                            np.where(session[threeclass] == fourthclass))
+            left_stim_trials_right_block = np.intersect1d(left_stim_trials_right_block, \
+                                            np.where(session[threeclass] == fourthclass))
+            right_stim_trials_right_block = np.intersect1d(right_stim_trials_right_block, \
+                                            np.where(session[threeclass] == fourthclass))    
+        
+    elif epoch=='feedback_times':
+        left_stim_trials_neutral_block = np.intersect1d(np.where(session['choice'] == 1), \
+                                        np.where(session['opto_probability_left'] == -1))
+        right_stim_trials_neutral_block = np.intersect1d(np.where(session['choice'] == -1), \
+                                        np.where(session['opto_probability_left'] == -1))
+        left_stim_trials_left_block = np.intersect1d(np.where(session['choice'] == 1), \
+                                        np.where(session['opto_probability_left'] == 1))
+        right_stim_trials_left_block = np.intersect1d(np.where(session['choice'] == -1), \
+                                        np.where(session['opto_probability_left'] == 1))
+        left_stim_trials_right_block = np.intersect1d(np.where(session['choice'] == 1), \
+                                        np.where(session['opto_probability_left'] == 0))
+        right_stim_trials_right_block = np.intersect1d(np.where(session['choice'] == -1), \
+                                        np.where(session['opto_probability_left'] == 0), 
+                                        np.where(session['feedbackType'] == 1))
+        
+        if threeclass != None:
+            left_stim_trials_neutral_block = np.intersect1d(left_stim_trials_neutral_block, \
+                                            np.where(session[threeclass] == fourthclass))
+            right_stim_trials_neutral_block = np.intersect1d(right_stim_trials_neutral_block, \
+                                            np.where(session[threeclass] == fourthclass))
+            left_stim_trials_left_block = np.intersect1d(left_stim_trials_left_block, \
+                                            np.where(session[threeclass] == fourthclass))
+            right_stim_trials_left_block = np.intersect1d(right_stim_trials_left_block, \
+                                            np.where(session[threeclass] == fourthclass))
+            left_stim_trials_right_block = np.intersect1d(left_stim_trials_right_block, \
+                                            np.where(session[threeclass] == fourthclass))
+            right_stim_trials_right_block = np.intersect1d(right_stim_trials_right_block, \
+                                            np.where(session[threeclass] == fourthclass))    
+        
+
+    # Concatenate neutral L and R trials
+    L = binned_firing_rate[left_stim_trials_neutral_block,:,:]
+    R = binned_firing_rate[right_stim_trials_neutral_block,:,:]
+    L_blockL = binned_firing_rate[left_stim_trials_left_block,:,:]
+    R_blockL = binned_firing_rate[right_stim_trials_left_block,:,:]
+    L_blockR = binned_firing_rate[left_stim_trials_right_block,:,:]
+    R_blockR = binned_firing_rate[right_stim_trials_right_block,:,:]
+        
+        
+        
+    # Obtain firing rates
+    N_L = mean_binned_firing_rate(L, left_stim_trials_neutral_block, 
+                                  session, cluster_session, order = None , 
+                                  bin_size = 0.025, smoothing = smoothing_win)
+    N_R = mean_binned_firing_rate(R, right_stim_trials_neutral_block, 
+                                  session, cluster_session, order = None , 
+                                  bin_size = 0.025, smoothing = smoothing_win)
+    L_L = mean_binned_firing_rate(L_blockL, left_stim_trials_left_block, 
+                                  session, cluster_session, order = None , 
+                                  bin_size = 0.025, smoothing = smoothing_win)
+    L_R = mean_binned_firing_rate(R_blockL, right_stim_trials_left_block, 
+                                  session, cluster_session, order = None , 
+                                  bin_size = 0.025, smoothing = smoothing_win)
+    R_L = mean_binned_firing_rate(L_blockR, left_stim_trials_right_block, 
+                                  session, cluster_session, order = None , 
+                                  bin_size = 0.025, smoothing = smoothing_win)
+    R_R = mean_binned_firing_rate(R_blockR, right_stim_trials_right_block, 
+                                  session, cluster_session, order = None , 
+                                  bin_size = 0.025, smoothing = smoothing_win)
+    
+    # Concatenate
+    
+    concatenated_mean_firing_rates = np.concatenate((N_L, N_R, L_L, L_R, R_L, R_R)
+                                              , axis = 1)
+    
+        
+    # Sort based by neutral block
+    sorte, order = z_score_and_order(concatenated_mean_firing_rates, (0,56),
+                                     order = None )
+    
+    # Apply sort
+    
+    sorte_left_block = \
+        z_score_and_order(concatenated_mean_firing_rates, (56,112),
+                                     order = order )
+        
+    sorte_right_block = \
+        z_score_and_order(concatenated_mean_firing_rates, (112,168),
+                                     order = order )
+    
+    # Plot
+    
+    fig, ax  = plt.subplots(4,3, figsize=(25,30), sharex=True)
+    plt.sca(ax[0,0])
+    sns.heatmap(sorte[:,:int(np.shape(sorte)[1]/2)], vmin=-5, vmax=5, center=0, cmap="bwr", 
+                cbar_kws={'label': ' mean  z-scored firing rate (Hz)'})
+    plt.axvline(8, 0,1)
+    ax[0,0].set_xlabel('Time from event (ms)')
+    ax[0,0].set_xticklabels(np.arange(-200,500, bin_size*1000*3)
+        , rotation='vertical')
+    ax[0,0].set_ylabel('NEUTRAL BLOCK', rotation='vertical',x=-0.1,y=0.5)
+    ax[0,0].yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
+    if epoch=='goCue_times':
+        ax[0,0].set_title("LEFT STIM TRIALS")
+    elif epoch=='feedback_times':
+        ax[0,0].set_title("LEFT CHOICE TRIALS")
+    
+    plt.sca(ax[0,1])
+    sns.heatmap(sorte[:,int(np.shape(sorte)[1]/2):], vmin=-5, vmax=5, center=0, cmap="bwr",
+                cbar_kws={'label': ' mean  z-scored firing rate (Hz)'})
+    plt.axvline(8, 0,1)
+    ax[0,1].set_xlabel('Time from event (ms)')
+    ax[0,1].set_xticklabels(np.arange(-200,500, bin_size*1000*3)
+        , rotation='vertical')
+    if epoch=='goCue_times':
+        ax[0,1].set_title("RIGHT STIM TRIALS")
+    elif epoch=='feedback_times':
+        ax[0,1].set_title("RIGHT CHOICE TRIALS")
+    
+    plt.sca(ax[0,2])
+    sns.heatmap((sorte[:,:int(np.shape(sorte)[1]/2)] - sorte[:,int(np.shape(sorte)[1]/2):]), 
+                vmin=-3, vmax=7, center=0, cmap="bwr",
+                cbar_kws={'label': ' mean  z-scored firing rate (Hz)'})
+    plt.axvline(8, 0,1)
+    ax[0,2].set_xlabel('Time from event (ms)')
+    ax[0,2].set_xticklabels(np.arange(-200,500, bin_size*1000*3)
+        , rotation='vertical')
+    ax[0,2].set_title(r"$\Delta$ LEFT TRIALS - RIGHT TRIALS")
+    
+    
+    plt.sca(ax[1,0])
+    sns.heatmap(sorte_left_block[:,:int(np.shape(sorte_left_block)[1]/2)], vmin=-5, center=0,  cmap="bwr",
+                vmax=5, cbar_kws={'label': ' mean  z-scored firing rate (Hz)'})
+    plt.axvline(8, 0,1)
+    ax[1,0].set_xlabel('Time from event (ms)')
+    ax[1,0].set_xticklabels(np.arange(-200,500, bin_size*1000*3)
+        , rotation='vertical')
+    ax[1,0].set_ylabel('LEFT BLOCK')
+    
+    plt.sca(ax[1,1])
+    sns.heatmap(sorte_left_block[:,int(np.shape(sorte_left_block)[1]/2):], vmin=-5,  center=0, cmap="bwr",
+                vmax=5, cbar_kws={'label': ' mean  z-scored firing rate (Hz)'})
+    plt.axvline(8, 0,1)
+    ax[1,1].set_xlabel('Time from event (ms)')
+    ax[1,1].set_xticklabels(np.arange(-200,500, bin_size*1000*3)
+        , rotation='vertical')
+    
+    plt.sca(ax[1,2])
+    stimulus_delta_left_block =  sorte_left_block[:,:int(np.shape(sorte_left_block)[1]/2)] \
+                                - sorte_left_block[:,int(np.shape(sorte_left_block)[1]/2):]
+    sns.heatmap(stimulus_delta_left_block, vmin=-5, center=0,  cmap="bwr",
+                vmax=5, cbar_kws={'label': ' mean  z-scored firing rate (Hz)'})
+    plt.axvline(8, 0,1)
+    ax[1,2].set_xlabel('Time from event (ms)')
+    ax[1,2].set_xticklabels(np.arange(-200,500, bin_size*1000*3)
+        , rotation='vertical')
+    
+    plt.sca(ax[2,0])
+    sns.heatmap(sorte_right_block[:,:int(np.shape(sorte_right_block)[1]/2)], center=0,  cmap="bwr",
+                vmin=-5, vmax=5, cbar_kws={'label': ' mean  z-scored firing rate (Hz)'})
+    plt.axvline(8, 0,1)
+    ax[2,0].set_xlabel('Time from event (ms)')
+    ax[2,0].set_xticklabels(np.arange(-200,500, bin_size*1000*3)
+        , rotation='vertical')
+    ax[2,0].set_ylabel('RIGHT BLOCK')
+    
+    plt.sca(ax[2,1])
+    sns.heatmap(sorte_right_block[:,int(np.shape(sorte_right_block)[1]/2):], center=0,  cmap="bwr",
+                vmin=-5, vmax=5, cbar_kws={'label': ' mean  z-scored firing rate (Hz)'})
+    plt.axvline(8, 0,1)
+    ax[2,1].set_xlabel('Time from event (ms)')
+    ax[2,1].set_xticklabels(np.arange(-200,500, bin_size*1000*3)
+        , rotation='vertical')
+    
+    plt.sca(ax[2,2])
+    stimulus_delta_right_block =  sorte_right_block[:,:int(np.shape(sorte_right_block)[1]/2)] \
+        - sorte_right_block[:,int(np.shape(sorte_right_block)[1]/2):]
+    
+    sns.heatmap(stimulus_delta_right_block, vmin=-5, center=0, cmap="bwr",
+                vmax=5, cbar_kws={'label': ' mean  z-scored firing rate (Hz)'})
+    plt.axvline(8, 0,1)
+    ax[2,2].set_xlabel('Time from event (ms)')
+    ax[2,2].set_xticklabels(np.arange(-200,500, bin_size*1000*3)
+        , rotation='vertical')
+    
+    plt.sca(ax[3,0])
+    block_delta_right_block =  sorte_left_block[:,:int(np.shape(sorte_left_block)[1]/2)] \
+                                - sorte_right_block[:,:int(np.shape(sorte_right_block)[1]/2)]
+    sns.heatmap(block_delta_right_block, vmin=-5, vmax=5, center=0, cmap="bwr", 
+                cbar_kws={'label': ' mean  z-scored firing rate (Hz)'})
+    plt.axvline(8, 0,1)
+    ax[3,0].set_xlabel('Time from event (ms)')
+    ax[3,0].set_xticklabels(np.arange(-200,500, bin_size*1000*3)
+        , rotation='vertical')
+    ax[3,0].set_ylabel(r'$\Delta$' + 'LEFT BLOCK -  RIGHT BLOCK')
+   
+    plt.sca(ax[3,1])
+    block_delta_left_block = sorte_left_block[:,int(np.shape(sorte_left_block)[1]/2):] \
+                            - sorte_right_block[:,int(np.shape(sorte_right_block)[1]/2):]
+    sns.heatmap(block_delta_left_block, vmin=-5, vmax=5, center=0, cmap="bwr", 
+                cbar_kws={'label': ' mean  z-scored firing rate (Hz)'})
+    plt.axvline(8, 0,1)
+    ax[3,1].set_xlabel('Time from event (ms)')
+    ax[3,1].set_xticklabels(np.arange(-200,500, bin_size*1000*3)
+        , rotation='vertical')
+    ax[3,1].set_ylabel('Location')
+
+    plt.sca(ax[3,2])
+    delta_delta =  stimulus_delta_left_block - stimulus_delta_right_block
+    sns.heatmap(delta_delta, vmin=-5, vmax=5, center=0, cmap="bwr", 
+                cbar_kws={'label': ' mean  z-scored firing rate (Hz)'})
+    plt.axvline(8, 0,1)
+    ax[3,2].set_xlabel('Time from event (ms)')
+    ax[3,2].set_xticklabels(np.arange(-200,500, bin_size*1000*3)
+        , rotation='vertical')
+    ax[3,2].set_title(r'$\Delta$ STIM SIDE (L-R) $\Delta$ BLOCK (L-R)')
+    plt.tight_layout()
+    
+    if extra_ref is not None:
+        if '/' in extra_ref: # Changes / from e.g layer 2/3 to avoid error at saving
+           l_region = list(extra_ref) 
+           l_region[region.find('/')] = '_'
+           extra_ref = ''.join(l_region)
+
+           plt.savefig(epoch + '_' + extra_ref +'_heatmap_common_L_2_R_order.png')
+           plt.savefig(epoch + '_' + extra_ref +'_heatmap_common_L_2_R_order.svg')
+           
+           
+
+        
+

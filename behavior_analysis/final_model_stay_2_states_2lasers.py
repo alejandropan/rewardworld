@@ -601,20 +601,15 @@ def plot_choice_40_trials(psy_df, ses_number, mouse_name, save =False):
 
 
 
-def true_stim_posterior(true_contrast, all_contrasts, beliefSTD):
-	# Compute distribution over perceived contrast
-	# start_time = time.time()
-	p_perceived = norm.pdf(all_contrasts, loc=true_contrast, scale=beliefSTD)
-
-	mat = np.zeros( [2, len(all_contrasts)]) # vectorized for speed, but this implements the sum above
-	for idx, perceived_contrast in enumerate(all_contrasts):
-		mat[0, idx] = norm.cdf(0, loc=perceived_contrast, scale=beliefSTD)
-		mat[1, idx] = 1- mat[0, idx]
-
-	posterior = mat @ p_perceived
-	posterior /= np.sum(posterior)
-
-	return posterior
+def true_stim_posterior(true_contrast, beliefSTD):
+    	# Compute distribution over perceived contrast
+    	# start_time = time.time()
+    
+    	def f(x):
+    		return norm.cdf(x,0,beliefSTD) * norm.pdf(x,true_contrast,beliefSTD)
+        
+    	bs_right = quad(f,-np.inf, +np.inf)
+    	return [1-bs_right[0],bs_right[0]]
 
 # Given all of the Q values (a matrix of size num_contrasts x 2), compute the overall Q_left and Q_right 
 # (i.e., the overall value of choosing left or right) given the perceived stimulus
@@ -647,7 +642,7 @@ def trial_log_likelihood_stay(params, trial_data, Q, all_contrasts, all_posterio
 
 	# Compute the log-likelihood of the actual mouse choice
 	if all_posteriors is None:
-		contrast_posterior = true_stim_posterior(trial_contrast, all_contrasts, beliefSTD)
+		contrast_posterior = true_stim_posterior(trial_contrast, beliefSTD)
 	else:
 		posterior_idx = np.argmin(np.abs(all_contrasts - trial_contrast))
 		contrast_posterior = all_posteriors[posterior_idx, :]
@@ -708,7 +703,7 @@ def session_neg_log_likelihood_stay(params, *data, pregen_all_posteriors=True, a
 	if pregen_all_posteriors:
 		all_posteriors = np.zeros((num_contrasts, 2))
 		for idx, contrast in enumerate(all_contrasts):
-			all_posteriors[idx, :] = true_stim_posterior(contrast, all_contrasts, beliefSTD)
+			all_posteriors[idx, :] = true_stim_posterior(contrast, beliefSTD)
 	else:
 		all_posteriors = None
 

@@ -29,7 +29,7 @@ from matplotlib.lines import Line2D
 import os
 import glob
 from os import path
-from scipy.integrate import quad
+
 
 
 
@@ -875,8 +875,10 @@ def plot_choice_40_trials(psy_df, ses_number, mouse_name, save =False):
     
     plt.savefig('choice_and_40.svg')
     plt.savefig('choice_and_40.jpeg')
-
-
+    
+###############################################################################
+################################## Model ######################################
+###############################################################################
 
 
 def true_stim_posterior(true_contrast, beliefSTD):
@@ -888,7 +890,6 @@ def true_stim_posterior(true_contrast, beliefSTD):
     
 	bs_right = quad(f,-np.inf, +np.inf)
 	return [1-bs_right[0],bs_right[0]]
-
 
 # Given all of the Q values (a matrix of size num_contrasts x 2), compute the overall Q_left and Q_right 
 # (i.e., the overall value of choosing left or right) given the perceived stimulus
@@ -911,8 +912,10 @@ def softmax_stay(Q_L, Q_R, beta, l_stay, r_stay, stay):
 
 	return p
 
-def trial_log_likelihood_stay(params, trial_data, Q, all_contrasts, all_posteriors, 
-                              previous_trial, trial_num, retrieve_Q = False, retrieve_ITIQ = False):
+def trial_log_likelihood_stay(params, trial_data, Q, all_contrasts,
+                              all_posteriors, previous_trial, 
+                              trial_num, retrieve_Q = False, 
+                              retrieve_ITIQ = False):
 	# Get relevant parameters
 	trial_contrast, trial_choice, reward, laser = trial_data
 	learning_rate, beliefSTD, extraVal, beta, stay = params
@@ -920,7 +923,8 @@ def trial_log_likelihood_stay(params, trial_data, Q, all_contrasts, all_posterio
 
 	# Compute the log-likelihood of the actual mouse choice
 	if all_posteriors is None:
-		contrast_posterior = true_stim_posterior(trial_contrast, beliefSTD)
+		contrast_posterior = true_stim_posterior(trial_contrast, 
+                                            beliefSTD)
 	else:
 		posterior_idx = np.argmin(np.abs(all_contrasts - trial_contrast))
 		contrast_posterior = all_posteriors[posterior_idx, :]
@@ -942,23 +946,22 @@ def trial_log_likelihood_stay(params, trial_data, Q, all_contrasts, all_posterio
 	else:
 		Q_chosen = Q_R
 
-	# Laser-modulation
+	# Update Q-values according to RPE modulated by laser
 	if laser == 1:
-		received_reward = reward + extraVal
+		for i in range(2):
+			Q[i, trial_choice] += contrast_posterior[i] * \
+                learning_rate * ((reward - Q_chosen)*extraVal)
 	else:
-		received_reward = reward
-
-	# Update Q-values according to the aggregate reward + laser value
-	for i in range(2):
-		Q[i, trial_choice] += contrast_posterior[i] * learning_rate * (received_reward - Q_chosen)
+		for i in range(2):
+			Q[i, trial_choice] += contrast_posterior[i] * \
+                learning_rate * (reward - Q_chosen)
 
 	if retrieve_ITIQ == True:
 		Q_L = np.sum(Q, axis=0)[0]
 		Q_R = np.sum(Q, axis=0)[1]
 
-
 	if retrieve_Q==True:
-		return LL, Q, Q_L, Q_R, choice_dist[1] #  choice_dist[1] = pChoice_right
+		return LL, Q, Q_L, Q_R, choice_dist[1] # choice_dist[1] = pChoice_right
     
 	else:
 		return LL, Q
@@ -1059,7 +1062,8 @@ def session_neg_log_likelihood_stay(params, *data, pregen_all_posteriors=True,
 
 # Optimize several times with different initializations and return the best fit parameters, and negative log likelihood
 
-def optimizer_stay(data, num_fits = 4, initial_guess=[0.1, 1, 0, 1, 1]):
+def optimizer_stay(data, num_fits = 4, initial_guess=[0.1, 1, 0, 1, 1],
+                   bound_type = 'chr2'):
 	# Accounting variables
 	best_NLL = np.Inf
 	best_x = [None, None, None, None, None]
@@ -1073,15 +1077,23 @@ def optimizer_stay(data, num_fits = 4, initial_guess=[0.1, 1, 0, 1, 1]):
 		if i != 0:
 			lr_guess = np.random.uniform(0, 2)
 			beliefSTD_guess = np.random.uniform(0.03, 1)
-			extraVal_guess = np.random.uniform(-2,2)
+			if bound_type == 'chr2':
+				extraVal_guess = np.random.uniform(0.001,10)
+			else:
+				extraVal_guess = np.random.uniform(0.001,10)
 			beta_guess = np.random.uniform(0.01, 1)
 			stay = np.random.uniform(-1, 1)
 			initial_guess = [lr_guess, beliefSTD_guess, extraVal_guess, beta_guess, stay]
 
 		# Run the fit
-		res = so.minimize(session_neg_log_likelihood_stay, initial_guess, args=data, 
-                    method='L-BFGS-B', bounds=[(0, 2), (0.03, 1), (-2, 2), (0.01, 1), 
-                                    (-1,1)])
+		if bound_type == 'chr2':
+			res = so.minimize(session_neg_log_likelihood_stay, initial_guess, args=data, 
+                        method='L-BFGS-B', bounds=[(0, 2), (0.03, 1), (0.01, 10), (0.01, 1), 
+                                        (-1,1)])
+		else:
+			res = so.minimize(session_neg_log_likelihood_stay, initial_guess, args=data, 
+                        method='L-BFGS-B', bounds=[(0, 2), (0.03, 1), (0.01, 10), (0.01, 1), 
+                                        (-1,1)])
 
 		# If this fit is better than the previous best, remember it, otherwise toss
 		buffer_x[i,:] = res.x
@@ -1217,17 +1229,6 @@ def generate_data_stay(data, all_contrasts, learning_rate=0.3,
 
 		rewards.append(reward)
 		
-		# Add laser value on the correct condition
-		if propagate_errors == True:
-			if choice == data[prop][t]:
-			    reward += extraVal
-			    lasers.append(1)
-			else:
-			    lasers.append(-1)
-		else:
-			reward = data[0][t]
-			reward += extraVal*data[prop][t]
-			lasers.append(data[prop][t])
 		# Learn (update Q-values)
 		if choice == 0:
 			Q_chosen = Q_L
@@ -1237,9 +1238,30 @@ def generate_data_stay(data, all_contrasts, learning_rate=0.3,
 		contrast_posterior = [0,0]
 		contrast_posterior[0] = norm.cdf(0, loc = trial_contrast, scale = beliefSTD)
 		contrast_posterior[1] = 1 - contrast_posterior[0]
-
-		for i in range(2):
-			Q[i, choice] += contrast_posterior[i] * learning_rate * (reward - Q_chosen)
+        
+        # Add laser value on the correct condition
+		if propagate_errors == True:
+			if choice == data[prop][t]:
+			    for i in range(2):
+        			Q[i, choice] += contrast_posterior[i] * learning_rate * (
+                        (reward - Q_chosen)*extraVal)
+			    lasers.append(1)
+			else:
+			    for i in range(2):
+        			Q[i, choice] += contrast_posterior[i] * learning_rate * \
+                        (reward - Q_chosen)
+			    lasers.append(-1)
+                
+		else:
+			reward = data[0][t]
+			lasers.append(data[prop][t])
+			if data[prop][t] == 1:
+			    for i in range(2):
+        			Q[i, choice] += contrast_posterior[i] * learning_rate \
+                        * ((reward - Q_chosen)*extraVal)
+			else:
+					Q[i, choice] += contrast_posterior[i] * learning_rate * \
+                        (reward - Q_chosen)                
 
 	return rewards, true_contrasts, choices, lasers
 
@@ -1280,9 +1302,8 @@ if __name__ == '__main__':
 
 	# Load Alex's actual data
 	psy = pd.read_pickle('all_behav.pkl')
-
-    train_set_size = 1
-    cross_validate = False
+	train_set_size = 1
+	cross_validate = False
      
     all_contrasts = np.array([-0.25  , -0.125 , -0.0625,  0.    ,  0.0625, 0.125 , 0.25  ])
     best_nphr_individual = np.zeros([len(psy.loc[psy['virus'] == 'nphr', 'mouse_name'].unique()),4])
@@ -1292,7 +1313,7 @@ if __name__ == '__main__':
     for i, mouse in enumerate(mice): 
         model_data_nphr, simulate_data_nphr  = \
             psy_df_to_Q_learning_model_format(psy.loc[psy['mouse_name'] == mouse], 
-                                              virus = psy.loc[psy['mouse_name'] == mouse, 'virus'].unique()[0])
+            virus = psy.loc[psy['mouse_name'] == mouse, 'virus'].unique()[0])
         
         
         obj = transform_model_struct_2_POMDP(model_data_nphr, simulate_data_nphr)
@@ -1338,9 +1359,15 @@ if __name__ == '__main__':
             data_test = data
             simulate_data_test = simulate_data
         
-
-        (best_x_stay, train_NLL_stay, buffer_NLL_stay, 
-         buffer_x_stay) = optimizer_stay(data, initial_guess=[0.3, 0.05, -1, 0.2,1])
+        if virus == 'chr2':
+            (best_x_stay, train_NLL_stay, buffer_NLL_stay, 
+             buffer_x_stay) = optimizer_stay(data, initial_guess=[0.3, 0.05, 1, 0.2,1],
+                                             bound_type =virus)
+        
+        if virus == 'nphr':
+            (best_x_stay, train_NLL_stay, buffer_NLL_stay, 
+             buffer_x_stay) = optimizer_stay(data, initial_guess=[0.3, 0.05, 1, 0.2,1],
+                                             bound_type =virus)
         
         cv_aic_stay = aic((session_neg_log_likelihood_stay(best_x_stay,
                   *data_test, pregen_all_posteriors=True))*-1,5)

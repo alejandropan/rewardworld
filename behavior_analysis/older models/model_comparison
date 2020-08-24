@@ -4081,13 +4081,35 @@ if __name__ == '__main__':
     models.to_pickle('./fitted_parameters.pkl')
     
     # FIG 1 - COMPARISON OF MODEL ACCURACY
-    fig, ax  = plt.subplot(figsize = (5,5))
-    sns.swarmplot(data = models, x = 'model_name', y = 'accu', hue = 'virus')
-    sns.lineplot(data = models, x = 'model_name', y = 'accu', hue = 'virus',
-                 ci = 0)
+    fig, ax  = plt.subplots(figsize =(5,10))
+    sns.swarmplot(data = models, x = 'model_name', y = 'accu', hue = 'virus',
+                  order = models['model_name'].unique())
+    sns.boxplot(data = models, x = 'model_name', y = 'accu',
+                  order = models['model_name'].unique(), color = 'white')
+    labels = models['model_name'].unique()
+    ax.set_xticklabels(labels,rotation = 90)
+    plt.ylim(0.6, 0.9)
+    ax.set_xlabel('Model Type')
+    ax.set_ylabel('Accuracy')
+    sns.despine()
+    plt.tight_layout()
+    plt.savefig('model_comparison_accu.png', dpi=300)
     
-    plt.savefig('model_comparison_accuracy.pdf', dpi=300)
-    # FIG 2 - MODEL PARAMETERS IN EACH MODEL
+    # FIG 2 - COMPARISON OF MODEL ACCURACY
+    fig, ax  = plt.subplots()
+    sns.swarmplot(data = models, x = 'model_name', y = 'LL', hue = 'virus',
+                  order = models['model_name'].unique())
+    sns.boxplot(data = models, x = 'model_name', y = 'LL',
+                  order = models['model_name'].unique(), color = 'white')
+    labels = models['model_name'].unique()
+    ax.set_xticklabels(labels,rotation = 90)
+    plt.ylim(-0.7, -0.3)
+    ax.set_xlabel('Model Type')
+    ax.set_ylabel('Mean LL / Trial')
+    sns.despine()
+    
+    plt.savefig('model_comparison_LL.png', dpi=300)
+    # FIG 3 - MODEL PARAMETERS IN EACH MODEL
     def boxplot_model_parameters_per_mouse(model_parameters, 
                                        model_type= 'w_stay'):
         '''
@@ -4099,28 +4121,28 @@ if __name__ == '__main__':
                                      ['x', 'virus']]
         
         if model_type == 'Model Control':
-            params = [r'$\alpha$', r'$\theta$', r'$\psi$',
+            params = [r'$\alpha$', r'$\sigma$', r'$\psi$',
                   r'$\tau$', r'$\gamma$']
         if model_type == 'Model - No Stay':
-            params = [r'$\alpha$', r'$\theta$', r'$\psi$',
+            params = [r'$\alpha$', r'$\sigma$', r'$\psi$',
                   r'$\tau$']
         if model_type == 'Model - Laser Multiplies':
-            params = [r'$\alpha$', r'$\theta$', r'$\psi$',
+            params = [r'$\alpha$', r'$\sigma$', r'$\psi$',
                   r'$\tau$', r'$\gamma$']
         if model_type == 'Model - Laser Multiplies + No Stay':
-            params = [r'$\alpha$', r'$\theta$', r'$\psi$',
+            params = [r'$\alpha$', r'$\sigma$', r'$\psi$',
                   r'$\tau$'] 
         if model_type == 'Model - 2 Laser parameters':
-            params = [r'$\alpha$', r'$\theta$', r'$\psi$',
+            params = [r'$\alpha$', r'$\sigma$', r'$\psi$',
                   r'$\tau$', r'$\gamma$', r'$\chi$']
         if model_type == 'Model - 2 Laser parameters + No Stay':
-            params = [r'$\alpha$', r'$\theta$', r'$\psi$',
+            params = [r'$\alpha$', r'$\sigma$', r'$\psi$',
                   r'$\tau$', r'$\chi$']
         if model_type == 'Model - No Laser':
-            params = [r'$\alpha$', r'$\theta$',
+            params = [r'$\alpha$', r'$\sigma$',
                   r'$\tau$', r'$\gamma$']
         if model_type == 'Model - No Laser + No Stay': 
-            params = [r'$\alpha$', r'$\theta$', r'$\tau$']
+            params = [r'$\alpha$', r'$\sigma$', r'$\tau$']
         
         mod = pd.DataFrame(columns = ['params', 'virus'])
         for i in range(len(model)):
@@ -4130,7 +4152,12 @@ if __name__ == '__main__':
             mod = mod.append(temp_mod)
         sns.swarmplot(data = mod,  x = 'params', y = 0,  hue = 'virus', 
                       palette = ['dodgerblue', 'orange'], split = False)
-        ax.axhline(0, ls='--', color = 'k')
+        if (model_type == 'Model - Laser Multiplies') | \
+            (model_type == 'Model - Laser Multiplies + No Stay'):
+                ax.axhline(1, ls='--', color = 'k')
+                
+        else:
+            ax.axhline(0, ls='--', color = 'k')
         ax.set_xlabel('Model Parameter')
         ax.set_ylabel('Fitted Coef')
         sns.despine()
@@ -4175,24 +4202,25 @@ if __name__ == '__main__':
         return p
     
     LLs = models.groupby(['model_name']).mean()
+    n_trials = len(psy)
+    LLs['LL'] = LLs*n_trials
     
-    
-    L1 = LLs.loc[LLs['model_name']== 'Model - No Stay', 'LL']
-    L2 = LLs.loc[LLs['model_name']== 'Model Control', 'LL']
+    L1 = LLs.loc[LLs.index== 'Model - No Stay', 'LL'][0]
+    L2 = LLs.loc[LLs.index== 'Model Control', 'LL'][0]
     print('Model - No Stay ' + '+ ' + 'Model Control' + str(chi2_LLR(L1,L2)))
     
-    L2 = LLs.loc[LLs['model_name']== 'Model - 2 Laser parameters', 'LL']
-    L1 = LLs.loc[LLs['model_name']== 'Model Control', 'LL']
+    L2 = LLs.loc[LLs.index== 'Model - 2 Laser parameters', 'LL'][0]
+    L1 = LLs.loc[LLs.index== 'Model Control', 'LL'][0]
     print('Model - 2 Laser parameters' + '+ ' + 'Model Control' + str(chi2_LLR(L1,L2)))
     
-    L2 = LLs.loc[LLs['model_name']== 'Model - 2 Laser parameters + No Stay', 'LL']
-    L1 = LLs.loc[LLs['model_name']== 'Model - No Stay', 'LL']
-    print('Model - 2 Laser parameters' + '+ ' + 'Model - No Stay' + str(chi2_LLR(L1,L2)))
+    L2 = LLs.loc[LLs.index== 'Model - 2 Laser parameters + No Stay', 'LL'][0]
+    L1 = LLs.loc[LLs.index== 'Model - No Stay', 'LL'][0]
+    print('Model - 2 Laser parameters + No Stay' + '+ ' + 'Model - No Stay' + str(chi2_LLR(L1,L2)))
     
-    L1 = LLs.loc[LLs['model_name']== 'Model - No Laser', 'LL']
-    L2 = LLs.loc[LLs['model_name']== 'Model Control', 'LL']
+    L1 = LLs.loc[LLs.index== 'Model - No Laser', 'LL'][0]
+    L2 = LLs.loc[LLs.index== 'Model Control', 'LL'][0]
     print('Model - No Laser' + '+ ' + 'Model Control' + str(chi2_LLR(L1,L2)))
     
-    L1 = LLs.loc[LLs['model_name']== 'Model - No Laser + No Stay', 'LL']
-    L2 = LLs.loc[LLs['model_name']== 'Model - No Stay', 'LL']
+    L1 = LLs.loc[LLs.index== 'Model - No Laser + No Stay', 'LL'][0]
+    L2 = LLs.loc[LLs.index== 'Model - No Stay', 'LL'][0]
     print('Model - No Laser + No Stay' + '+ ' + 'Model - No Stay' + str(chi2_LLR(L1,L2)))

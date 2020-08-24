@@ -1,0 +1,24 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Fri Aug 21 13:56:13 2020
+
+@author: alex
+"""
+
+
+
+
+accu['virus']= ['nphr','chr2','chr2','nphr']
+accu=accu.melt(id_vars=['mouse','virus'])
+pal={'chr2':'b','nphr':'r'}
+for mouse in mice:
+    sns.pointplot(data=accu.loc[accu['mouse']==mouse], x='variable', 
+                  y='value', order=['w_stay','wo_stay',
+                     'wo_stay_no_laser',
+                     'wo_stay_no_vision',
+                     'wo_stay_no_vision_no_laser'], 
+                      color=pal[accu.loc[accu['mouse']==mouse, 'virus'].unique()[0]])
+plt.ylabel('Accuracy')
+plt.xticks(rotation=90)
+sns.despine()

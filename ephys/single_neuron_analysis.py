@@ -148,7 +148,7 @@ for j, region in enumerate(np.unique(pooled_allen)):
                        'r_trials_block_selective']
     
     s_fr_neurons = significant_firing_rate_neurons(gen_spiketimes, gen_spikeclusters, 
-                                                   'goCue_times', region_goodlusters,
+                                                   'feedback_times', region_goodlusters,
                                      session, comparisons = len(comparisons_str), bin_size = 0.025)
     
     
@@ -196,20 +196,26 @@ def significant_firing_rate_neurons (gen_spiketimes, gen_spikeclusters, epoch, r
     cluster_session = np.floor(region_goodlusters/10000)
     
     
-    # Divide by stimulus side and opto block
+    # Divide by choice and opto block
     
-    left_stim_trials_neutral_block = np.intersect1d(np.where(session['contrastLeft'] >= 0), \
-                                    np.where(session['opto_probability_left'] == -1))
-    right_stim_trials_neutral_block = np.intersect1d(np.where(session['contrastRight'] >= 0), \
-                                    np.where(session['opto_probability_left'] == -1))
-    left_stim_trials_left_block = np.intersect1d(np.where(session['contrastLeft'] >= 0), \
-                                    np.where(session['opto_probability_left'] == 1))
-    right_stim_trials_left_block = np.intersect1d(np.where(session['contrastRight'] >= 0), \
-                                    np.where(session['opto_probability_left'] == 1))
-    left_stim_trials_right_block = np.intersect1d(np.where(session['contrastLeft'] >= 0), \
-                                    np.where(session['opto_probability_left'] == 0))
-    right_stim_trials_right_block = np.intersect1d(np.where(session['contrastRight'] >= 0), \
-                                    np.where(session['opto_probability_left'] == 0))
+    left_stim_trials_neutral_block = np.intersect1d(np.where(session['choice'] > 0), \
+                                    np.where(session['opto_probability_left'] == -1),
+                                    np.where(session['feedbackType'] == 1))
+    right_stim_trials_neutral_block = np.intersect1d(np.where(session['choice'] <= 0), \
+                                    np.where(session['opto_probability_left'] == -1),
+                                    np.where(session['feedbackType'] == 1))
+    left_stim_trials_left_block = np.intersect1d(np.where(session['choice'] > 0), \
+                                    np.where(session['opto_probability_left'] == 1),
+                                    np.where(session['feedbackType'] == 1))
+    right_stim_trials_left_block = np.intersect1d(np.where(session['choice'] <= 0), \
+                                    np.where(session['opto_probability_left'] == 1),
+                                    np.where(session['feedbackType'] == 1))
+    left_stim_trials_right_block = np.intersect1d(np.where(session['choice'] > 0), \
+                                    np.where(session['opto_probability_left'] == 0),
+                                    np.where(session['feedbackType'] == 1))
+    right_stim_trials_right_block = np.intersect1d(np.where(session['choice'] <= 0), \
+                                    np.where(session['opto_probability_left'] == 0),
+                                    np.where(session['feedbackType'] == 1))
     
     L = binned_firing_rate[left_stim_trials_neutral_block,:,:]
     R = binned_firing_rate[right_stim_trials_neutral_block,:,:]

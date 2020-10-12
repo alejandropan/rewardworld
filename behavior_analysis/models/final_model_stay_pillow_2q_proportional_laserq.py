@@ -1,0 +1,574 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Thu May 21 18:52:51 2020
+
+@author: alex
+"""
+
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Sun May 10 19:13:18 2020
+
+@author: alex
+"""
+import numpy as np
+import scipy.optimize as so
+import time
+import sys
+import pickle
+import pandas as pd
+import matplotlib.pyplot as plt
+from rew_alf.data_organizers import *
+import seaborn as sns
+from scipy.stats.distributions import chi2
+from scipy.stats import norm
+import random
+from matplotlib.lines import Line2D
+import os
+import glob
+from os import path
+from scipy.integrate import quad
+ 
+
+def true_stim_posterior(true_contrast, beliefSTD):
+
+    def st_sp_0(percieve_contrast, beliefSTD=beliefSTD):
+        all_contrasts = np.array([-0.25, -0.125, -0.0625, 0.0625, 0.125, 0.25])
+        a = 0
+        b = 0
+        for i in all_contrasts[all_contrasts>0]:
+            a += norm.pdf((percieve_contrast - i)/ beliefSTD)
+        for i in all_contrasts:
+            b += norm.pdf((percieve_contrast - i)/ beliefSTD)
+
+        return a/b * norm.pdf(percieve_contrast,true_contrast,beliefSTD)
+
+    bs_right = quad(st_sp_0,-1, 1)
+
+    return [1-bs_right[0],bs_right[0]]
+
+
+# Given all of the Q values (a matrix of size num_contrasts x 2), compute the overall Q_left and Q_right
+# (i.e., the overall value of choosing left or right) given the perceived stimulus
+def compute_QL_QR(QReward,QLaser, contrast_posterior, pref):  
+    Q_L = (pref * contrast_posterior[0] * QReward[0]) + ((1-pref) * QLaser[0]) 
+    Q_R = (pref * contrast_posterior[1] * QReward[1]) + ((1-pref) * QLaser[1]) 
+    
+    return Q_L, Q_R
+
+def softmax_stay(Q_L, Q_R, beta, l_stay, r_stay, stay):
+    p = [np.exp(Q_L / beta + stay*l_stay),
+      np.exp(Q_R / beta + stay*r_stay)]
+    p /= np.sum(p)
+
+    return p
+
+def trial_log_likelihood_stay(params, trial_data, QReward,QLaser, all_contrasts, all_posteriors,
+                              previous_trial, trial_num):
+    # Get relevant parameters
+    trial_contrast, trial_choice, reward, laser = trial_data
+    learning_rate_reward, learning_rate_laser, beliefSTD, beta, stay, pref = params
+    QReward = QReward.copy()
+    QLaser = QLaser.copy()
+
+    # Compute the log-likelihood of the actual mouse choice
+    if all_posteriors is None:
+        contrast_posterior = true_stim_posterior(trial_contrast, beliefSTD)
+    else:
+        posterior_idx = np.argmin(np.abs(all_contrasts - trial_contrast))
+        contrast_posterior = all_posteriors[posterior_idx, :]
+
+    Q_L, Q_R = compute_QL_QR(QReward,QLaser, contrast_posterior, pref)
+    if trial_num == 0:
+        (l_stay, r_stay) = [0,0]
+    else:
+        previous_choice= [0,0]
+        previous_choice[previous_trial] = 1
+        (l_stay, r_stay) = previous_choice
+
+    choice_dist = softmax_stay(Q_L, Q_R, beta,l_stay, r_stay, stay)
+    LL = np.log(choice_dist[trial_choice])
+
+    # Update Q-values according to the aggregate reward + laser value
+    QReward[trial_choice] += learning_rate_reward * \
+        (reward - QReward[trial_choice]*contrast_posterior[trial_choice]) * contrast_posterior[trial_choice]
+    QLaser[trial_choice] += learning_rate_laser * (laser - QLaser[trial_choice]) 
+
+    return LL, QReward, QLaser,\
+        Q_L, Q_R, choice_dist[1] #  choice_dist[1] = pChoice_right
+
+
+def session_neg_log_likelihood_stay(params, *data, pregen_all_posteriors=True,
+                                    fitting = True):
+    # Unpack the arguments
+    learning_rate_reward, learning_rate_laser, beliefSTD, beta, stay, pref = params
+    rewards, true_contrasts, choices, lasers, ses_switch = data
+    num_trials = len(rewards)
+    
+    # Start data holders
+    Q_L = []
+    Q_R = []
+    Q_L_reward = []
+    Q_L_laser =[]
+    Q_R_reward = []
+    Q_R_laser =[]
+    Q_R_ITI =[]
+    Q_L_ITI = []
+    pRight = []
+
+    # Generate the possible contrast list
+    all_contrasts = np.array([-0.25, -0.125, -0.0625, 0, 0.0625, 0.125, 0.25])
+    num_contrasts = len(all_contrasts)
+
+    # If True, generate all posterior distributions ahead of time to save time
+    if pregen_all_posteriors:
+        all_posteriors = np.zeros((num_contrasts, 2))
+        for idx, contrast in enumerate(all_contrasts):
+            all_posteriors[idx, :] = true_stim_posterior(contrast, beliefSTD)
+    else:
+        all_posteriors = None
+
+    # Compute the log-likelihood
+    acc = 0
+    LL = 0
+    QReward = np.zeros(2)
+    QLaser = np.zeros(2)
+    
+    for i in range(num_trials):
+            if i == 0:
+                trial_LL, newQReward, newQLaser,\
+                Q_Lt, Q_Rt, pright = trial_log_likelihood_stay(params,
+                                            [true_contrasts[i], choices[i], rewards[i], lasers[i]],
+                                            QReward, QLaser,
+                                            all_contrasts, all_posteriors,
+                                            np.nan, i)
+
+            else:
+                if ses_switch[i] == 1:
+                    Q = np.zeros(2)
+
+                trial_LL, newQReward, newQLaser,\
+                Q_Lt, Q_Rt, pright = trial_log_likelihood_stay(params,
+                                            [true_contrasts[i], choices[i], rewards[i], lasers[i]],
+                                            QReward, QLaser,
+                                            all_contrasts, all_posteriors,
+                                            choices[i-1], i)
+            LL += trial_LL
+            QReward = newQReward
+            QLaser = newQLaser
+            
+
+            acc += (np.exp(trial_LL)>0.5)*1
+            
+            Q_L.append(Q_Lt)
+            Q_R.append(Q_Rt)
+            Q_L_ITI.append(QReward[0] + QLaser[0])
+            Q_R_ITI.append(QReward[1] + QLaser[1])
+            Q_L_reward.append(QReward[0])
+            Q_L_laser.append(QReward[1])
+            Q_R_reward.append(QLaser[0])
+            Q_R_laser.append(QLaser[1])
+            
+            pRight.append(pright)
+            
+    acc = acc/num_trials
+    
+    if fitting==True:
+        return -LL
+    else:
+        return -LL,  acc, Q_L, Q_R, Q_L_ITI, Q_R_ITI, Q_L_reward, Q_L_laser,\
+                Q_R_reward, Q_R_laser, pRight
+
+# Optimize several times with different initializations and return the best fit parameters, and negative log likelihood
+
+def optimizer_stay(data, num_fits = 1, initial_guess=[0.1,0.1, 1,1, 1,0.5]):
+    # Accounting variables
+    best_NLL = np.Inf
+    best_x = [None, None, None, None, None, None]
+    buffer_NLL = []
+    buffer_x = np.empty([num_fits,len(initial_guess)])
+    # Do our fit with several different initializations
+    for i in range(num_fits):
+        print('Starting fit %d' % i)
+
+        # For every fit other than the first, construct a new initial guess
+        if i != 0:
+            lr_reward_guess = np.random.uniform(0, 1)
+            lr_laser_guess = np.random.uniform(0, 1)
+            beliefSTD_guess = np.random.uniform(0.03, 1)
+            beta_guess = np.random.uniform(0.01, 1)
+            stay = np.random.uniform(-1, 1)
+            pref = np.random.uniform(0, 1)
+            initial_guess = [lr_reward_guess, lr_laser_guess,
+                             beliefSTD_guess, beta_guess, 
+                             stay, pref]
+
+        # Run the fit
+        res = so.minimize(session_neg_log_likelihood_stay, initial_guess, args=data,
+                    method='L-BFGS-B', bounds=[(0, 1), (0, 1), 
+                                               (0.03, 1), (-2, 2), (-1, 1),
+                                    (0, 2)])
+
+        # If this fit is better than the previous best, remember it, otherwise toss
+        buffer_x[i,:] = res.x
+        buffer_NLL.append(res.fun)
+
+        if res.fun <= best_NLL:
+            best_NLL = res.fun
+            best_x = res.x
+
+    return best_x, best_NLL, buffer_NLL, buffer_x
+
+def generate_data_stay(data, all_contrasts, learning_rate_reward=0.3,
+                       learning_rate_laser=0.3,
+                       beliefSTD=0.1, beta=0.2,
+                       stay = 1, pref= 0.5, is_verbose=False, propagate_errors = True,
+                       pregen_all_posteriors=True):
+
+    rewards = []
+    true_contrasts = []
+    choices = []
+    lasers = []
+
+    if propagate_errors == False:
+        prop = 3
+    else:
+        prop = 4
+    if pregen_all_posteriors:
+        all_posteriors = np.zeros((num_contrasts, 2))
+        for idx, contrast in enumerate(all_contrasts):
+            all_posteriors[idx, :] = true_stim_posterior(contrast, beliefSTD)
+    else:
+        all_posteriors = None
+
+    # Simulate the POMDP model
+    QReward = np.zeros(2)
+    QLaser = np.zeros(2)
+    for t in range(len(data[0])):
+        if is_verbose:
+            print(t)
+
+        # Pick a true stimulus and store
+        trial_contrast = data[1][t]
+        true_contrasts.append(trial_contrast)
+        # Add noise
+        # Compute the log-likelihood of the actual mouse choice
+        if all_posteriors is None:
+            contrast_posterior = true_stim_posterior(trial_contrast, beliefSTD)
+        else:
+            posterior_idx = np.argmin(np.abs(all_contrasts - trial_contrast))
+            contrast_posterior = all_posteriors[posterior_idx, :]
+
+        Q_L, Q_R = compute_QL_QR(QReward,QLaser, contrast_posterior, pref)
+
+        if t == 0:
+            (l_stay, r_stay) = [0,0]
+        else:
+            previous_choice= [0,0]
+            previous_choice[choices[t-1]] = 1
+            (l_stay, r_stay) = previous_choice
+
+        choice_dist = softmax_stay(Q_L, Q_R, beta,l_stay, r_stay, stay)
+        choice = np.random.choice(2, p = [float(choice_dist[0]), float(choice_dist[1])])
+        choices.append(choice)
+
+        # Get reward and store it
+        if np.sign(trial_contrast) == -1 and choice == 0:
+            reward = 1
+        elif np.sign(trial_contrast) == 1 and choice == 1:
+            reward = 1
+        elif np.sign(trial_contrast) == 0:
+            reward = random.choice([0,1])
+        else:
+            reward = 0
+
+        rewards.append(reward)
+
+        # Add laser value on the correct condition
+        if choice == data[prop][t]:
+                laser = 1
+                lasers.append(1)
+        else:
+                laser = 0
+                lasers.append(-1)
+        # Learn (update Q-values)
+        # Update Q-values according to the aggregate reward + laser value
+        QReward[choice] += learning_rate_reward * \
+            (reward - QReward[choice] *contrast_posterior[choice] ) * \
+                contrast_posterior[choice]
+        QLaser[choice] += learning_rate_laser * (laser - QLaser[choice]) 
+
+    return rewards, true_contrasts, choices, lasers
+
+def transform_model_struct_2_POMDP(model_data, simulate_data):
+        simulate_data.loc[simulate_data['extraRewardTrials'] == 'right', 'extraRewardTrials' ] = 1
+        simulate_data.loc[simulate_data['extraRewardTrials'] == 'left', 'extraRewardTrials' ] = 0
+        simulate_data.loc[simulate_data['extraRewardTrials'] == 'none', 'extraRewardTrials' ] = -1
+        obj = model_data
+        obj['choice'] = obj['choice'] * -1
+        obj.loc[obj['choice'] == -1, 'choice'] = 0
+        obj['laser_side'] = simulate_data['extraRewardTrials']
+        return obj
+
+def aic(LL,n_param):
+    # Calculates Akaike Information Criterion
+    aic =  2*n_param - 2*LL
+    return aic
+
+# Main function, runs all the testing scripts
+all_contrasts = np.array([-0.25, -0.125, -0.0625, 0, 0.0625, 0.125, 0.25])
+
+# Load Alex's actual data
+psy = pd.read_pickle('all_behav.pkl')
+
+# Select mice
+mice = np.array(['dop_8', 'dop_9', 'dop_11', 'dop_4'])
+psy = psy.loc[np.isin(psy['mouse_name'], mice)]
+
+# Create columns that we are about to calculate
+psy['QL'] = np.nan
+psy['QR'] = np.nan
+psy['ITIQL'] = np.nan
+psy['ITIQR'] = np.nan
+psy['pRight'] = np.nan
+psy['Q_L_reward']=np.nan
+psy['Q_L_laser']=np.nan
+psy['Q_R_reward']=np.nan
+psy['Q_R_laser']=np.nan
+
+psy = add_trial_within_block(psy)
+
+# Cross validation parameters
+train_set_size = 0.5
+cross_validate = False
+
+# Matrices to hold values (numpy arrays)
+best_nphr_individual = np.zeros([len(psy.loc[psy['virus'] == 'nphr', 'mouse_name'].unique()),4])
+best_nphr_NLL_individual = np.zeros([len(psy.loc[psy['virus'] == 'nphr', 'mouse_name'].unique()),1])
+
+# Dataframes for output
+model_parameters = pd.DataFrame()
+
+# Fitting and calculating
+for i, mouse in enumerate(mice):
+    
+        # Transform the data
+        model_data_nphr, simulate_data_nphr  = \
+            psy_df_to_Q_learning_model_format(psy.loc[psy['mouse_name'] == mouse],
+                                              virus = psy.loc[psy['mouse_name'] == mouse, 'virus'].unique()[0])
+        # Obtain sessions switches
+        session_switches = np.zeros(len(model_data_nphr))
+        for session in model_data_nphr['ses'].unique():
+             session_switches[model_data_nphr.ses.ge(session).idxmax()]=1
+
+        obj = transform_model_struct_2_POMDP(model_data_nphr, simulate_data_nphr)
+        
+        opto = obj['extraRewardTrials'].to_numpy()
+        virus = psy.loc[psy['mouse_name'] == mouse, 'virus'].unique()[0]
+        if virus == 'nphr':
+            opto = opto * -1
+        
+        
+        
+        
+        #Kfold:
+        kf = KFold(n_splits=5)
+        for train_index, test_index in kf.split(obj):
+            obj_train = obj.iloc[train_index,:]
+            obj_test = obj.iloc[test_index,:]
+            
+            # Train
+            choices_train = list(obj_train['choice'].to_numpy())
+            contrasts_train = list(obj_train['stimTrials'].to_numpy())
+            rewards_train = list(obj_train['reward'].to_numpy())
+            opto_train = opto[train_index]
+            
+            # Opto comes in a weird array this fixes it
+            lasers_train = []
+            for i in range(len(opto_train)):
+                try:
+                    lasers_train.append(int(opto_train[i][0]))
+                except:
+                    lasers_train.append(int(opto_train[i]))
+            
+            # Test
+            choices_test = list(obj_test['choice'].to_numpy())
+            contrasts_test = list(obj_test['stimTrials'].to_numpy())
+            rewards_test = list(obj_test['reward'].to_numpy())
+            opto_test = opto[test_index]
+            
+            lasers_test = []
+            for i in range(len(opto_test)):
+                try:
+                    lasers_test.append(int(opto_test[i][0]))
+                except:
+                    lasers_test.append(int(opto_test[i]))
+            
+    
+            data = (rewards_train, contrasts_train,
+                    choices_train, lasers_train, session_switches[train_index])
+
+            data_test = (rewards_test, contrasts_test,
+                    choices_test, lasers_test, session_switches[test_index])
+                
+            
+            # else: Need to find a good cross validation option, I was dividing 
+            # in order but that might create artifacts
+            
+            # Fit:
+            (best_x_stay, train_NLL_stay, buffer_NLL_stay,
+             buffer_x_stay) = optimizer_stay(data, initial_guess=[0.3, 0.3,
+                                                                  0.05, 0.2,1, 0.5])
+            
+            # Calculate variables
+            neg_LL,  acc, _, _, _, _, _, _,\
+                _, _, _ = session_neg_log_likelihood_stay(best_x_stay,
+                      *data_test, pregen_all_posteriors=True,fitting =False)
+                
+            if train_set_size == 1:
+                psy.loc[psy['mouse_name']==mouse, 'QL']=Q_L
+                psy.loc[psy['mouse_name']==mouse, 'QR']=Q_R
+                psy.loc[psy['mouse_name']==mouse, 'ITIQL']=Q_L_ITI
+                psy.loc[psy['mouse_name']==mouse, 'ITIQR']=Q_R_ITI
+                psy.loc[psy['mouse_name']==mouse, 'pRight']=pRight
+                psy.loc[psy['mouse_name']==mouse, 'Q_L_reward']=Q_L_reward
+                psy.loc[psy['mouse_name']==mouse, 'Q_L_laser']=Q_L_laser
+                psy.loc[psy['mouse_name']==mouse, 'Q_R_reward']=Q_R_reward
+                psy.loc[psy['mouse_name']==mouse, 'Q_R_laser']=Q_R_laser
+    
+            
+            # Model QC
+            LL = neg_LL*-1
+            cv_aic_stay = aic(LL, len(best_x_stay))
+            cv_acc_stay = acc
+            
+            # Add to storing DataFrames
+            model_parameters_mouse = pd.DataFrame()
+            model_parameters_mouse['x'] = [best_x_stay]
+            model_parameters_mouse['LL'] = (LL/len(data_test[0])) # Log likelihood per trial
+            model_parameters_mouse['aic'] = cv_aic_stay
+            model_parameters_mouse['accu'] = cv_acc_stay
+            model_parameters_mouse['model_name'] = '2q2RPE'
+            model_parameters_mouse['mouse'] = mouse
+            model_parameters_mouse['virus'] = psy.loc[psy['mouse_name'] == mouse, 'virus'].unique()[0]
+            model_parameters = pd.concat([model_parameters, model_parameters_mouse])
+
+# Fitting and calculating
+train_set_size = 1
+
+for i, mouse in enumerate(mice):
+    
+        # Transform the data
+        model_data_nphr, simulate_data_nphr  = \
+            psy_df_to_Q_learning_model_format(psy.loc[psy['mouse_name'] == mouse],
+                                              virus = psy.loc[psy['mouse_name'] == mouse, 'virus'].unique()[0])
+        # Obtain sessions switches
+        session_switches = np.zeros(len(model_data_nphr))
+        for session in model_data_nphr['ses'].unique():
+             session_switches[model_data_nphr.ses.ge(session).idxmax()]=1
+
+        obj = transform_model_struct_2_POMDP(model_data_nphr, simulate_data_nphr)
+        
+        opto = obj['extraRewardTrials'].to_numpy()
+        virus = psy.loc[psy['mouse_name'] == mouse, 'virus'].unique()[0]
+        if virus == 'nphr':
+            opto = opto * -1
+        
+        # Opto comes in a weird array this fixes it
+        lasers = []
+        for i in range(len(opto)):
+            try:
+                lasers.append(int(opto[i][0]))
+            except:
+                lasers.append(int(opto[i]))
+        
+        
+        choices = list(obj['choice'].to_numpy())
+        contrasts = list(obj['stimTrials'].to_numpy())
+        rewards = list(obj['reward'].to_numpy())
+        laser_side = list(obj['laser_side'].to_numpy())
+
+        data = (rewards[:int(len(rewards)*train_set_size)],
+                contrasts[:int(len(rewards)*train_set_size)],
+                choices[:int(len(rewards)*train_set_size)],
+                lasers[:int(len(rewards)*train_set_size)],
+                session_switches[:int(len(rewards)*train_set_size)])
+        
+       
+        
+        
+        
+        if train_set_size == 1:
+            data_test = data
+            simulate_data_test = data
+        else:
+            data_test = (rewards[int(len(rewards)*train_set_size):],
+                         contrasts[int(len(rewards)*train_set_size):],
+                         choices[int(len(rewards)*train_set_size):],
+                      lasers[int(len(rewards)*train_set_size):],
+                      session_switches[int(len(rewards)*train_set_size):])
+            
+            simulate_data_test = (rewards[int(len(rewards)*train_set_size):],
+                         contrasts[int(len(rewards)*train_set_size):],
+                         choices[int(len(rewards)*train_set_size):],
+                      lasers[int(len(rewards)*train_set_size):],
+                      laser_side[int(len(rewards)*train_set_size):],
+                      session_switches[int(len(rewards)*train_set_size):])
+            
+        
+        # else: Need to find a good cross validation option, I was dividing 
+        # in order but that might create artifacts
+        
+        # Fit:
+        (best_x_stay, train_NLL_stay, buffer_NLL_stay,
+         buffer_x_stay) = optimizer_stay(data, initial_guess=[0.3, 0.3,
+                                                              0.05, 0.2,1, 0.5])
+        
+        # Calculate variables
+        _,  _, Q_L, Q_R, Q_L_ITI, Q_R_ITI, Q_L_reward, Q_L_laser,\
+                Q_R_reward, Q_R_laser, pRight = session_neg_log_likelihood_stay(best_x_stay,
+                  *data_test, pregen_all_posteriors=True,fitting =False)
+            
+        if train_set_size == 1:
+            psy.loc[psy['mouse_name']==mouse, 'QL']=Q_L
+            psy.loc[psy['mouse_name']==mouse, 'QR']=Q_R
+            psy.loc[psy['mouse_name']==mouse, 'ITIQL']=Q_L_ITI
+            psy.loc[psy['mouse_name']==mouse, 'ITIQR']=Q_R_ITI
+            psy.loc[psy['mouse_name']==mouse, 'pRight']=pRight
+            psy.loc[psy['mouse_name']==mouse, 'Q_L_reward']=Q_L_reward
+            psy.loc[psy['mouse_name']==mouse, 'Q_L_laser']=Q_L_laser
+            psy.loc[psy['mouse_name']==mouse, 'Q_R_reward']=Q_R_reward
+            psy.loc[psy['mouse_name']==mouse, 'Q_R_laser']=Q_R_laser
+
+        
+        # Add simulatio0n data
+        num_contrasts = len(all_contrasts)
+        sim_data = generate_data_stay(simulate_data_test, all_contrasts, learning_rate_reward=0.3,
+                       learning_rate_laser=0.3,
+                       beliefSTD=0.1, beta=0.2,
+                       stay = 1, pref= 0.5)
+        
+        sim_data = pd.DataFrame(sim_data).T
+        sim_data = sim_data.rename(columns={0: "model_rewards", 
+                                            1: "signed_contrast", 
+                                            2: "simulated_choices",
+                                            3: "model_laser"})
+        
+        if train_set_size == 1:
+        
+            psy.loc[psy['mouse_name']==mouse,'model_rewards']=sim_data['model_rewards'].to_numpy()
+            psy.loc[psy['mouse_name']==mouse,'simulated_choices']=sim_data['simulated_choices'].to_numpy()
+            psy.loc[psy['mouse_name']==mouse,'model_laser']=sim_data['model_laser'].to_numpy()
+                
+
+# Analysis
+
+
+boxplot_model_parameters_per_mouse(model_parameters,
+                                       model_type= 'w_stay',
+                                       save = True)
+plot_q_trial_whole_dataset(psy)
+plot_qmotivation_trial_whole_dataset(psy, save= True)
+

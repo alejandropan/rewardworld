@@ -312,7 +312,7 @@ def model_performance(model_parameters, modelled_data, model_type= 'w_stay', sav
 
 
 
-def simulate_and_plot(modelled_data, model_parameters, 
+def simulate_and_plot(modelled_data,all_contrasts, model_parameters, 
                     model_type= 'w_stay'):
     mice = modelled_data['mouse_name'].unique()
     for mouse in mice:
@@ -338,27 +338,14 @@ def simulate_and_plot(modelled_data, model_parameters,
         for i  in range(len(data)):
             data_m.append(data[i]*1)        
 
-        # Calculate Q values
-        if model_type == 'standard':
-           sim_data = generate_data(data_m, all_contrasts, learning_rate=params[0], 
-                                               beliefSTD=params[1], extraVal=params[2], 
-                                               beta=params[3], stay=params[4])   
-        
-        if model_type == 'w_bias':
-            sim_data = generate_data_bias(data_m, all_contrasts, learning_rate=params[0], 
-                                               beliefSTD=params[1], extraVal=params[2], 
-                                               beta=params[3], stay=params[4])   
+      
         
         if model_type == 'w_stay':
             sim_data = generate_data_stay(data_m, all_contrasts, learning_rate=params[0], 
                                                beliefSTD=params[1], extraVal=params[2], 
-                                               beta=params[3], stay=params[4])   
+                                               beta=params[3])   
         
-        if model_type == 'w_bias_n_stay':
-           sim_data = generate_data_stay_and_bias(data_m, all_contrasts, learning_rate=params[0], 
-                                               beliefSTD=params[1], extraVal=params[2], 
-                                               beta=params[3], stay=params[4])
-        # Plots
+
         sim_data = pd.DataFrame(sim_data)
         sim_data = np.array(sim_data)
         sim_data = pd.DataFrame(sim_data).T

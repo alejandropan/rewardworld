@@ -18,11 +18,6 @@ functions {
         qlr[2] = q[1,2] .* cp[1] + q[2,2] .* cp[2];
         return qlr;
         }
-        
-    
-    real contrast_posterior(real x, real xc, real theta, real sc, int x_i){
-            return normal_cdf(x, 0, theta) * normal_lpdf(x | sc, theta);
-            }
 
 }
 
@@ -153,25 +148,42 @@ model {
                 for (t in 1:NT_all[a,s]) {
                         vector[2] cp;  // contrast posterior
                         vector[2] qlr; // ql and qr for every trial
-                        vector[2] p; // probability of a right choice
+                        vector[2] p;
                         real d; // delta with laser
                         real bs_right;
-                        real pchoice;
+                        
                         
                         // solution until integrate_1d is upgraded
                         real estep;
+                        bs_right = 0;
                         for  (i  in 1:1000){
                             estep =  -1 + (0.002 * i);
-                            bs_right = 0;
-                            bs_right += normal_cdf(estep, 0, sensories[a][s]) * normal_lpdf(estep| sc[a,s,t], sensories[a][s]) * 0.002;
+                            bs_right += normal_cdf(estep, 0, sensories[a][s]) * exp(normal_lpdf(estep| sc[a,s,t], sensories[a][s])) * 0.002;
                             }
                         cp[1]=1 - bs_right;
                         cp[2]=bs_right;
                         //
+                        
+                        //print("cp before softmax", cp);
                         qlr = calculate_ql_qr(q, cp);
-                        p = multi_softmax(qlr, betas[a][s]); // probability of a right choice
-                        //print("p after bernoulli",bernoulli_logit_lpmf( c[a,s,t] | p));
-                        pchoice = p[c[a,s,t]+1];
+                        //print("qlr before softmax", qlr);
+                        p = softmax(qlr ./ betas[a][s]); // probability of a right choice
+                        if (p[2]==0)
+                            p[2] = 0.001;
+                        else if (p[2]==1)
+                            p[2] = 0.999;
+                        else
+                            p[2] = p[2];
+                            
+                        if (p[2]==0)
+                            p[1] = p[1] - 0.001;
+                        else if (p[2]==1)
+                            p[1] = p[1] + 0.001;
+                        else
+                            p[1] = p[1];
+                        //print("p before bernoulli", p[2]);
+                        //print("bernoulli(p[2])", bernoulli_lpmf(c[a,s,t]|p[2]))
+                        c[a,s,t] ~ bernoulli(p[2]);
                         d = (r[a,s,t] + (l[a,s,t] * lasers[a][s])) - qlr[c[a,s,t]+1]; // +1 due not 0 indexing
                         //print("delta",d)
                         for (b in 1:2) {

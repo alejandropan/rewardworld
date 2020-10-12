@@ -34,10 +34,10 @@ mice = np.array(['dop_8', 'dop_9', 'dop_11', 'dop_4'])
 psy = pd.read_pickle('all_behav.pkl')
 
 # Select only ephys sessions
-psy = psy.loc[((psy['ses']>'2020-01-13') & (psy['mouse_name'] == 'dop_4')) | 
-              ((psy['ses']>'2020-03-13') & (psy['mouse_name'] != 'dop_9')) |
-              ((psy['ses']>'2020-03-13') & (psy['ses']<'2020-03-19') 
-               & (psy['mouse_name'] == 'dop_9'))]
+#psy = psy.loc[((psy['ses']>'2020-01-13') & (psy['mouse_name'] == 'dop_4')) | 
+#              ((psy['ses']>'2020-03-13') & (psy['mouse_name'] != 'dop_9')) |
+#               & (psy['mouse_name'] == 'dop_9'))]
+#              ((psy['ses']>'2020-03-13') & (psy['ses']<'2020-03-19') 
 
 
 train_set_size = 1

@@ -151,6 +151,77 @@ for i, v in enumerate (psy['virus'].unique()):
     plt.title(v)
 plt.tight_layout()
 
+# Plot by next reward
+fig, ax =  plt.subplots(2, figsize=(5,10))
+for i, v in enumerate (psy['virus'].unique()):
+    plt.sca(ax[i])
+    sns.lineplot(data = psy.loc[(psy['virus']==v)], \
+                 x='signed_contrasts', 
+                 y='choice', hue ='next_choice', style='prev_outcome', ci=68,
+                 legend='brief', palette=pal)
+    plt.title(v)
+plt.tight_layout()
+
+# Corrected by next reward
+fig, ax =  plt.subplots(2, figsize=(5,10))
+for i, v in enumerate (psy['virus'].unique()):
+    plt.sca(ax[i])
+    data = psy.loc[(psy['virus']==v)]
+    next_c_1 = data.loc[data['next_choice']=='Right'].groupby(['signed_contrasts','next_outcome']).mean()['choice'].reset_index()
+    next_c_0 = data.loc[data['next_choice']=='Left'].groupby(['signed_contrasts', 'next_outcome']).mean()['choice'].reset_index()
+    prev_c_1 = data.loc[data['prev_choice']=='Right'].groupby(['signed_contrasts','prev_outcome']).mean()['choice'].reset_index()
+    prev_c_0 = data.loc[data['prev_choice']=='Left'].groupby(['signed_contrasts','prev_outcome']).mean()['choice'].reset_index()
+    
+    diff_p = prev_c_1.loc[prev_c_1['prev_outcome']=='Reward','choice'] - prev_c_0.loc[prev_c_0['prev_outcome']=='Reward','choice']    
+    diff_n = next_c_1.loc[next_c_1['next_outcome']=='Reward','choice'] - next_c_0.loc[next_c_0['next_outcome']=='Reward','choice']    
+    
+    diff_p_e = prev_c_1.loc[prev_c_1['prev_outcome']=='Error','choice'] - prev_c_0.loc[prev_c_0['prev_outcome']=='Error','choice']    
+    diff_n_e = next_c_1.loc[next_c_1['next_outcome']=='Error','choice'] - next_c_0.loc[next_c_0['next_outcome']=='Error','choice']    
+    
+    
+    
+    plt.plot( next_c_1['signed_contrasts'].unique(), diff_p-diff_n)
+    plt.plot( next_c_1['signed_contrasts'].unique(), diff_p_e-diff_n_e)
+    plt.xlabel('Signed Contrasts')
+    plt.ylabel('Delta Righwards - i.e How much more likely am I to go right?')
+    sns.despine()
+    plt.plot(next_c_1['signed_contrasts'].unique(), diff_p)
+    plt.plot(next_c_1['signed_contrasts'].unique(), diff_p_e)
+    plt.xlabel('Signed Contrasts')
+    plt.ylabel('Delta Righwards - i.e How much more likely am I to go right?')
+    sns.despine()
+    
+
+
+
+# Divided by difficulty
+easy_t = psy.loc[(psy['prev_difficulty']=='easy') & (psy['prev_opto']== 1)]
+hard_t = psy.loc[(psy['prev_difficulty']=='hard') & (psy['prev_opto']==1)]
+
+
+fig, ax =  plt.subplots(2, figsize=(5,10))
+for i, v in enumerate (easy_t['virus'].unique()):
+    plt.sca(ax[i])
+    sns.lineplot(data = easy_t.loc[(easy_t['virus']==v)], \
+                 x='signed_contrasts', 
+                 y='choice', hue ='prev_choice', style='prev_outcome', ci=68,
+                 legend='brief', palette=pal)
+    plt.title(v)
+plt.tight_layout()
+
+fig, ax =  plt.subplots(2, figsize=(5,10))
+for i, v in enumerate (hard_t['virus'].unique()):
+    plt.sca(ax[i])
+    sns.lineplot(data = hard_t.loc[(hard_t['virus']==v)], \
+                 x='signed_contrasts', 
+                 y='choice', hue ='prev_choice', style='prev_outcome', ci=68,
+                 legend='brief', palette=pal)
+    plt.title(v)
+plt.tight_layout()
+
+
+
+
 # Plot by opto
 
 fig, ax =  plt.subplots(2, figsize=(5,10))

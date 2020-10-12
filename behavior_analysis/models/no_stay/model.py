@@ -212,7 +212,7 @@ def session_neg_log_likelihood_stay(params, *data, pregen_all_posteriors=True,
 
 # Optimize several times with different initializations and return the best fit parameters, and negative log likelihood
 
-def optimizer_stay(data, num_fits = 20, initial_guess=[0.1, 1, 0, 1]):
+def optimizer_stay(data, num_fits = 7, initial_guess=[0.1, 1, 0, 1]):
     # Accounting variables
     best_NLL = np.Inf
     best_x = [None, None, None, None]

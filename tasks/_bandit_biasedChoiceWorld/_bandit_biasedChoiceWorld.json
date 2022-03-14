@@ -1,0 +1,37 @@
+{
+    "__CREATED-ON__": "2021-03-03 21:11:06.064375",
+    "__DEF-TEXT__": "This file contains information about a PyBpod protocol.",
+    "__DEF-URL__": "http://pybpod.readthedocs.org",
+    "__SOFTWARE__": "PyBpod GUI API v1.8.2",
+    "__UPDATED-ON__": "2021-03-03 21:11:06.064375",
+    "__UUID4__": "4b767f14-f7de-4b24-87eb-055d1cc6289d",
+    "commands": [
+        {
+            "cmd": "python C:\\iblrig\\scripts\\bonsai_stop.py 7110",
+            "type": "create_execcmd",
+            "when": 1
+        },
+        {
+            "cmd": "python C:\\iblrig\\scripts\\bonsai_stop.py 7111",
+            "type": "create_execcmd",
+            "when": 1
+        },
+        {
+            "cmd": "python C:\\iblrig\\scripts\\cleanup.py",
+            "type": "create_execcmd",
+            "when": 1
+        },
+        {
+            "cmd": "python C:\\iblrig\\scripts\\create_session.py --poop=False",
+            "type": "create_execcmd",
+            "when": 1
+        },
+        {
+            "cmd": "python C:\\iblrig\\scripts\\bpod_lights.py 1",
+            "type": "create_execcmd",
+            "when": 1
+        }
+    ],
+    "name": "_bandit_biasedChoiceWorld",
+    "trigger-softcodes": false
+}

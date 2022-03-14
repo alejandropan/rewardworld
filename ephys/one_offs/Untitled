@@ -1,0 +1,158 @@
+data {
+
+        int NS; // number of subjects
+        int NSESS; // max number of sessions
+        int NT; // max number of trials
+
+        int NSxNSESS; // flattening the subjects and sessions
+        int NT_all[NSxNSESS]; // a vector with different trial lengths per subject+per session
+        int sub_idx[NSxNSESS];    // Mapping parameter to subject
+        int sess_idx[NSxNSESS];    // Mapping parameter to session
+
+        int r[NS,NSESS,NT];
+        int l[NS,NSESS,NT];
+        int c[NS,NSESS,NT];
+}
+
+
+parameters {
+        // normal intercept model
+        real betam;
+        real alpham;
+        real alphalaserm;
+        real alphaforgettingm;
+        real alphalaserforgettingm;
+        real sidem;
+        real laserm;
+        real dmwaterm;
+        real dmlaserm;
+
+
+        real<lower=0> betasd;
+        real<lower=0> lasersd;
+        real<lower=0> dmwatersd;
+        real<lower=0> dmlasersd;
+        real<lower=0> alphasd;
+        real<lower=0> alphalasersd;
+        real<lower=0> alphaforgettingsd;
+        real<lower=0> alphalaserforgettingsd;
+        real<lower=0> sidesd;
+
+        real beta_mouse[NS];
+        real laser_mouse[NS];
+        real dmwater_mouse[NS];
+        real dmlaser_mouse[NS];
+        real alpha_mouse[NS];
+        real alphalaser_mouse[NS];
+        real alphaforgetting_mouse[NS];
+        real alphalaserforgetting_mouse[NS];
+        real side_mouse[NS];
+
+        real<lower=0> sidesess_sd;
+        real sides[NSxNSESS];
+        real<lower=0> alphalaser_ses_sd;
+        real alphalaser_ses[NSxNSESS];
+        real<lower=0> alpha_ses_sd;
+        real alpha_ses[NSxNSESS];
+        real<lower=0> alphaforgetting_ses_sd;
+        real alphaforgetting_ses[NSxNSESS];
+        real<lower=0> alphalaserforgetting_ses_sd;
+        real alphalaserforgetting_ses[NSxNSESS];
+        real<lower=0> laser_ses_sd;
+        real laser_ses[NSxNSESS];
+        real<lower=0> beta_ses_sd;
+        real beta_ses[NSxNSESS];
+        real<lower=0> dmwater_ses_sd;
+        real dmwater_ses[NSxNSESS];
+        real<lower=0> dmlaser_ses_sd;
+        real dmlaser_ses[NSxNSESS];
+
+}
+
+
+model {
+
+        // for each var_mouse
+        alpham ~ normal(0,1);
+        alphalaserm  ~ normal(0,1);
+        alphaforgettingm  ~ normal(0,1);
+        alphalaserforgettingm  ~ normal(0,1);
+
+        betam ~ normal(0,1);
+        laserm ~ normal(0,1);
+        sidem ~ normal(0,1);
+
+        dmwaterm ~ normal(0,1);
+        dmlaserm ~ normal(0,1);
+
+        alphasd ~ normal(0,1);
+        alphalasersd ~ normal(0,1);
+        alphaforgettingsd ~ normal(0,1);
+        alphalaserforgettingsd ~ normal(0,1);
+
+        betasd ~ normal(0,1);
+        sidesd ~ normal(0,1);
+        lasersd ~ normal(0,1);
+
+        dmwatersd ~ normal(0,1);
+        dmlasersd ~ normal(0,1);
+
+        // pulling out mouse so there's no if statement in for loop below
+        // more efficient for stan
+        for (mouse in 1:NS){
+            alpha_mouse[mouse] ~ normal(alpham,alphasd);
+            alphalaser_mouse[mouse] ~ normal(alphalaserm,alphalasersd);
+            alphaforgetting_mouse[mouse] ~ normal(alphaforgettingm,alphaforgettingsd);
+            alphalaserforgetting_mouse[mouse] ~ normal(alphalaserforgettingm,alphalaserforgettingsd);
+            beta_mouse[mouse] ~ normal(betam,betasd);
+            laser_mouse[mouse] ~ normal(laserm,lasersd);
+            side_mouse[mouse] ~ normal(sidem, sidesd);
+
+            dmwater_mouse[mouse]~ normal(dmwaterm, dmwatersd);
+            dmlaser_mouse[mouse]~ normal(dmlaserm, dmlasersd);
+            }
+
+        for (ms_i in 1:NSxNSESS) {
+                real alpha;
+                real alphalaser;
+                real alphaforgetting;
+                real alphalaserforgetting;
+
+                real qwater;
+                real qlaser;
+
+                int choice;
+
+                alphaforgetting_ses[ms_i] ~ normal(alphaforgetting_mouse[sub_idx[ms_i]], alphaforgetting_ses_sd);
+                alphalaserforgetting_ses[ms_i] ~ normal(alphalaserforgetting_mouse[sub_idx[ms_i]], alphalaserforgetting_ses_sd);
+                alphalaser_ses[ms_i] ~ normal(alphalaser_mouse[sub_idx[ms_i]], alphalaser_ses_sd);
+                alpha_ses[ms_i] ~ normal(alpha_mouse[sub_idx[ms_i]], alpha_ses_sd);
+                beta_ses[ms_i] ~ normal(beta_mouse[sub_idx[ms_i]], beta_ses_sd);
+                laser_ses[ms_i] ~ normal(laser_mouse[sub_idx[ms_i]], laser_ses_sd);
+
+                dmwater_ses[ms_i] ~ normal(dmwater_mouse[sub_idx[ms_i]], dmwater_ses_sd);
+                dmlaser_ses[ms_i] ~ normal(dmlaser_mouse[sub_idx[ms_i]], dmlaser_ses_sd);
+
+                sides[ms_i] ~ normal(side_mouse[sub_idx[ms_i]], sidesess_sd);
+
+                alpha = Phi_approx(alpha_ses[sub_idx[ms_i]]/sqrt(2));
+                alphalaser = Phi_approx(alphalaser_ses[sub_idx[ms_i]]/sqrt(2));
+                alphaforgetting = Phi_approx(alphaforgetting_ses[sub_idx[ms_i]]/sqrt(2));
+                alphalaserforgetting = Phi_approx(alphalaserforgetting_ses[sub_idx[ms_i]]/sqrt(2));
+
+                for (t in 1:NT_all[ms_i]) {
+                  c[sub_idx[ms_i], sess_idx[ms_i], t] ~ bernoulli_logit(sides + qwater + qlaser);
+                  choice = 2 * c[sub_idx[ms_i], sess_idx[ms_i], t] - 1; // 1 / -1 to facilitate REINFORCE
+                  if (r[sub_idx[ms_i], sess_idx[ms_i], t] == 1)
+                    qwater = (1 - alpha) * qwater + choice * beta_ses ;
+                  if (r[sub_idx[ms_i], sess_idx[ms_i], t] == 0)// r is -1
+                    qwater = (1 - alphaforgetting) * qwater + choice * dmwater_ses;
+                  if (l[sub_idx[ms_i], sess_idx[ms_i], t] == 1)
+                    qlaser = (1 - alphalaser) * qlaser + choice * laser_ses ;
+                  if (l[sub_idx[ms_i], sess_idx[ms_i], t] == 0)
+                    qlaser = (1 - alphalaserforgetting) * qlaser + choice * dmlaser ;
+                }
+
+        }
+
+}

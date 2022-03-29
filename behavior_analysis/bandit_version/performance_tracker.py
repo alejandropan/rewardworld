@@ -14,10 +14,10 @@ import pandas as pd
 import seaborn as sns
 import sys
 import json
-import rewardworld.behavior_analysis.bandit_version.full_bandit_fix as fl
+import rewardworld.behavior_analysis.bandit_version.block_bandit_summary as bd
 
 
-def get_tree(mouse_folder):
+def get_tree(mouse_folder, extract=False):
     alf_folders = []
     dates = [e for e in mouse_folder.iterdir() if e.is_dir()]
     for date in dates:
@@ -26,11 +26,18 @@ def get_tree(mouse_folder):
             alf = ses / 'alf'
             if alf.exists():
                 alf_folders.append(alf)
+            elif extract==True:
+                try:
+                    bd.extract_all(ses, save=True)
+                    #bd.extract_all_wheel(ses, save=True)
+                    bd.full_bandit_fix(ses)
+                except:
+                    print('No data for '+ str(ses))
     return alf_folders
 
-def data_from_mouse(mouse):
+def data_from_mouse(mouse, extract=True):
     mouse_folder = Path('/Volumes/witten/Alex/Data/Subjects/' + mouse)
-    alfs = get_tree(mouse_folder)
+    alfs = get_tree(mouse_folder, extract=extract)
     performance = []
     protocols = []
     date = []
@@ -45,7 +52,7 @@ def data_from_mouse(mouse):
         protocols.append(settings['PYBPOD_PROTOCOL'])
         iti.append(settings['ITI_ERROR'])
         date.append(alf.parent.parent.stem + '-' + alf.parent.stem)
-        #fl.full_bandit_fix(str(alf.parent.resolve()))
+        #bd.full_bandit_fix(str(alf.parent.resolve()))
         dt_mouse = pd.DataFrame()
         dt_mouse['choices']=np.load(alf / '_ibl_trials.choice.npy')
         dt_mouse['rewarded']= np.load(alf / '_ibl_trials.feedbackType.npy')==1
@@ -65,6 +72,9 @@ def data_from_mouse(mouse):
                             '_bandit_shaping_biasedChoiceWorld':'80/20',
                             '_bandit_shaping_90_10_biasedChoiceWorld':'90/10',
                             '_bandit_shaping_100_0_biasedChoiceWorld':'100/0',
+                            '_bandit_laser_blocks_ephysChoiceWorld':'laser_water_bandit',
+                            '_bandit_100_0_biasedChoiceWorld':'100/0',
+                            '_bandit_onlylaser_blocks_ephysChoiceWorld':'laser_only_bandit',
                             '_bandit_biasedChoiceWorld':'full'})
     return data
 
@@ -81,7 +91,7 @@ def plot_performance(mouse):
 
 
 data = pd.DataFrame()
-for mouse in ['dop_13','dop_14','dop_15','dop_16','dop_18','dop_20','dop_21']:
+for mouse in ['dop_40','dop_45','dop_46']:
     mouse_df = data_from_mouse(mouse)
     mouse_df['mouse_name']=mouse
     data = pd.concat([data,mouse_df])

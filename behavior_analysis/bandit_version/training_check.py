@@ -4,8 +4,8 @@ import numpy as np
 from pathlib import Path
 import os
 from ibllib.io.extractors.biased_trials import extract_all
-from full_bandit_fix import full_bandit_fix 
-from session_summary_10 import *
+import rewardworld.behavior_analysis.bandit_version.full_bandit_fix as full_bandit_fix
+from rewardworld.behavior_analysis.bandit_version.session_summary_10 import *
 import one.alf as alf
 from ibllib.io.raw_data_loaders import load_settings
 import zipfile
@@ -57,7 +57,8 @@ def mouse_data_loader(rootdir):
     return mouse_df
 
 ROOT = '/Volumes/witten/Alex/Data/Subjects/'
-MICE = ['DChR2_1','DChR2_2','dop_40','dop_45','dop_46','dop_36','dop_31','dop_30']
+MICE = ['dop_36','dop_31','dop_30','dop_38','dop_40','dop_45','dop_46']
+# MICE = ['DChR2_1','DChR2_2','dop_40','dop_45','dop_46','dop_36','dop_31','dop_30']
 data=pd.DataFrame()
 for mouse in MICE:
     mouse_df = mouse_data_loader(ROOT+mouse)
@@ -66,24 +67,20 @@ for mouse in MICE:
 data['feedbackType'] = 1*(data['feedbackType']>0)
 data = data.reset_index()
 
+# Analysis 100_0 step
 sub_data = data.loc[(data['protocol']=='_bandit_100_0_biasedChoiceWorld_equal_stim') |
     (data['protocol']=='_bandit_100_0_biasedChoiceWorld_different_stim')]
 sns.lineplot(data=sub_data,x='day',y='feedbackType',hue='mouse', ci=0)
 plt.xlabel('Training Day')
 plt.ylabel('Fraction Correct')
 plt.ylim(0,1)
-plt.hlines(0.75, 0, 30,linestyles='--')
-
-
-
+plt.hlines(0.70, 0, sub_data.day.max(),linestyles='--')
 
 ## analysis of bandit step
-
 select_data = data.loc[(data['protocol']=='_bandit_biasedChoiceWorld')]
 select_data['high_probability_choice'] = 0
 select_data.loc[(select_data['choice']==-1)&(select_data['probabilityLeft']==0.1),'high_probability_choice']=1
 select_data.loc[(select_data['choice']==1)&(select_data['probabilityLeft']==0.7),'high_probability_choice']=1
-
 
 #######
 norm_data = pd.DataFrame()
@@ -94,13 +91,6 @@ for mouse in select_data.mouse.unique():
     sub_data['day'] = sub_data['day'] - days[0]
     norm_data=  pd.concat([norm_data,sub_data])
 
-
-sns.lineplot(data=norm_data,x='day',y='high_probability_choice',hue='mouse', ci=0)
-plt.xlabel('Training Day')
-plt.ylabel('High Prob Choice')
-plt.ylim(0,1)
-plt.xlim(0,80)
-plt.hlines(0.5, 0, 30,linestyles='--')
 #########
 
 select_data['norm_day'] = np.nan
@@ -113,8 +103,7 @@ sns.lineplot(data = select_data, x='norm_day',y='high_probability_choice', hue='
 plt.xlabel('Training Day')
 plt.ylabel('High Prob Choice')
 plt.ylim(0,1)
-plt.xlim(0,40)
-plt.hlines(0.5, 0, 30,linestyles='--')
+plt.hlines(0.5, 0, select_data.day.max(),linestyles='--')
 
 
 MICE = ['dop_38','dop_24','dop_36','dop_31','dop_30']

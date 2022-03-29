@@ -243,10 +243,10 @@ for ses in sessions:
     incorrect_psths_laser_NAcc.append(incorrect_psths_laser[2]) 
 
 
-def psth_average(lists_of_psths):
+def psth_average(lists_of_psths, start=None, end=None):
     psths = []
     for c in lists_of_psths:
-        psths.append(np.nanmean(c[0],axis=0))
+        psths.append(np.nanmean(c[0][start:end],axis=0))
     psths_time = lists_of_psths[0][1] #Always the same so just take in the first one 
     psths_avg = [psths,psths_time]
     return psths_avg
@@ -270,4 +270,66 @@ for i, reg in enumerate([DLS,DMS, NAcc]):
     plt.sca(ax[1,i])
     plot_psth(reg[1], color='orange', plot_error=True)
     plot_psth(reg[0], color='dodgerblue', plot_error=True)
+    plt.title(reg_names[i])
+
+## Divided by trial bin
+
+DMS_1 = [psth_average(correct_psths_water_DMS, start=0, end=200),psth_average(correct_psths_laser_DMS, start=0, end=200)]
+DLS_1 = [psth_average(correct_psths_water_DLS, start=0, end=200),psth_average(correct_psths_laser_DLS, start=0, end=200)]
+NAcc_1 = [psth_average(correct_psths_water_NAcc, start=0, end=200),psth_average(correct_psths_laser_NAcc, start=0, end=200)]
+
+DMS_2 = [psth_average(correct_psths_water_DMS, start=201, end=400),psth_average(correct_psths_laser_DMS, start=201, end=400)]
+DLS_2 = [psth_average(correct_psths_water_DLS, start=201, end=400),psth_average(correct_psths_laser_DLS, start=201, end=400)]
+NAcc_2 = [psth_average(correct_psths_water_NAcc, start=201, end=400),psth_average(correct_psths_laser_NAcc, start=201, end=400)]
+
+DMS_3 = [psth_average(correct_psths_water_DMS, start=401, end=600),psth_average(correct_psths_laser_DMS, start=401, end=600)]
+DLS_3 = [psth_average(correct_psths_water_DLS, start=401, end=600),psth_average(correct_psths_laser_DLS, start=401, end=600)]
+NAcc_3 = [psth_average(correct_psths_water_NAcc, start=401, end=600),psth_average(correct_psths_laser_NAcc, start=401, end=600)]
+
+
+_, ax = plt.subplots(2,3, sharey=True)
+for i, reg in enumerate([DLS_1,DMS_1, NAcc_1]):
+    plt.sca(ax[0,i])
+    plot_psth(reg[1], color='orange', plot_error=True)
+    plot_psth(reg[0], color='dodgerblue', plot_error=True)
+    plt.title(reg_names[i])
+for i, reg in enumerate([DLS_2,DMS_2, NAcc_2]):
+    plt.sca(ax[0,i])
+    plot_psth(reg[1], color='orange', plot_error=True, alpha=0.66)
+    plot_psth(reg[0], color='dodgerblue', plot_error=True,alpha=0.66)
+    plt.title(reg_names[i])
+for i, reg in enumerate([DLS_3,DMS_3, NAcc_3]):
+    plt.sca(ax[0,i])
+    plot_psth(reg[1], color='orange', plot_error=True,alpha=0.33)
+    plot_psth(reg[0], color='dodgerblue', plot_error=True,alpha=0.33)
+    plt.title(reg_names[i])
+
+DMS_1 = [psth_average(incorrect_psths_water_DMS, start=0, end=200),psth_average(incorrect_psths_laser_DMS, start=0, end=200)]
+DLS_1 = [psth_average(incorrect_psths_water_DLS, start=0, end=200),psth_average(incorrect_psths_laser_DLS, start=0, end=200)]
+NAcc_1 = [psth_average(incorrect_psths_water_NAcc, start=0, end=200),psth_average(incorrect_psths_laser_NAcc, start=0, end=200)]
+
+DMS_2 = [psth_average(incorrect_psths_water_DMS, start=201, end=400),psth_average(incorrect_psths_laser_DMS, start=201, end=400)]
+DLS_2 = [psth_average(incorrect_psths_water_DLS, start=201, end=400),psth_average(incorrect_psths_laser_DLS, start=201, end=400)]
+NAcc_2 = [psth_average(incorrect_psths_water_NAcc,  start=201, end=400),psth_average(incorrect_psths_laser_NAcc, start=201, end=400)]
+
+DMS_3 = [psth_average(incorrect_psths_water_DMS, start=401, end=600),psth_average(incorrect_psths_laser_DMS, start=401, end=600)]
+DLS_3 = [psth_average(incorrect_psths_water_DLS, start=401, end=600),psth_average(incorrect_psths_laser_DLS, start=401, end=600)]
+NAcc_3 = [psth_average(incorrect_psths_water_NAcc,  start=401, end=600),psth_average(incorrect_psths_laser_NAcc,  start=401, end=600)]
+
+for i, reg in enumerate([DLS_1,DMS_1, NAcc_1]):
+    plt.sca(ax[1,i])
+    plot_psth(reg[1], color='orange', plot_error=True)
+    plot_psth(reg[0], color='dodgerblue', plot_error=True)
+    plt.title(reg_names[i])
+
+for i, reg in enumerate([DLS_2,DMS_2, NAcc_2]):
+    plt.sca(ax[1,i])
+    plot_psth(reg[1], color='orange', plot_error=True,alpha=0.66)
+    plot_psth(reg[0], color='dodgerblue', plot_error=True,alpha=0.66)
+    plt.title(reg_names[i])
+
+for i, reg in enumerate([DLS_3,DMS_3, NAcc_3]):
+    plt.sca(ax[1,i])
+    plot_psth(reg[1], color='orange', plot_error=True,alpha=0.33)
+    plot_psth(reg[0], color='dodgerblue', plot_error=True,alpha=0.2)
     plt.title(reg_names[i])

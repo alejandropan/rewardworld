@@ -1,9 +1,9 @@
 from ibllib.io.extractors.biased_trials import extract_all
 from ibllib.io.extractors.training_wheel import extract_all as extract_all_wheel
-#from rewardworld.behavior_analysis.bandit_version.full_bandit_fix_blocks import full_bandit_fix
-#from rewardworld.behavior_analysis.bandit_version.session_summary import *
-from full_bandit_fix_blocks import full_bandit_fix
-from session_summary import *
+from rewardworld.behavior_analysis.bandit_version.full_bandit_fix_blocks import full_bandit_fix
+from rewardworld.behavior_analysis.bandit_version.session_summary import *
+#from full_bandit_fix_blocks import full_bandit_fix
+#from session_summary import *
 
 ################################## Functions ##################################
 

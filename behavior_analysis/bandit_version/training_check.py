@@ -67,10 +67,16 @@ for mouse in MICE:
 data['feedbackType'] = 1*(data['feedbackType']>0)
 data = data.reset_index()
 
+# Palette
+
+pal=dict(dop_36='gray',dop_31='gray',dop_30='gray',dop_38='gray',dop_40='k',dop_45='k',dop_46='k')
+
+fig,ax = plt.subplots(1,2)
 # Analysis 100_0 step
+plt.sca(ax[0])
 sub_data = data.loc[(data['protocol']=='_bandit_100_0_biasedChoiceWorld_equal_stim') |
     (data['protocol']=='_bandit_100_0_biasedChoiceWorld_different_stim')]
-sns.lineplot(data=sub_data,x='day',y='feedbackType',hue='mouse', ci=0)
+sns.lineplot(data=sub_data,x='day',y='feedbackType',hue='mouse', ci=0, palette=pal)
 plt.xlabel('Training Day')
 plt.ylabel('Fraction Correct')
 plt.ylim(0,1)
@@ -82,28 +88,16 @@ select_data['high_probability_choice'] = 0
 select_data.loc[(select_data['choice']==-1)&(select_data['probabilityLeft']==0.1),'high_probability_choice']=1
 select_data.loc[(select_data['choice']==1)&(select_data['probabilityLeft']==0.7),'high_probability_choice']=1
 
-#######
-norm_data = pd.DataFrame()
-for mouse in select_data.mouse.unique():
-    day = select_data.loc[(select_data['mouse']==mouse)].groupby(['day']).mean().reset_index()
-    days = day['day'].iloc[np.where(day['day'].diff()==1)[0]].to_numpy()
-    sub_data = select_data.loc[(select_data['mouse']==mouse)&(np.isin(select_data['day'],days))]
-    sub_data['day'] = sub_data['day'] - days[0]
-    norm_data=  pd.concat([norm_data,sub_data])
-
 #########
-
 select_data['norm_day'] = np.nan
 for mouse in select_data.mouse.unique():
     for i, ses in enumerate(sorted(select_data.loc[select_data['mouse']==mouse,'day'].unique())):
         select_data.loc[(select_data['mouse']==mouse)&(select_data['day']==ses),'norm_day'] = i
-
-
-sns.lineplot(data = select_data, x='norm_day',y='high_probability_choice', hue='mouse', ci=0)
+plt.sca(ax[1])
+sns.lineplot(data = select_data, x='norm_day',y='high_probability_choice', hue='mouse', ci=0, palette=pal)
 plt.xlabel('Training Day')
 plt.ylabel('High Prob Choice')
 plt.ylim(0,1)
 plt.hlines(0.5, 0, select_data.day.max(),linestyles='--')
 
 
-MICE = ['dop_38','dop_24','dop_36','dop_31','dop_30']

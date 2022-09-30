@@ -1,0 +1,69 @@
+from ibllib.pipes import ephys_preprocessing as ep    
+import sys
+from pathlib import Path
+from ibllib.oneibl import registration as r
+import numpy as np
+from pipe_2_pykilosort_to_alf import extract_all, sorting_sync_and_alf, move_phy_files
+
+def remove_passive_ttls(ses, n_passive=20, bpod_ch=16, audio_ch=7, laser_ch=17):
+    t = np.load(ses + '/raw_ephys_data/_spikeglx_sync.times.npy')
+    c = np.load(ses + '/raw_ephys_data/_spikeglx_sync.channels.npy')
+    p = np.load(ses + '/raw_ephys_data/_spikeglx_sync.polarities.npy')
+    np.save(ses + '/raw_ephys_data/_spikeglx_sync_times_w_passive.npy', t)
+    np.save(ses + '/raw_ephys_data/_spikeglx_sync_channels_w_passive.npy', c)
+    np.save(ses + '/raw_ephys_data/_spikeglx_sync_polarities_w_passive.npy', p)
+    # bpod channel split
+    bpod_t = t[c==bpod_ch]
+    bpod_p = p[c==bpod_ch]
+    bpod_t_passive = bpod_t[(-n_passive*4):] # up and down ttls x2, x2 (i.e. x4), because in the passive task bpod does a  superfast ttl when starting a new trial
+    bpod_p_passive = bpod_p[(-n_passive*4):]
+    # audio channel split
+    audio_t = t[c==audio_ch]
+    audio_p = p[c==audio_ch]
+    audio_t_passive = audio_t[(-n_passive):] # There are 10 audio passive trials (20 ups/downs)
+    audio_p_passive = audio_p[(-n_passive):]
+    # laser channel split
+    laser_t = t[c==laser_ch]
+    laser_p = p[c==laser_ch]
+    laser_t_passive = laser_t[(-n_passive*20):] # There are 10 laser passive trials (20 ups/downs * 20 pulses per trial)
+    laser_p_passive = laser_p[(-n_passive*20):]
+    # delete from main array
+    first_passive_ttl = bpod_t[(-n_passive*4)]
+    to_del_raw = np.where(t>=first_passive_ttl)
+    audio_bpod_laser_ttls =  np.where(np.isin(c, [audio_ch,bpod_ch,laser_ch]))
+    to_del = np.intersect1d(to_del_raw,audio_bpod_laser_ttls)
+    t_ses = np.delete(t, to_del)
+    c_ses = np.delete(c, to_del)
+    p_ses = np.delete(p, to_del)
+    # save
+    np.save(ses + '/raw_ephys_data/_spikeglx_sync.times.npy', t_ses)
+    np.save(ses + '/raw_ephys_data/_spikeglx_sync.channels.npy', c_ses)
+    np.save(ses + '/raw_ephys_data/_spikeglx_sync.polarities.npy', p_ses)
+    np.save(ses + '/raw_ephys_data/bpod_t_passive.npy', bpod_t_passive)
+    np.save(ses + '/raw_ephys_data/bpod_p_passive.npy', bpod_p_passive)
+    np.save(ses + '/raw_ephys_data/audio_t_passive.npy', audio_t_passive)
+    np.save(ses + '/raw_ephys_data/audio_p_passive.npy', audio_p_passive)
+    np.save(ses + '/raw_ephys_data/laser_t_passive.npy', laser_t_passive)
+    np.save(ses + '/raw_ephys_data/laser_p_passive.npy', laser_p_passive)
+
+def pre_processing(path):
+        rc = r.RegistrationClient()
+        rc.register_session(path)
+        ep.EphysPulses(path).run()
+        ep.RawEphysQC(path).run()
+        ep.EphysMtscomp(path).run()
+        ep.SpikeSorting(path).run()
+        ep.SpikeSorting(path).run()
+
+if __name__=='__main__':
+        ses = sys.argv[1]
+        path = Path(ses)
+        pre_processing(path)
+        if Path(ses+'/passive').is_dir():
+                remove_passive_ttls(ses, n_passive=20, bpod_ch=16, audio_ch=7, laser_ch=17)
+        extract_all(path, save=True, bin_exists=False)
+        sorting_sync_and_alf(path, overwrite=False)
+        move_phy_files(ses)
+
+        
+

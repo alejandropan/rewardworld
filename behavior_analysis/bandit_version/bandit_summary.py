@@ -2,6 +2,8 @@ from ibllib.io.extractors.biased_trials import extract_all
 from ibllib.io.extractors.training_wheel import extract_all as extract_all_wheel
 from full_bandit_fix import full_bandit_fix
 from session_summary_10 import *
+from binned_performance import *
+
 ######################################################################################################
 if __name__ == "__main__":
     ses = sys.argv[1]
@@ -13,7 +15,9 @@ if __name__ == "__main__":
     params, acc = fit_GLM(ses_df)
     plot_GLM(params,acc)
     plt.savefig(ses+'/glm_summary.png')
+    plt.close()
     plot_session_wo_laser(ses_df)
     plt.savefig(ses+'/example.png')
     plt.close()
+    plot_binned_performance(ses)
 

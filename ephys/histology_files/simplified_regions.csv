@@ -1,73 +1,199 @@
 ,original,group,n_neurons
-0,ACAd1,ACC,1.0
-1,ACAd5,ACC,1.0
-2,ACAv1,ACC,1.0
-3,ACAv2/3,ACC,5.0
-4,ACAv5,ACC,14.0
-5,AON,OA,131.0
-6,"Accumbens nucleus, core region",NAcc,98.0
-7,"Accumbens nucleus, shell region",NAcsh,19.0
-8,BST,BNST,66.0
-9,"Caudoputamen- intermediate, dorsolateral, dorsal",DLS,1.0
-10,"Caudoputamen- intermediate, dorsolateral, intermedial dorsal",DLS,1.0
-11,"Caudoputamen- intermediate, dorsomedial, central dorsal",DMS,9.0
-12,"Caudoputamen- intermediate, dorsomedial, dorsal tip ",DMS,15.0
-13,"Caudoputamen- intermediate, dorsomedial, dorsolateral",DMS,1.0
-14,"Caudoputamen- intermediate, dorsomedial, intermedial",DMS,32.0
-15,"Caudoputamen- intermediate, ventrolateral, central ventrolateral",VLS,2.0
-16,"Caudoputamen- intermediate, ventrolateral, ventral tip",VLS,2.0
-17,"Caudoputamen- intermediate, ventromedial, central ventromedial",VMS,8.0
-18,"Caudoputamen- intermediate, ventromedial, ventral",VMS,12.0
-19,"Caudoputamen- intermediate, ventromedial, ventromedial",VMS,39.0
-20,"Caudoputamen- rostral, intermediate, dorsal",DMS,71.0
-21,"Caudoputamen- rostral, intermediate, ventral",VMS,132.0
-22,"Caudoputamen- rostral, lateral, lateral strip",DMS,1.0
-23,"Cingulate cortex, area 25 (dorsal peduncular cortex), layer5",DMS,1.0
-24,"Cingulate cortex, area 25 (dorsal peduncular cortex), layer6a",DMS,7.0
-25,DP,PFC,37.0
-26,FRP5,FA,18.0
-27,FRP6a,FA,4.0
-28,FS,VP,6.0
-29,HY,HY,5.0
-30,ILA2/3,PFC,4.0
-31,ILA5,PFC,1.0
-32,LPO,HY,4.0
-33,LSr,SPT,147.0
-34,LSv,SPT,3.0
-35,"Lateral accumbens, shell region",NAcsh,12.0
-36,"Lateral septal nucleus, dorsal part",SPT,1.0
-37,"Lateral septal nucleus, intermediate part",SPT,3.0
-38,MOB,MOC,18.0
-39,MOp5,MOC,2.0
-40,MOp6a,MOC,10.0
-41,MOs2/3,MOC,1.0
-42,MOs5,MOC,37.0
-43,MPO,HY,1.0
-44,Medial septal nucleus,SPT,2.0
-45,NDB,NDB,25.0
-46,Nucleus of the vertical limb of the diagonal band,NDB,3.0
-47,OLF,OA,7.0
-48,ORBl1,FA,4.0
-49,ORBl2/3,FA,12.0
-50,ORBl5,FA,10.0
-51,ORBl6a,FA,2.0
-52,ORBm2/3,FA,1.0
-53,ORBm5,FA,56.0
-54,ORBvl1,FA,20.0
-55,ORBvl2/3,FA,51.0
-56,ORBvl5,FA,61.0
-57,PAL,VP,4.0
-58,PL1,PFC,26.0
-59,PL2/3,PFC,2.0
-60,PL5,PFC,18.0
-61,PS,HY,6.0
-62,SI,VP,60.0
-63,Striatum ventral region,NAcsh,2.0
-64,TTd,OA,33.0
-65,TTv,OA,1.0
-66,aco,other,4.0
-67,act,other,3.0
-68,"anterior commissure, anterior part",other,2.0
-69,corpus callosum,other,9.0
-70,genu of the corpus callosum,other,10.0
-71,root,other,1.0
+0,FRP5,OFC,1
+1,FRP6a,OFC,1
+2,ORBl1,OFC,1
+3,ORBl2/3,OFC,1
+4,ORBl5,OFC,1
+5,ORBl6a,OFC,1
+6,ORBl6b,OFC,1
+7,ORBm2/3,OFC,1
+8,ORBm5,OFC,1
+9,ORBvl1,OFC,1
+10,ORBvl2/3,OFC,1
+11,ORBvl5,OFC,1
+12,ORBm6a,OFC,1
+13,DP,PFC,1
+14,ILA1,PFC,1
+15,ILA2/3,PFC,1
+16,ILA5,PFC,1
+17,ILA6a,PFC,1
+18,PL1,PFC,1
+19,PL2/3,PFC,1
+20,PL5,PFC,1
+21,PL6a,PFC,1
+22,PL6b,PFC,1
+23,ACAd5,ACC,1
+24,ACAv2/3,ACC,1
+25,ACAv5,ACC,1
+26,ACAv6a,ACC,1
+27,"Cingulate cortex, area 25 (dorsal peduncular cortex), layer1",ACC,1
+28,"Cingulate cortex, area 25 (dorsal peduncular cortex), layer5",ACC,1
+29,"Cingulate cortex, area 25 (dorsal peduncular cortex), layer6a",ACC,1
+30,Primary somatosensory cortex layer 6a,SSs,1
+31,Primary somatosensory cortex layer 6b,SSs,1
+32,"Primary somatosensory cortex, upper lip region, layer 6b",SSs,1
+33,SSp-bfd5,SSs,1
+34,SSp-bfd6a,SSs,1
+35,SSp-bfd6b,SSs,1
+36,SSp-n6a,SSs,1
+37,SSp-n6b,SSs,1
+38,SSp-un2/3,SSs,1
+39,SSp-un4,SSs,1
+40,SSp-un5,SSs,1
+41,SSp-un6a,SSs,1
+42,SSp-un6b,SSs,1
+43,SSp-bfd2/3,SSs,1
+44,SSp-bfd4,SSs,1
+45,SSp-ll5,SSs,1
+46,SSp-ll6a ...,SSs,1
+47,SSp-ll6b,SSs,1
+48,SSp-m5,SSs,1
+49,SSp-m6a,SSs,1
+50,SSp-m6b,SSs,1
+51,SSp-n4,SSs,1
+52,SSp-n5,SSs,1
+53,SSp-ul2/3,SSs,1
+54,SSp-ul4,SSs,1
+55,SSp-ul5,SSs,1
+56,SSp-ul6a,SSs,1
+57,SSp-un6b,SSs,1
+58,MOp1,MO,1
+59,MOp2/3,MO,1
+60,MOp5,MO,1
+61,MOp6a,MO,1
+62,MOp6b,MO,1
+63,MOs2/3,MO,1
+64,MOs5,MO,1
+65,MOs6a,MO,1
+66,MOs6b,MO,1
+67,"Caudoputamen- caudal, dorsal, dorsolateral",DLS,1
+68,"Caudoputamen- caudal, intermediate, dorsal",DLS,1
+69,"Caudoputamen- caudal, ventral",DLS,1
+70,"Caudoputamen- intermediate, dorsolateral, dorsal",DLS,1
+71,"Caudoputamen- intermediate, dorsolateral, intermedial dorsal",DLS,1
+72,"Caudoputamen- rostral, lateral, lateral strip",DLS,1
+73,"Caudoputamen- caudal, dorsal, dorsomedial",DMS,1
+74,"Caudoputamen- caudal, dorsal",DMS,1
+75,"Caudoputamen- intermediate, dorsomedial, central dorsal",DMS,1
+76,"Caudoputamen- intermediate, dorsomedial, dorsal tip",DMS,1
+77,"Caudoputamen- intermediate, dorsomedial, dorsolateral",DMS,1
+78,"Caudoputamen- intermediate, dorsomedial, intermedial",DMS,1
+79,Caudoputamen- rostral extreme,DMS,1
+80,"Caudoputamen- rostral, intermediate, dorsal",DMS,1
+81,"Caudoputamen- rostral, medial",DMS,1
+82,"Caudoputamen- caudal, intermediate, ventrolateral",VPS,1
+83,"Caudoputamen- caudal, intermediate, ventromedial",VPS,1
+84,"Caudoputamen- intermediate, ventrolateral, central ventrolateral",VPS,1
+85,"Caudoputamen- intermediate, ventrolateral, intermedial ventral",VPS,1
+86,"Caudoputamen- intermediate, ventrolateral, ventral",VPS,1
+87,"Caudoputamen- intermediate, ventrolateral, ventral tip",VPS,1
+88,"Caudoputamen- intermediate, ventromedial, central ventromedial",VPS,1
+89,"Caudoputamen- intermediate, ventromedial, ventral",VPS,1
+90,"Caudoputamen- intermediate, ventromedial, ventromedial",VPS,1
+91,"Caudoputamen- rostral, intermediate, ventral",VPS,1
+92,"Caudoputamen- rostra,l lateral, ventromedial",VPS,1
+93,Striatum ventral region,VPS,1
+94,"Accumbens nucleus, core region",NAcc,1
+95,"Accumbens nucleus, shell region",NAcc,1
+96,"Lateral accumbens, shell region",NAcc,1
+97,FS,VP,1
+98,MA,VP,1
+99,PAL,VP,1
+100,SI,VP,1
+101,Ventral pallidum,VP,1
+102,GPe,GPe,1
+103,GPi,GPi,1
+104,MB,MB,1
+105,SNr,SNr,1
+106,AON,Olfactory,1
+107,"Dorsal tenia tecta, layer 1",Olfactory,1
+108,"Dorsal tenia tecta, layer 4",Olfactory,1
+109,MOB,Olfactory,1
+110,OLF,Olfactory,1
+111,OT,Olfactory,1
+112,TTd,Olfactory,1
+113,TTv,Olfactory,1
+114,PIR,Olfactory,1
+115,Olfactory tubercle 3,Olfactory,1
+116,IA,Amygdala,1
+117,BMAa,Amygdala,1
+118,BST,Amygdala,1
+119,CEAc,Amygdala,1
+120,CEAl,Amygdala,1
+121,CEAm,Amygdala,1
+122,COAa,Amygdala,1
+123,Extension of the amygdala,Amygdala,1
+124,"Interstitial nucleus of the posterior limb of the anterior commissure, lateral part",Amygdala,1
+125,"Interstitial nucleus of the posterior limb of the anterior commissure, medial part",Amygdala,1
+126,MEA,Amygdala,1
+127,AAA,Amygdala,1
+128,LSr,Septum,1
+129,LSv,Septum,1
+130,"Lateral septal nucleus, dorsal part",Septum,1
+131,"Lateral septal nucleus, intermediate part",Septum,1
+132,MS,Septum,1
+133,Medial septal nucleus,Septum,1
+134,LD,Thalamus,1
+135,RT,Thalamus,1
+136,VAL,Thalamus,1
+137,VPL,Thalamus,1
+138,VPM,Thalamus,1
+139,AV,Thalamus,1
+140,LGd-co,Thalamus,1
+141,LP,Thalamus,1
+142,MD,Thalamus,1
+143,PF,Thalamus,1
+144,TH,Thalamus,1
+145,CL,Thalamus,1
+146,AHN,Hypothalamus,1
+147,HY,Hypothalamus,1
+148,LHA,Hypothalamus,1
+149,LPO,Hypothalamus,1
+150,MPN,Hypothalamus,1
+151,MPO,Hypothalamus,1
+152,PS,Hypothalamus,1
+153,PeF,Hypothalamus,1
+154,AVPV,Hypothalamus,1
+155,ZI,ZI,1
+156,STN,STN,1
+157,Claustrum,Claustrum,1
+158,CLA,Other,1
+159,AId6a,Other,1
+160,"Dysgranular insular cortex, layer 6b",Other,1
+161,"Granular insular cortex, layer 6b",Other,1
+162,GU5,Other,1
+163,GU6a,Other,1
+164,Intermediate endopiriform claustrum,Other,1
+165,Dorsal endopiriform nucleus,Other,1
+166,EPd,Other,1
+167,CA3,Other,1
+168,DG-mo,Other,1
+169,NDB,Pallidum,1
+170,Nucleus of the horizontal limb of the diagonal band,Pallidum,1
+171,Navicular nucleus of the basal forebrain,Pallidum,1
+172,Nucleus of the vertical limb of the diagonal band,Pallidum,1
+173,aco,Other,1
+174,act,Other,1
+175,"anterior commissure, anterior part",Other,1
+176,ccb,Other,1
+177,ccg,Other,1
+178,chpl,Other,1
+179,cing,Other,1
+180,corpus callosum,Other,1
+181,em,Other,1
+182,external capsule,Other,1
+183,fa,Other,1
+184,fiber tracts,Other,1
+185,forceps minor of the corpus callosum,Other,1
+186,fx,Other,1
+187,genu of the corpus callosum,Other,1
+188,int,Other,1
+189,lateral ventricle,Other,1
+190,root,Other,1
+191,scwm,Other,1
+192,SEZ,Other,1
+193,VL,Other,1
+194,alv,Other,1
+195,fi,Other,1
+196,ml,Other,1
+197,or,Other,1

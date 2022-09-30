@@ -1,0 +1,73 @@
+,original,group,n_neurons
+0,ACAd1,ACC,1.0
+1,ACAd5,ACC,1.0
+2,ACAv1,ACC,1.0
+3,ACAv2/3,ACC,5.0
+4,ACAv5,ACC,14.0
+5,AON,OA,131.0
+6,"Accumbens nucleus, core region",NAcc,98.0
+7,"Accumbens nucleus, shell region",NAcsh,19.0
+8,BST,BNST,66.0
+9,"Caudoputamen- intermediate, dorsolateral, dorsal",DLS,1.0
+10,"Caudoputamen- intermediate, dorsolateral, intermedial dorsal",DLS,1.0
+11,"Caudoputamen- intermediate, dorsomedial, central dorsal",DMS,9.0
+12,"Caudoputamen- intermediate, dorsomedial, dorsal tip ",DMS,15.0
+13,"Caudoputamen- intermediate, dorsomedial, dorsolateral",DMS,1.0
+14,"Caudoputamen- intermediate, dorsomedial, intermedial",DMS,32.0
+15,"Caudoputamen- intermediate, ventrolateral, central ventrolateral",VLS,2.0
+16,"Caudoputamen- intermediate, ventrolateral, ventral tip",VLS,2.0
+17,"Caudoputamen- intermediate, ventromedial, central ventromedial",VMS,8.0
+18,"Caudoputamen- intermediate, ventromedial, ventral",VMS,12.0
+19,"Caudoputamen- intermediate, ventromedial, ventromedial",VMS,39.0
+20,"Caudoputamen- rostral, intermediate, dorsal",DMS,71.0
+21,"Caudoputamen- rostral, intermediate, ventral",VMS,132.0
+22,"Caudoputamen- rostral, lateral, lateral strip",DMS,1.0
+23,"Cingulate cortex, area 25 (dorsal peduncular cortex), layer5",DMS,1.0
+24,"Cingulate cortex, area 25 (dorsal peduncular cortex), layer6a",DMS,7.0
+25,DP,PFC,37.0
+26,FRP5,FA,18.0
+27,FRP6a,FA,4.0
+28,FS,VP,6.0
+29,HY,HY,5.0
+30,ILA2/3,PFC,4.0
+31,ILA5,PFC,1.0
+32,LPO,HY,4.0
+33,LSr,SPT,147.0
+34,LSv,SPT,3.0
+35,"Lateral accumbens, shell region",NAcsh,12.0
+36,"Lateral septal nucleus, dorsal part",SPT,1.0
+37,"Lateral septal nucleus, intermediate part",SPT,3.0
+38,MOB,MOC,18.0
+39,MOp5,MOC,2.0
+40,MOp6a,MOC,10.0
+41,MOs2/3,MOC,1.0
+42,MOs5,MOC,37.0
+43,MPO,HY,1.0
+44,Medial septal nucleus,SPT,2.0
+45,NDB,NDB,25.0
+46,Nucleus of the vertical limb of the diagonal band,NDB,3.0
+47,OLF,OA,7.0
+48,ORBl1,FA,4.0
+49,ORBl2/3,FA,12.0
+50,ORBl5,FA,10.0
+51,ORBl6a,FA,2.0
+52,ORBm2/3,FA,1.0
+53,ORBm5,FA,56.0
+54,ORBvl1,FA,20.0
+55,ORBvl2/3,FA,51.0
+56,ORBvl5,FA,61.0
+57,PAL,VP,4.0
+58,PL1,PFC,26.0
+59,PL2/3,PFC,2.0
+60,PL5,PFC,18.0
+61,PS,HY,6.0
+62,SI,VP,60.0
+63,Striatum ventral region,NAcsh,2.0
+64,TTd,OA,33.0
+65,TTv,OA,1.0
+66,aco,other,4.0
+67,act,other,3.0
+68,"anterior commissure, anterior part",other,2.0
+69,corpus callosum,other,9.0
+70,genu of the corpus callosum,other,10.0
+71,root,other,1.0

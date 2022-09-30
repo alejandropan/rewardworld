@@ -36,7 +36,7 @@ def plot_block_evolution(behav):
     # Plot block evolution
     sns.lineplot(data=behav, x='trial_within_block',
                  y = 1*(behav['choice']>0),
-                 hue = behav['Probability of reward on left'], ci=68,
+                 hue = behav['Probability of reward on left'], errorbar='se',
                  err_style="bars", palette = 'colorblind')
     plt.xlim(-5,10)
     plt.xlabel('Trial within block')
@@ -48,7 +48,7 @@ def plot_block_evolution(behav):
 def plot_stay_prob(behav):
     # Plot probability of staying
     sns.barplot(x=behav['previous_outcome_1'],  y=behav['choice']==behav['previous_choice_1'],
-                palette = {0:'r', 1:'g'}, ci=68)
+                palette = {0:'r', 1:'g'}, errorbar='se')
     plt.ylim(0,1)
     plt.ylabel('Fraction of repeated choices')
     plt.xticks([0,1],['Previous Unrewarded', 'Rrevious Rewarded'])
@@ -57,7 +57,7 @@ def plot_stay_prob(behav):
 def plot_choice_summary(behav):
     # Plot fraction of left choices per block
     sns.barplot(data=behav, x='probabilityLeft',
-                y = 1*(behav['choice']*-1>0), ci=68)
+                y = 1*(behav['choice']*-1>0), errorbar='se')
     plt.ylabel('Fraction Left Choices')
     plt.ylim(0,1)
     sns.despine()
@@ -373,16 +373,16 @@ def plot_session_wo_laser(ses_df):
     plt.plot(example['choice_r'].rolling(10, center=True).mean(),color='orange')
     #plt.plot(example['choice_l'].rolling(10, center=True).mean(),color='blue')
     plt.plot(example['value_choice'].rolling(10, center=True).mean(),color='k', linestyle='dashed')
-    plt.plot(example['probabilityRight']/5+1.50,color='k',
+    plt.plot(example['probabilityRight']/5+1.11,color='k',
              linestyle='--', alpha =0.5)
     #plt.xlim(0,400)
     plt.yticks(ticks=[0.0,0.25,0.5,0.75, 1.0],labels=[0.0,0.25,0.5,0.75,1.0])
-    plt.vlines(np.where(example['reward_r']==1),1.37,1.47, color='green')
-    plt.vlines(np.where(example['reward_l']==1),1.25,1.35, color='green')
-    plt.vlines(np.where((example['potential_reward_l']==1)),1.25,1.30, color='green')
-    plt.vlines(np.where((example['potential_reward_r']==1)),1.37,1.43, color='green')
+    #plt.vlines(np.where((example['potential_reward_l']==1)),1.25,1.30, color='green')
+    #plt.vlines(np.where((example['potential_reward_r']==1)),1.37,1.43, color='green')
     plt.vlines(np.where(example['choice_r']==1),1.01,1.11, color='black')
     plt.vlines(np.where(example['choice_l']==1),-0.11,-0.01, color='black')
+    plt.vlines(np.where(example['reward_r']==1),1.01,1.11, color='green')
+    plt.vlines(np.where(example['reward_l']==1),-0.11,-0.01, color='green')
     sns.despine()
     plt.xlabel('Trial')
     plt.ylabel('Choice probability')

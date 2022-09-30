@@ -326,156 +326,140 @@ def alphadecay_plot(data):
     plt.show()
 
 
+if __name__=='__main__':
+    standata = make_stan_data(load_data())
+    standata_recovery = load_sim_data() # Raw data for simulations
 
-standata = make_stan_data(load_data())
-standata_recovery = load_sim_data() # Raw data for simulations
+    # Accuracy analysis:
+    accu_standard = 0.7064414537611433
+    betalaserdecayaccu = 0.7072184584282222
 
-# Accuracy analysis:
-accu_standard = 0.7064414537611433
-betalaserdecayaccu = 0.7072184584282222
-
-realdata = stan_data_to_df(standata_recovery,standata)
-realdata = realdata.rename(columns={'choices':'choice'})
-realdata = transform_data_laserdecay(realdata, bins=8)
-realdata = realdata.rename(columns={'laser_block':'opto_block'})
-realdata = trial_within_block(realdata)
-realdata = add_transition_info(realdata, trials_forward=10)
-
-
+    realdata = stan_data_to_df(standata_recovery,standata)
+    realdata = realdata.rename(columns={'choices':'choice'})
+    realdata = transform_data_laserdecay(realdata, bins=8)
+    realdata = realdata.rename(columns={'laser_block':'opto_block'})
+    realdata = trial_within_block(realdata)
+    realdata = add_transition_info(realdata, trials_forward=10)
 
 
 
-if LASERDECAY==True:
-    standard_laserdecay = pd.read_csv('/Volumes/witten/Alex/Data/ephys_bandit/stan_fits/standard_alphalaserdecay/output/summary.csv')
-    laserdecayaccu = q_learning_model_alphalaserdecay(standata,saved_params=standard_laserdecay)['acc'].unique().mean()
-    simdata_standard = pd.DataFrame()
-    for i in np.arange(5):
-        _, _, _, df = simulate_q_learning_model_alphalaserdecay(standata_recovery,saved_params=standard_laserdecay)
-        simdata_standard = pd.concat([simdata_standard,df])
-    simdata_standard = simdata_standard.rename(columns={'choices':'choice'})
-    simdata_standard = transform_data_laserdecay(simdata_standard, bins=8)
-    simdata_standard = simdata_standard.rename(columns={'laser_block':'opto_block'})
-    simdata_standard = trial_within_block(simdata_standard)
-    simdata_standard = add_transition_info(simdata_standard, trials_forward=10)
-    plot_laserdecay_summary(simdata_standard, BINS=8)
-    laserdecayanalysis(simdata_standard, BINS=8)
 
 
-if standard_75==True:
-    standard_75 = pd.read_csv('/Volumes/witten/Alex/Data/ephys_bandit/stan_fits/investigation_laserdecay/standard_75/output/summary.csv')
-    simdata_standard = pd.DataFrame()
+    if LASERDECAY==True:
+        standard_laserdecay = pd.read_csv('/Volumes/witten/Alex/Data/ephys_bandit/stan_fits/standard_alphalaserdecay/output/summary.csv')
+        laserdecayaccu = q_learning_model_alphalaserdecay(standata,saved_params=standard_laserdecay)['acc'].unique().mean()
+        simdata_standard = pd.DataFrame()
+        for i in np.arange(5):
+            _, _, _, df = simulate_q_learning_model_alphalaserdecay(standata_recovery,saved_params=standard_laserdecay)
+            simdata_standard = pd.concat([simdata_standard,df])
+        simdata_standard = simdata_standard.rename(columns={'choices':'choice'})
+        simdata_standard = transform_data_laserdecay(simdata_standard, bins=8)
+        simdata_standard = simdata_standard.rename(columns={'laser_block':'opto_block'})
+        simdata_standard = trial_within_block(simdata_standard)
+        simdata_standard = add_transition_info(simdata_standard, trials_forward=10)
+        plot_laserdecay_summary(simdata_standard, BINS=8)
+        laserdecayanalysis(simdata_standard, BINS=8)
+
+
+    if standard_75==True:
+        standard_75 = pd.read_csv('/Volumes/witten/Alex/Data/ephys_bandit/stan_fits/investigation_laserdecay/standard_75/output/summary.csv')
+        simdata_standard = pd.DataFrame()
+        for i in np.arange(10):
+            _, _, _, df = simulate_q_learning_model_new(standata_recovery,saved_params=standard_75)
+            simdata_standard = pd.concat([simdata_standard,df])
+        simdata_standard = simdata_standard.rename(columns={'choices':'choice'})
+        simdata_standard = transform_data_laserdecay(simdata_standard, bins=8)
+        simdata_standard = simdata_standard.rename(columns={'laser_block':'opto_block'})
+        simdata_standard = trial_within_block(simdata_standard)
+        simdata_standard = add_transition_info(simdata_standard, trials_forward=10)
+        plot_laserdecay_summary(simdata_standard, BINS=8)
+
+    if standard_150rest==True:
+        standard_150rest = pd.read_csv('/Volumes/witten/Alex/Data/ephys_bandit/stan_fits/investigation_laserdecay/standard_rest/output/summary.csv')
+        simdata_standard = pd.DataFrame()
+        for i in np.arange(10):
+            _, _, _, df = simulate_q_learning_model_new(standata_recovery,saved_params=standard_150rest)
+            simdata_standard = pd.concat([simdata_standard,df])
+        simdata_standard = simdata_standard.rename(columns={'choices':'choice'})
+        simdata_standard = transform_data_laserdecay(simdata_standard, bins=8)
+        simdata_standard = simdata_standard.rename(columns={'laser_block':'opto_block'})
+        simdata_standard = trial_within_block(simdata_standard)
+        simdata_standard = add_transition_info(simdata_standard, trials_forward=10)
+        plot_laserdecay_summary(simdata_standard, BINS=8)
+
+
+    if reinforce_75==True:
+        reinforce_75 = pd.read_csv('/Volumes/witten/Alex/Data/ephys_bandit/stan_fits/investigation_laserdecay/reinforce_75/output/summary.csv')
+        simdata_reinforce = pd.DataFrame()
+        for i in np.arange(10):
+            _, _, _, df =  simulate_reinforce_winloss_stay(standata_recovery,saved_params=reinforce_75)
+            simdata_reinforce = pd.concat([simdata_reinforce,df])
+        simdata_reinforce = simdata_reinforce.rename(columns={'choices':'choice'})
+        simdata_reinforce = transform_data_laserdecay(simdata_reinforce, bins=8)
+        simdata_reinforce = simdata_reinforce.rename(columns={'laser_block':'opto_block'})
+        simdata_reinforce = trial_within_block(simdata_reinforce)
+        simdata_reinforce = add_transition_info(simdata_reinforce, trials_forward=10)
+        plot_laserdecay_summary(simdata_reinforce, BINS=8)
+
+    if reinforce_150rest==True:
+        reinforce_150rest = pd.read_csv('/Volumes/witten/Alex/Data/ephys_bandit/stan_fits/investigation_laserdecay/reinforce_rest/output/summary.csv')
+        simdata_reinforce = pd.DataFrame()
+        for i in np.arange(10):
+            _, _, _, df =  simulate_reinforce_winloss_stay(standata_recovery,saved_params=reinforce_150rest)
+            simdata_reinforce = pd.concat([simdata_reinforce,df])
+        simdata_reinforce = simdata_reinforce.rename(columns={'choices':'choice'})
+        simdata_reinforce = transform_data_laserdecay(simdata_reinforce, bins=8)
+        simdata_reinforce = simdata_reinforce.rename(columns={'laser_block':'opto_block'})
+        simdata_reinforce = trial_within_block(simdata_reinforce)
+        simdata_reinforce = add_transition_info(simdata_reinforce, trials_forward=10)
+        plot_laserdecay_summary(simdata_reinforce, BINS=8)
+
+
+
+
+
+    if LASERDECAY_everytrial==True:
+        standard_laserdecay = pd.read_csv('/Volumes/witten/Alex/Data/ephys_bandit/stan_fits/standard_alphalaserdecay_every_trial/output/summary.csv')
+        laserdecayeverytrialaccu = q_learning_model_alphalaserdecay_everytrial(standata,saved_params=standard_laserdecay)['acc'].unique().mean()
+        _, _, _, simdata_standard = simulate_q_learning_model_alphalaserdecay_everytrial(standata_recovery,saved_params=standard_laserdecay)
+        simdata_standard = simdata_standard.rename(columns={'choices':'choice'})
+        simdata_standard = transform_data_laserdecay(simdata_standard, bins=8)
+        simdata_standard = simdata_standard.rename(columns={'laser_block':'opto_block'})
+        simdata_standard = trial_within_block(simdata_standard)
+        simdata_standard = add_transition_info(simdata_standard, trials_forward=10)
+        plot_laserdecay_summary(simdata_standard, BINS=8)
+
+
+    if REINFORCE==True:
+        REINFORCEalphalaserdecaystay = pd.read_csv('/Volumes/witten/Alex/Data/ephys_bandit/stan_fits/REINFORCE_laserdecaywin_mixedstay/output/summary.csv')
+        _, _, _, simdata_reinforce = simulate_reinforce_alphalaserdecay_win_stay(standata_recovery,saved_params=REINFORCEalphalaserdecaystay)
+        simdata_reinforce = simdata_reinforce.rename(columns={'choices':'choice'})
+        simdata_reinforce = transform_data_laserdecay(simdata_reinforce, bins=8)
+        simdata_reinforce = simdata_reinforce.rename(columns={'laser_block':'opto_block'})
+        simdata_reinforce = trial_within_block(simdata_reinforce)
+        simdata_reinforce = add_transition_info(simdata_reinforce, trials_forward=10)
+        laserdecayanalysis(simdata_reinforce, BINS=8)
+        plot_laserdecay_summary(simdata_reinforce, BINS=8)
+
+
+
+
+
+
+
+
+    simdata_reinforce1=pd.DataFrame()
     for i in np.arange(10):
-        _, _, _, df = simulate_q_learning_model_new(standata_recovery,saved_params=standard_75)
-        simdata_standard = pd.concat([simdata_standard,df])
-    simdata_standard = simdata_standard.rename(columns={'choices':'choice'})
-    simdata_standard = transform_data_laserdecay(simdata_standard, bins=8)
-    simdata_standard = simdata_standard.rename(columns={'laser_block':'opto_block'})
-    simdata_standard = trial_within_block(simdata_standard)
-    simdata_standard = add_transition_info(simdata_standard, trials_forward=10)
-    plot_laserdecay_summary(simdata_standard, BINS=8)
-
-if standard_150rest==True:
-    standard_150rest = pd.read_csv('/Volumes/witten/Alex/Data/ephys_bandit/stan_fits/investigation_laserdecay/standard_rest/output/summary.csv')
-    simdata_standard = pd.DataFrame()
-    for i in np.arange(10):
-        _, _, _, df = simulate_q_learning_model_new(standata_recovery,saved_params=standard_150rest)
-        simdata_standard = pd.concat([simdata_standard,df])
-    simdata_standard = simdata_standard.rename(columns={'choices':'choice'})
-    simdata_standard = transform_data_laserdecay(simdata_standard, bins=8)
-    simdata_standard = simdata_standard.rename(columns={'laser_block':'opto_block'})
-    simdata_standard = trial_within_block(simdata_standard)
-    simdata_standard = add_transition_info(simdata_standard, trials_forward=10)
-    plot_laserdecay_summary(simdata_standard, BINS=8)
-
-
-if reinforce_75==True:
-    reinforce_75 = pd.read_csv('/Volumes/witten/Alex/Data/ephys_bandit/stan_fits/investigation_laserdecay/reinforce_75/output/summary.csv')
-    simdata_reinforce = pd.DataFrame()
-    for i in np.arange(10):
-        _, _, _, df =  simulate_reinforce_winloss_stay(standata_recovery,saved_params=reinforce_75)
-        simdata_reinforce = pd.concat([simdata_reinforce,df])
-    simdata_reinforce = simdata_reinforce.rename(columns={'choices':'choice'})
-    simdata_reinforce = transform_data_laserdecay(simdata_reinforce, bins=8)
-    simdata_reinforce = simdata_reinforce.rename(columns={'laser_block':'opto_block'})
-    simdata_reinforce = trial_within_block(simdata_reinforce)
-    simdata_reinforce = add_transition_info(simdata_reinforce, trials_forward=10)
-    plot_laserdecay_summary(simdata_reinforce, BINS=8)
-
-if reinforce_150rest==True:
-    reinforce_150rest = pd.read_csv('/Volumes/witten/Alex/Data/ephys_bandit/stan_fits/investigation_laserdecay/reinforce_rest/output/summary.csv')
-    simdata_reinforce = pd.DataFrame()
-    for i in np.arange(10):
-        _, _, _, df =  simulate_reinforce_winloss_stay(standata_recovery,saved_params=reinforce_150rest)
-        simdata_reinforce = pd.concat([simdata_reinforce,df])
-    simdata_reinforce = simdata_reinforce.rename(columns={'choices':'choice'})
-    simdata_reinforce = transform_data_laserdecay(simdata_reinforce, bins=8)
-    simdata_reinforce = simdata_reinforce.rename(columns={'laser_block':'opto_block'})
-    simdata_reinforce = trial_within_block(simdata_reinforce)
-    simdata_reinforce = add_transition_info(simdata_reinforce, trials_forward=10)
-    plot_laserdecay_summary(simdata_reinforce, BINS=8)
+        _, _, _, simdata_reinforce = simulate_reinforce_alphalaserdecay_win_stay(standata_recovery,saved_params=REINFORCEalphalaserdecaystay)
+        simdata_reinforce = simdata_reinforce.rename(columns={'choices':'choice'})
+        simdata_reinforce = transform_data_laserdecay(simdata_reinforce, bins=8)
+        simdata_reinforce = simdata_reinforce.rename(columns={'laser_block':'opto_block'})
+        simdata_reinforce = trial_within_block(simdata_reinforce)
+        simdata_reinforce = add_transition_info(simdata_reinforce, trials_forward=10)
+        simdata_reinforce1=pd.concat([simdata_reinforce1,simdata_reinforce])
 
 
 
-
-
-if LASERDECAY_everytrial==True:
-    standard_laserdecay = pd.read_csv('/Volumes/witten/Alex/Data/ephys_bandit/stan_fits/standard_alphalaserdecay_every_trial/output/summary.csv')
-    laserdecayeverytrialaccu = q_learning_model_alphalaserdecay_everytrial(standata,saved_params=standard_laserdecay)['acc'].unique().mean()
-    _, _, _, simdata_standard = simulate_q_learning_model_alphalaserdecay_everytrial(standata_recovery,saved_params=standard_laserdecay)
-    simdata_standard = simdata_standard.rename(columns={'choices':'choice'})
-    simdata_standard = transform_data_laserdecay(simdata_standard, bins=8)
-    simdata_standard = simdata_standard.rename(columns={'laser_block':'opto_block'})
-    simdata_standard = trial_within_block(simdata_standard)
-    simdata_standard = add_transition_info(simdata_standard, trials_forward=10)
-    plot_laserdecay_summary(simdata_standard, BINS=8)
-
-
-if REINFORCE==True:
-    REINFORCEalphalaserdecaystay = pd.read_csv('/Volumes/witten/Alex/Data/ephys_bandit/stan_fits/REINFORCE_laserdecaywin_mixedstay/output/summary.csv')
-    _, _, _, simdata_reinforce = simulate_reinforce_alphalaserdecay_win_stay(standata_recovery,saved_params=REINFORCEalphalaserdecaystay)
-    simdata_reinforce = simdata_reinforce.rename(columns={'choices':'choice'})
-    simdata_reinforce = transform_data_laserdecay(simdata_reinforce, bins=8)
-    simdata_reinforce = simdata_reinforce.rename(columns={'laser_block':'opto_block'})
-    simdata_reinforce = trial_within_block(simdata_reinforce)
-    simdata_reinforce = add_transition_info(simdata_reinforce, trials_forward=10)
-    laserdecayanalysis(simdata_reinforce, BINS=8)
-    plot_laserdecay_summary(simdata_reinforce, BINS=8)
-
-
-
-
-
-
-
-
-simdata_reinforce1=pd.DataFrame()
-for i in np.arange(10):
-    _, _, _, simdata_reinforce = simulate_reinforce_alphalaserdecay_win_stay(standata_recovery,saved_params=REINFORCEalphalaserdecaystay)
-    simdata_reinforce = simdata_reinforce.rename(columns={'choices':'choice'})
-    simdata_reinforce = transform_data_laserdecay(simdata_reinforce, bins=8)
-    simdata_reinforce = simdata_reinforce.rename(columns={'laser_block':'opto_block'})
-    simdata_reinforce = trial_within_block(simdata_reinforce)
-    simdata_reinforce = add_transition_info(simdata_reinforce, trials_forward=10)
-    simdata_reinforce1=pd.concat([simdata_reinforce1,simdata_reinforce])
-
-
-
-# Add transition data to dataframe
-laserdecayanalysis(realdata, BINS=8)
-plot_laserdecay_summary(realdata, BINS=8)
-
-
-b1 = []
-x=1
-for i in np.arange(300):
-    l = np.random.choice(2, p=[0.75,0.25])
-    x+=(1*l)
-    b1.append(1/(1+np.exp((-10+(0.3*x)))))
-plt.plot(b1)
-plt.show()
-
-                    x+=(1* np.random.choice(2, p=[0.75,0.25]))
-                    #alphalaser = (1-laserdecay)*alphalaser
-                    alphalaser = 1/(1+np.exp((-3+(0.1*x))))*alphalaser_init
-
-    sns.lineplot(data=simdata_standard.reset_index(), x ='index', y='alpha_laser', palette = 'viridis', ci=None)
+    # Add transition data to dataframe
+    laserdecayanalysis(realdata, BINS=8)
+    plot_laserdecay_summary(realdata, BINS=8)

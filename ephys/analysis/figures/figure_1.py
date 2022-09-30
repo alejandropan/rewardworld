@@ -7,9 +7,6 @@ from scipy.stats import zscore
 from scipy.signal import butter, filtfilt
 
 
-
-WAIC.py
-
 ##
 qlearning_values =  load_qdata_from_file(ROOT_FOLDER = '/Volumes/witten/Alex/Data/Subjects', prefix='QLearning_alphalaserdecay_')
 reinforce_values =  load_qdata_from_file(ROOT_FOLDER = '/Volumes/witten/Alex/Data/Subjects', prefix='REINFORCE_mixedstay_alphalaserdecay_')

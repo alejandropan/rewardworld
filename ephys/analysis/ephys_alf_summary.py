@@ -113,7 +113,6 @@ LIST_OF_SESSIONS_ALEX = \
 '/Volumes/witten/Alex/Data/Subjects/dop_24/2021-03-19/002',
 '/Volumes/witten/Alex/Data/Subjects/dop_21/2021-06-14/001',
 '/Volumes/witten/Alex/Data/Subjects/dop_21/2021-06-20/001',
-'/Volumes/witten/Alex/Data/Subjects/dop_21/2021-06-12/001',
 '/Volumes/witten/Alex/Data/Subjects/dop_36/2021-07-17/002',
 '/Volumes/witten/Alex/Data/Subjects/dop_36/2021-07-19/001',
 '/Volumes/witten/Alex/Data/Subjects/dop_36/2021-07-21/002',
@@ -174,7 +173,6 @@ def add_transition_info(ses_d, trials_forward=10):
                                      ' to '\
                                    +ses_ses_next['probabilityLeft'].astype(str)
 
-############################
             blocks = np.array([0.1,0.7])
             ses_ses_next_real = ses_df.loc[(ses_df['block_number']==i) &
             (ses_df['transition_analysis_real']==1) &
@@ -187,7 +185,6 @@ def add_transition_info(ses_d, trials_forward=10):
                                     ses_ses_next_real['probabilityLeft'].iloc[0].astype(str) + \
                                      ' to '\
                                    + str(past_block[0])
-############################
 
     return ses_df
 
@@ -287,21 +284,33 @@ def NormalizeData(data):
 
 
 ######## Classes
-
 class probe:
     def __init__(self,path):
         self.spike_times = np.load(path+'/spikes.times.npy')
         self.spike_clusters = np.load(path+'/spikes.clusters.npy')
         self.cluster_channels = np.load(path+'/clusters.channels.npy')
         self.channel_locations = np.load(path+'/channels.locations.npy', allow_pickle = True)
+        self.channel_xyz = pd.read_json(path + '/channel_locations.json', orient='index').iloc[:-1,:3].to_numpy()/1000000
+        self.cluster_xyz = self.channel_xyz[self.cluster_channels,:]
+        self.channel_xyz  = np.load(path+'/channels.localCoordinates.npy')
+        self.channel_hem = np.load(path+'/channels.hemisphere.npy')
+        self.cluster_hem = self.channel_hem[self.cluster_channels]
         self.cluster_locations = self.channel_locations[self.cluster_channels]
-        self.cluster_metrics = pd.read_csv(path+'/clusters.metrics.csv')['group']
+        metrics = pd.read_csv(path+'/clusters.metrics.csv')
+        self.cluster_metrics = [None] * (metrics['cluster_id'].max()+1)
+        for i in metrics.cluster_id.to_numpy():
+            self.cluster_metrics[i] = metrics.loc[metrics['cluster_id']==i, 'group'].to_list()[0]
+        self.cluster_selection = np.load(path+'/clusters_selection.npy')
         try:
             self.cluster_id = pd.read_csv(path+'/clusters.metrics.csv')['cluster_id']
         except:
             self.cluster_id = pd.read_csv(path+'/clusters.metrics.csv')['id']           
         try:
-            groups = pd.read_csv('/Users/alexpan/Documents/PYTHON/rewardworld/ephys/histology_files/simplified_regions.csv')
+            try:
+                groups = pd.read_csv('/jukebox/witten/Alex/PYTHON/rewardworld/ephys/histology_files/simplified_regions.csv')
+            except:
+                groups = pd.read_csv('/volumes/witten/Alex/PYTHON/rewardworld/ephys/histology_files/simplified_regions.csv')
+            #groups = pd.read_csv('/mnt/s0/PYTHON/rewardworld/ephys/histology_files/simplified_regions.csv')
             groups = groups.iloc[:,1:3]
             groups = groups.set_index('original')
             group_dict = groups.to_dict()['group']
@@ -309,6 +318,7 @@ class probe:
                 pd.Series(self.cluster_locations).map(group_dict)
         except:
             print("Simplified locations not available")
+
 class alf_ephys:
     def __init__(self, n_probes):
         self.probes = [None]*n_probes
@@ -324,7 +334,13 @@ class alf:
         self.left_reward  = np.load(path+'/alf/_ibl_trials.left_reward.npy')
         self.right_reward  = np.load(path+'/alf/_ibl_trials.right_reward.npy')
         self.probabilityLeft  = np.load(path+'/alf/_ibl_trials.probabilityLeft.npy')
-        self.opto_block = np.load(path+'/alf/_ibl_trials.opto_block.npy')
+        self.no_reward_block = False
+        if Path(path+'/alf/standard_QRlaser.npy').is_file()==True:
+            self.opto_block = np.load(path+'/alf/_ibl_trials.opto_block.npy')
+        else:
+            self.opto_block = np.zeros(len(self.choice))
+            print('No reward type blocks')
+            self.no_reward_block = True
         self.laser_reward  = (1*(np.load(path+'/alf/_ibl_trials.rewardVolume.npy')>0)) * self.opto_block
         self.water_reward = (1*(np.load(path+'/alf/_ibl_trials.rewardVolume.npy')>0)) \
                             * (1*(self.opto_block==0))
@@ -334,30 +350,33 @@ class alf:
         self.start_time = np.load(path+'/alf/_ibl_trials.intervals.npy')[:,0]
         self.first_move = np.load(path+'/alf/_ibl_trials.firstMovement_times.npy')
 
-
-        if os.path.isfile(path+'/alf/QLearning_alphalaserdecay_QL.npy'):
-            self.QL = np.load(path+'/alf/QLearning_alphalaserdecay_QL.npy')
-            self.QR = np.load(path+'/alf/QLearning_alphalaserdecay_QR.npy')
-            self.QLlaser = np.load(path+'/alf/QLearning_alphalaserdecay_QLlaser.npy')
-            self.QRlaser = np.load(path+'/alf/QLearning_alphalaserdecay_QRlaser.npy')
-            self.QLstay  = np.load(path+'/alf/QLearning_alphalaserdecay_QLstay.npy')
-            self.QRstay  = np.load(path+'/alf/QLearning_alphalaserdecay_QRstay.npy')
-            self.QLreward  = np.load(path+'/alf/QLearning_alphalaserdecay_QLreward.npy')
-            self.QRreward  = np.load(path+'/alf/QLearning_alphalaserdecay_QRreward.npy')
-            self.choice_prediction  = np.load(path+'/alf/QLearning_alphalaserdecay_choice_prediction.npy')
+        if os.path.isfile(path+'/alf/standard_QL.npy'):
+            self.QL = np.load(path+'/alf/standard_QL.npy')
+            self.QR = np.load(path+'/alf/standard_QR.npy')
+            if self.no_reward_block==False:
+                self.QLlaser = np.load(path+'/alf/standard_QLlaser.npy')
+                self.QRlaser = np.load(path+'/alf/standard_QRlaser.npy')
+            self.QLstay  = np.load(path+'/alf/standard_QLstay.npy')
+            self.QRstay  = np.load(path+'/alf/standard_QRstay.npy')
+            self.QLreward  = np.load(path+'/alf/standard_QLreward.npy')
+            self.QRreward  = np.load(path+'/alf/standard_QRreward.npy')
+            self.choice_prediction  = np.load(path+'/alf/standard_choice_prediction.npy')
             self.accuracy = np.mean((1*(self.choice>0))==(1*(self.choice_prediction>0.5)))
-
-            self.DQlaser = np.load(path+'/alf/REINFORCE_mixedstay_alphalaserdecay_laser.npy')
+        if os.path.isfile(path+'/alf/REINFORCE_mixedstay_alphalaserdecay_laser.npy'):
+            if self.no_reward_block==False:
+                self.DQlaser = np.load(path+'/alf/REINFORCE_mixedstay_alphalaserdecay_laser.npy')
             self.DQwater = np.load(path+'/alf/REINFORCE_mixedstay_alphalaserdecay_water.npy')
             self.RQLstay  = np.load(path+'/alf/REINFORCE_mixedstay_alphalaserdecay_QLstay.npy')
             self.RQRstay  = np.load(path+'/alf/REINFORCE_mixedstay_alphalaserdecay_QRstay.npy')
-            self.DQ = self.DQlaser + self.DQwater + (self.QRstay - self.QLstay)
+            if self.no_reward_block==False:
+                self.DQ = self.DQlaser + self.DQwater + (self.QRstay - self.QLstay)
+            else:
+                self.DQ = self.DQwater + (self.QRstay - self.QLstay)
             self.reinforce_choice_prediction  = np.load(path+'/alf/REINFORCE_mixedstay_alphalaserdecay_choice_prediction.npy')
             self.raccuracy = np.mean((1*(self.choice>0))==(1*(self.reinforce_choice_prediction>0.5)))
 
-
         if ephys==True: # Clunky section to be streamlined
-            probe_paths = glob(path +'/alf/*[0-9]*/')
+            probe_paths = sorted(glob(path +'/alf/*[0-9]*/'))
             self.probe = alf_ephys(len(probe_paths))
             for p, p_path in enumerate(probe_paths):
                 if Path(p_path+'/pykilosort').is_dir():
@@ -378,15 +397,17 @@ class alf:
         example = self.to_df()
         example['choice_r'] = (example['choice']==1)*1
         example['choice_l'] = (example['choice']==-1)*1
-        example['value_laser'] = example['QRlaser']-example['QLlaser']
+        if self.no_reward_block==False:
+            example['value_laser'] = example['QRlaser']-example['QLlaser']
         example['value_reward'] = example['QRreward']-example['QLreward']
         example['value_stay'] = example['QRstay']-example['QLstay']
         example['probabilityRight']=0.1
         example.loc[example['probabilityLeft']==0.1, 'probabilityRight'] = 0.7
         example['reward_r'] = example['outcome']*example['choice_r']*(1*(example['opto_block']!=1))
         example['reward_l'] = example['outcome']*example['choice_l']*(1*(example['opto_block']!=1))
-        example['laser_r'] = example['outcome']*example['choice_r']*example['opto_block']
-        example['laser_l'] = example['outcome']*example['choice_l']*example['opto_block']
+        if self.no_reward_block==False:
+            example['laser_r'] = example['outcome']*example['choice_r']*example['opto_block']
+            example['laser_l'] = example['outcome']*example['choice_l']*example['opto_block']
         fig = plt.figure()
         spec = gridspec.GridSpec(ncols=1, nrows=2,
                                  height_ratios=[2, 5])
@@ -396,7 +417,8 @@ class alf:
         ax1.plot(example['choice_prediction'].rolling(10,center=False).mean(),color='k', linestyle='dashed', linewidth=2)
         ax1.spines['top'].set_visible(False)
         ax2 = ax1.twinx()  # instantiate a second axes that shares the same x-axis
-        ax2.plot(example['value_laser'].rolling(10, center=False).mean(),color='orange', linestyle='dashed', linewidth=2)
+        if self.no_reward_block==False:
+            ax2.plot(example['value_laser'].rolling(10, center=False).mean(),color='orange', linestyle='dashed', linewidth=2)
         ax2.plot(example['value_reward'].rolling(10, center=False).mean(),color='dodgerblue', linestyle='dashed', linewidth=2)
         ax2.spines['top'].set_visible(False)
         ax2.plot(example['value_stay'].rolling(10, center=False).mean(),color='gray', linestyle='dashed', linewidth=2)
@@ -413,8 +435,9 @@ class alf:
         plt.vlines(np.where(example['choice']==-1),-0.225,-0.15, color='k')
         plt.vlines(np.where(example['reward_l']==1),-0.225,-0.15, color='dodgerblue')
         plt.vlines(np.where(example['reward_r']==1),0.925,1.0, color='dodgerblue')
-        plt.vlines(np.where(example['laser_r']==1),0.925,1.0, color='orange')
-        plt.vlines(np.where(example['laser_l']==1),-0.225,-0.15, color='orange')
+        if self.no_reward_block==False:
+            plt.vlines(np.where(example['laser_r']==1),0.925,1.0, color='orange')
+            plt.vlines(np.where(example['laser_l']==1),-0.225,-0.15, color='orange')
         plt.axis('off')
         plt.ylabel('Reward probability')
         return fig
@@ -719,10 +742,10 @@ class ephys_ephys_dataset:
 
 if __name__=="__main__":
     # 1. Load all data
-    sessions = ephys_ephys_dataset(len(LIST_OF_SESSIONS_CHR2_GOOD_REC))
-    for i, ses in enumerate(LIST_OF_SESSIONS_CHR2_GOOD_REC):
+    sessions = ephys_ephys_dataset(len(LIST_OF_SESSIONS_ALEX))
+    for i, ses in enumerate(LIST_OF_SESSIONS_ALEX):
             print(ses)
-            ses_data = alf(ses, ephys=False)
+            ses_data = alf(ses, ephys=True)
             ses_data.mouse = Path(ses).parent.parent.name
             ses_data.date = Path(ses).parent.name
             ses_data.ses = Path(ses).name

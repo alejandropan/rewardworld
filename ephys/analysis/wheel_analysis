@@ -1,14 +1,11 @@
-from numpy import np
+from turtle import left
+import numpy as np
 import matplotlib.pyplot as plt
 
 #g_t  go cue trigger time
 #f_t feedback trigger time
 #pos position file
 #pos_t position timestamps file
-
-
-start= 154 #trial number for example
-stop = start+4
 
 def flatten_list(_2d_list):
     flat_list = []
@@ -33,6 +30,73 @@ def find_nearest(array, values):
         nearests=np.abs(array - values).argmin()
     return nearests
 
+
+g_t = np.load('/Volumes/witten/Alex/Data/Subjects/fip_16/2021-04-09/001/alf/_ibl_trials.goCueTrigger_times.npy')
+f_t = np.load('/Volumes/witten/Alex/Data/Subjects/fip_16/2021-04-09/001/alf/_ibl_trials.feedback_times.npy')
+pos = np.load('/Volumes/witten/Alex/Data/Subjects/fip_16/2021-04-09/001/alf/_ibl_wheel.position.npy')
+pos_t = np.load('/Volumes/witten/Alex/Data/Subjects/fip_16/2021-04-09/001/alf/_ibl_wheel.timestamps.npy')
+f_type = np.load('/Volumes/witten/Alex/Data/Subjects/fip_16/2021-04-09/001/alf/_ibl_trials.feedbackType.npy')
+choice = np.load('/Volumes/witten/Alex/Data/Subjects/fip_16/2021-04-09/001/alf/_ibl_trials.choice.npy')
+
+left = np.intersect1d(np.where(f_type==1), np.where(choice==1))
+right =  np.intersect1d(np.where(f_type==1), np.where(choice==-1))
+
+
+start_dots = []
+finish_dots = []
+
+for i,trial in enumerate(left):
+    p0 = pos[find_nearest(pos_t,g_t[trial])]
+    dpos = pos-p0
+    if i==0:
+        start_dots.append(dpos[find_nearest(pos_t,g_t[trial])])
+        finish_dots.append(dpos[find_nearest(pos_t,f_t[trial])])
+        data = dpos[find_nearest(pos_t,g_t[trial]):find_nearest(pos_t,f_t[trial])]
+        data_t = pos_t[find_nearest(pos_t,g_t[trial]):find_nearest(pos_t,f_t[trial])]
+    else:
+        start_dots.append(dpos[find_nearest(pos_t,g_t[trial])])
+        finish_dots.append(dpos[find_nearest(pos_t,f_t[trial])])
+        datat = dpos[find_nearest(pos_t,g_t[trial]):find_nearest(pos_t,f_t[trial])]
+        datat_t = pos_t[find_nearest(pos_t,g_t[trial]):find_nearest(pos_t,f_t[trial])]
+        data = np.concatenate([data,datat])
+        data_t= np.concatenate([data_t,datat_t])
+
+plt.plot(data_t,data)
+
+start_dots = []
+finish_dots = []
+
+for i,trial in enumerate(right):
+    p0 = pos[find_nearest(pos_t,g_t[trial])]
+    dpos = pos-p0
+    if i==0:
+        start_dots.append(dpos[find_nearest(pos_t,g_t[trial])])
+        finish_dots.append(dpos[find_nearest(pos_t,f_t[trial])])
+        data = dpos[find_nearest(pos_t,g_t[trial]):find_nearest(pos_t,f_t[trial])]
+        data_t = pos_t[find_nearest(pos_t,g_t[trial]):find_nearest(pos_t,f_t[trial])]
+    else:
+        start_dots.append(dpos[find_nearest(pos_t,g_t[trial])])
+        finish_dots.append(dpos[find_nearest(pos_t,f_t[trial])])
+        datat = dpos[find_nearest(pos_t,g_t[trial]):find_nearest(pos_t,f_t[trial])]
+        datat_t = pos_t[find_nearest(pos_t,g_t[trial]):find_nearest(pos_t,f_t[trial])]
+        data = np.concatenate([data,datat])
+        data_t= np.concatenate([data_t,datat_t])
+
+plt.plot(data_t,data)
+
+
+
+
+plt.scatter(g_t[start:stop], start_dots, color='g')
+plt.scatter(f_t[start:stop], finish_dots, color='r')
+plt.xlabel('Seconds')
+plt.ylabel('Position(rad)')
+
+
+
+
+
+
 maximum_displacement = []
 for t in np.arange(len(g_t)):
     timestamps = np.where((pos_t>g_t[t])&(pos_t<f_t[t]))
@@ -54,28 +118,3 @@ plt.ylabel('Position(rad)')
 
 deltas = pos[find_nearest(pos_t,f_t[start:stop])]-pos[find_nearest(pos_t,g_t[start:stop])]
 print(deltas)
-
-start_dots = []
-finish_dots = []
-
-for i,trial in enumerate(np.arange(start,stop)):
-    p0 = pos[find_nearest(pos_t,g_t[trial])]
-    dpos = pos-p0
-    if i==0:
-        start_dots.append(dpos[find_nearest(pos_t,g_t[trial])])
-        finish_dots.append(dpos[find_nearest(pos_t,f_t[trial])])
-        data = dpos[find_nearest(pos_t,g_t[trial]):find_nearest(pos_t,f_t[trial])]
-        data_t = pos_t[find_nearest(pos_t,g_t[trial]):find_nearest(pos_t,f_t[trial])]
-    else:
-        start_dots.append(dpos[find_nearest(pos_t,g_t[trial])])
-        finish_dots.append(dpos[find_nearest(pos_t,f_t[trial])])
-        datat = dpos[find_nearest(pos_t,g_t[trial]):find_nearest(pos_t,f_t[trial])]
-        datat_t = pos_t[find_nearest(pos_t,g_t[trial]):find_nearest(pos_t,f_t[trial])]
-        data = np.concatenate([data,datat])
-        data_t= np.concatenate([data_t,datat_t])
-
-plt.plot(data_t,data)
-plt.scatter(g_t[start:stop], start_dots, color='g')
-plt.scatter(f_t[start:stop], finish_dots, color='r')
-plt.xlabel('Seconds')
-plt.ylabel('Position(rad)')

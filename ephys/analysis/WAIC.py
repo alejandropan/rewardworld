@@ -8,7 +8,6 @@ import multiprocess as mp
 import time
 
 # Functions
-
 def load_cmd_stan_output(chains):
     output=pd.DataFrame()
     for c,i in enumerate(chains):
@@ -19,8 +18,6 @@ def load_cmd_stan_output(chains):
         chain['chain'] = c+1
         output = pd.concat([output,chain])
     return output
-
-
 
 def lppd_from_chain(path, model, standata, save=False, save_name=None):
     p_chain1 =  list(glob.glob(path+'/output/*1.csv'))[-1] #Latest 1 chain
@@ -53,7 +50,6 @@ def lppd_from_chain(path, model, standata, save=False, save_name=None):
 
 
 if __name__=='__main__':
-
     try:
         reducedstay=np.load('qreducedstay.npy')
         reduced=np.load('qreduced.npy')

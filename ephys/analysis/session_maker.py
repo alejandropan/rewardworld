@@ -86,9 +86,9 @@ class TrialParamHandler(object):
         self.block_num = 0
         self.block_trial_num = 0
         self.opto_block_trial_num = 0
-        self.block_len_factor = 20
-        self.block_len_min = 10
-        self.block_len_max = 30
+        self.block_len_factor = 30
+        self.block_len_min = 20
+        self.block_len_max = 40
         self.block_probability_set = [0.1, 0.7]
         self.block_len = get_block_len(self.block_len_factor, self.block_len_min, self.block_len_max)
         self.opto_block_len = get_block_len(

@@ -1,52 +1,156 @@
 from ibllib.io.extractors.biased_trials import extract_all
 from ibllib.io.extractors.training_wheel import extract_all as extract_all_wheel
-from rewardworld.behavior_analysis.bandit_version.full_bandit_fix_blocks import full_bandit_fix
-from rewardworld.behavior_analysis.bandit_version.session_summary import *
-#from full_bandit_fix_blocks import full_bandit_fix
-#from session_summary import *
-
+#from rewardworld.behavior_analysis.bandit_version.full_bandit_fix_blocks import full_bandit_fix
+#from rewardworld.behavior_analysis.bandit_version.session_summary import *
+from full_bandit_fix_blocks import full_bandit_fix
+from session_summary import *
+from ibllib.io.extractors.training_trials import (
+    Choice, FeedbackTimes, FeedbackType, GoCueTimes, Intervals, ItiDuration, ProbabilityLeft, ResponseTimes, RewardVolume,
+    StimOnTimes_deprecated)
 ################################## Functions ##################################
+
+
 
 def logit(p):
     return 1/(1+np.exp(-p))
 
-def add_transition_info_animal(mouse_df):
-    new_df = pd.DataFrame()
-    for ses in mouse_df['date'].unique():
-        new_df = pd.concat([new_df,
-                            add_transition_info(mouse_df.loc[mouse_df['date']==ses].reset_index())])
-    return new_df
+def trial_within_block(behav):
+    behav['trial_within_block'] = np.nan
+    behav['block_number'] = np.nan
+    behav['trial_within_block_real'] = np.nan
+    behav['probabilityLeft_next'] = np.nan # this is for plotting trials before block change
+    behav['opto_block_next'] = np.nan # this is for plotting trials before block change
+    behav['probabilityLeft_past'] = np.nan # this is for plotting trials before block change
+    behav['opto_block_past'] = np.nan # this is for plotting trials before block change
+    behav['block_change'] = np.concatenate([np.zeros(1),
+                                            1*(np.diff(behav['probabilityLeft'])!=0)])
+    block_switches = np.concatenate([np.zeros(1),
+                                     behav.loc[behav['block_change']==1].index]).astype(int)
+    col_trial_within_block = np.where(behav.columns == 'trial_within_block')[0][0]
+    col_probabilityLeft_next = np.where(behav.columns == 'probabilityLeft_next')[0][0]
+    col_block_number = np.where(behav.columns == 'block_number')[0][0]
+    col_opto_block_next = np.where(behav.columns == 'opto_block_next')[0][0]
+    col_opto_block_past = np.where(behav.columns == 'opto_block_past')[0][0]
+    col_opto_probabilityLeft_past = np.where(behav.columns == 'probabilityLeft_past')[0][0]
+    col_trial_within_block_real = np.where(behav.columns == 'trial_within_block_real')[0][0]
+    for i in np.arange(len(block_switches)):
+        if i == 0:
+            # Trial within block and probability for plotting
+            behav.iloc[block_switches[i]:block_switches[i+1], col_probabilityLeft_next] = \
+                behav['probabilityLeft'][block_switches[i+1]]
+            behav.iloc[block_switches[i]:block_switches[i+1], col_opto_block_next] = \
+                        behav['laser_block'][block_switches[i]]
+            behav.iloc[block_switches[i]:block_switches[i+1], col_opto_block_next] = \
+            np.arange(block_switches[i+1] - block_switches[i])
+            # Block number
+            behav.iloc[block_switches[i]:block_switches[i+1], col_block_number] = i
+            behav.iloc[block_switches[i]:block_switches[i+1], col_trial_within_block_real] = \
+            np.arange(len(behav.iloc[block_switches[i]:block_switches[i+1], col_block_number]))
+        elif i == len(block_switches)-1:
+            # Trial within block and probability for plotting
+            behav.iloc[block_switches[i]-5:, col_probabilityLeft_next] = \
+                behav['probabilityLeft'][block_switches[i]]
+            behav.iloc[block_switches[i]-5:, col_opto_block_next] = \
+                behav['laser_block'][block_switches[i]]
+            behav.iloc[block_switches[i]:, col_opto_probabilityLeft_past] = \
+                behav['probabilityLeft'][block_switches[i-1]]
+            behav.iloc[block_switches[i]-5:, col_opto_block_past] = \
+                behav['laser_block'][block_switches[i-1]]
+            behav.iloc[block_switches[i]-5:, col_trial_within_block] = \
+                np.arange(-5, len(behav) - block_switches[i])
+            # Block number
+            behav.iloc[block_switches[i]:, col_block_number] = i
+            behav.iloc[block_switches[i]:, col_trial_within_block_real] = np.arange(len(behav.iloc[block_switches[i]:, col_block_number]))
+        else:
+            # Trial within block and probability for plotting
+            behav.iloc[block_switches[i]-5:block_switches[i+1], col_probabilityLeft_next] = \
+                behav['probabilityLeft'][block_switches[i]]
+            behav.iloc[block_switches[i]-5:block_switches[i+1], col_opto_block_next] = \
+                behav['laser_block'][block_switches[i]]
+            behav.iloc[block_switches[i]:block_switches[i+1], col_opto_probabilityLeft_past] = \
+                behav['probabilityLeft'][block_switches[i-1]]
+            behav.iloc[block_switches[i]:block_switches[i+1], col_opto_block_past] = \
+                behav['laser_block'][block_switches[i-1]]
+            behav.iloc[block_switches[i]-5:block_switches[i+1], col_trial_within_block] = \
+                np.arange(-5, block_switches[i+1] - block_switches[i])
+            # Block number
+            behav.iloc[block_switches[i]:block_switches[i+1], col_block_number] = i
+            behav.iloc[block_switches[i]:block_switches[i+1], col_trial_within_block_real] = np.arange(len(behav.iloc[block_switches[i]:block_switches[i+1], col_block_number]))
+    #Assign next block to negative within trial
+    behav['block_number_real'] = behav['block_number'].copy()
+    behav.loc[behav['trial_within_block']<0,'block_number'] = \
+                behav.loc[behav['trial_within_block']<0,'block_number']+1
+    behav.loc[behav['trial_within_block']>=0,'opto_block_next'] = np.nan
+    behav.loc[behav['trial_within_block']>=0,'probabilityLeft_next'] = np.nan
+    behav.loc[behav['trial_within_block']<0,'opto_block_past'] = np.nan
+    behav.loc[behav['trial_within_block']<0,'probabilityLeft_past'] = np.nan
+    return behav
 
-def add_transition_info(ses_d, trials_back=4):
+
+
+def plot_transition(ses_d):
+    negative_trials = ses_d.loc[ses_d['trial_within_block']<0].copy()
+    positive_trials = ses_d.loc[ses_d['trial_within_block_real']>=0].copy()
+    positive_trials['trial_within_block']=positive_trials['trial_within_block_real']
+    positive_trials['transition_type']=positive_trials['transition_type_real']
+    ses_df = pd.concat([negative_trials,positive_trials])
+    sns.lineplot(data = ses_df.loc[(ses_df['transition_type']=='0.1 to 0.7') |
+            (ses_df['transition_type']=='0.7 to 0.1')].reset_index(), x='trial_within_block', y='choice_1',
+            errorbar='se', hue='laser_block', err_style='bars', style='transition_type', palette=['dodgerblue','orange'])
+    plt.ylim(0,1)
+    plt.xlim(-5,15)
+    plt.vlines(0,0,1,linestyles='dashed', color='k')
+    plt.ylabel('% Right Choices')
+    plt.xlabel('Trials from block switch')
+    sns.despine()
+
+def add_transition_info(ses_d, trials_forward=10):
+    trials_back=5 # Current cannot be changed
     ses_df = ses_d.copy()
     ses_df['choice_1'] = ses_df['choice']>0
-    ses_df['probability_past'] = np.nan
-    ses_df['probability_current'] = ses_df['probabilityLeft'].copy()
-    ses_df['opto_past'] = np.nan
-    ##
-    ses_df.loc[ses_df['trial_within_block']<0,'block_number'] = \
-        ses_df.loc[ses_df['trial_within_block']<0,'block_number']+1
-    for block in range(ses_df.block_number.max().astype(int)):
-        ses_df.loc[(ses_df['block_number']==block)&(ses_df['trial_within_block']<0),
-                   'probability_current'] = ses_df.loc[ses_df['block_number']==block,
-                                                       'probability_current'].to_numpy()[trials_back+1]
-        ses_df.loc[(ses_df['block_number']==block)&(ses_df['trial_within_block']<0),
-                   'laser_block'] = ses_df.loc[ses_df['block_number']==block,
-                                               'laser_block'].to_numpy()[trials_back+1]
-        if block > 0:
-            ses_df.loc[ses_df['block_number']==block, 'probability_past']= \
-                ses_df.loc[ses_df['block_number']==block-1, 'probabilityLeft'].to_numpy()[trials_back+1]
-            ses_df.loc[ses_df['block_number']==block, 'opto_past'] = \
-                ses_df.loc[ses_df['block_number']==block-1, 'laser_block'].to_numpy()[trials_back+1]
-    ##
-    # Define transition types
-    ses_df.loc[ses_df['probability_past']>0.5,'probability_past'] = 'Left'
-    ses_df.loc[ses_df['probability_past']!='Left','probability_past'] = 'Right'
-    ses_df.loc[ses_df['probability_current']>0.5,'probability_current'] = 'Left'
-    ses_df.loc[ses_df['probability_current']!='Left','probability_current'] = 'Right'
-    ses_df['transition'] = ses_df['probability_past'].astype(str)+ ' to ' \
-                           +ses_df['probability_current'].astype(str)+ \
-                           ' Opto'+ses_df['laser_block'].astype(str)
+    ses_df['transition_analysis'] = np.nan
+    ses_df['transition_type'] = np.nan
+    ses_df['transition_analysis_real'] = np.nan
+    ses_df['transition_type_real'] = np.nan
+    ses_df.loc[ses_df['trial_within_block']<trials_forward,'transition_analysis']=1
+    ses_df['transition_analysis_real']=1
+    for i in np.arange(len(ses_df['block_number'].unique())):
+        if i>0:
+            ses_ses_past = ses_df.loc[(ses_df['block_number']==i) &
+            (ses_df['transition_analysis']==1) &
+            (ses_df['trial_within_block']<0)]
+
+            ses_ses_next = ses_df.loc[(ses_df['block_number']==i) &
+            (ses_df['transition_analysis']==1) &
+            (ses_df['trial_within_block']>=0)]
+
+            ses_df.loc[(ses_df['block_number']==i) &
+            (ses_df['transition_analysis']==1) &
+            (ses_df['trial_within_block']<0) ,'transition_type'] = \
+                                    ses_ses_past['probabilityLeft'].astype(str)+ \
+                                    ' to '\
+                                   +ses_ses_past['probabilityLeft_next'].astype(str)
+
+            ses_df.loc[(ses_df['block_number']==i) &
+            (ses_df['transition_analysis']==1) &
+            (ses_df['trial_within_block']>=0) ,'transition_type'] = \
+                                    ses_ses_next['probabilityLeft_past'].astype(str)+ \
+                                     ' to '\
+                                   +ses_ses_next['probabilityLeft'].astype(str)
+
+            blocks = np.array([0.1,0.7])
+            ses_ses_next_real = ses_df.loc[(ses_df['block_number']==i) &
+            (ses_df['transition_analysis_real']==1) &
+            (ses_df['trial_within_block_real']>=0)]
+            past_block = blocks[blocks!=ses_ses_next_real['probabilityLeft'].iloc[0]]
+
+            ses_df.loc[(ses_df['block_number_real']==i) &
+            (ses_df['transition_analysis_real']==1) &
+            (ses_df['trial_within_block_real']>=0) ,'transition_type_real'] = \
+                                    ses_ses_next_real['probabilityLeft'].iloc[0].astype(str) + \
+                                     ' to '\
+                                   + str(past_block[0])
+
     return ses_df
 
 def load_condition(root):
@@ -70,37 +174,7 @@ def load_condition(root):
         behav = pd.concat([behav, behav_m])
     return behav
 
-def add_transition_info(ses_d, trials_back=5):
-    ses_df = ses_d.copy()
-    ses_df['choice_1'] = ses_df['choice']>0
-    ses_df['probability_past'] = np.nan
-    ses_df['probability_current'] = ses_df['probabilityLeft'].copy()
-    ses_df['opto_past'] = np.nan
-    ##
-    ses_df.loc[ses_df['trial_within_block']<0,'block_number'] = \
-        ses_df.loc[ses_df['trial_within_block']<0,'block_number']+1
-    for block in range(ses_df.block_number.max().astype(int)):
-        ses_df.loc[(ses_df['block_number']==block)&(ses_df['trial_within_block']<0),
-                   'probability_current'] = ses_df.loc[ses_df['block_number']==block,
-                                                       'probability_current'].to_numpy()[trials_back+1]
-        ses_df.loc[(ses_df['block_number']==block)&(ses_df['trial_within_block']<0),
-                   'laser_block'] = ses_df.loc[ses_df['block_number']==block,
-                                               'laser_block'].to_numpy()[trials_back+1]
-        if block > 0:
-            ses_df.loc[ses_df['block_number']==block, 'probability_past']= \
-                ses_df.loc[ses_df['block_number']==block-1, 'probabilityLeft'].to_numpy()[trials_back+1]
-            ses_df.loc[ses_df['block_number']==block, 'opto_past'] = \
-                ses_df.loc[ses_df['block_number']==block-1, 'laser_block'].to_numpy()[trials_back+1]
-    ##
-    # Define transition types
-    ses_df.loc[ses_df['probability_past']>0.5,'probability_past'] = 'Left'
-    ses_df.loc[ses_df['probability_past']!='Left','probability_past'] = 'Right'
-    ses_df.loc[ses_df['probability_current']>0.5,'probability_current'] = 'Left'
-    ses_df.loc[ses_df['probability_current']!='Left','probability_current'] = 'Right'
-    ses_df['transition'] = ses_df['probability_past'].astype(str)+ ' to ' \
-                           +ses_df['probability_current'].astype(str)+ \
-                           ' Opto'+ses_df['laser_block'].astype(str)
-    return ses_df
+
 
 def simulate_from_laser_model(dm, params):
     laser_choice = \
@@ -566,7 +640,9 @@ def add_laser_block_regressors(ses_df):
 ######################################################################################################
 if __name__ == "__main__":
     ses = sys.argv[1]
-    extract_all(ses, save=True)
+    extract_all(
+            session_path=ses, save=True, extra_classes=[Intervals, FeedbackType, ProbabilityLeft, Choice, ItiDuration,
+            StimOnTimes_deprecated, RewardVolume, FeedbackTimes, ResponseTimes, GoCueTimes])
     extract_all_wheel(ses, save=True)
     full_bandit_fix(ses)
     ses_df=pd.DataFrame()
@@ -576,7 +652,7 @@ if __name__ == "__main__":
 
     # Create new variables
     ses_df['repeated'] = ses_df['choice']==ses_df['previous_choice_1']
-    sns.barplot(data=ses_df, x='laser_block', y='repeated', hue='previous_outcome_1', ci=68)
+    sns.barplot(data=ses_df, x='laser_block', y='repeated', hue='previous_outcome_1', errorbar='se')
     plt.savefig(ses+'/stay_summary.png')
     plt.close()
     # Plot session
@@ -599,3 +675,11 @@ if __name__ == "__main__":
     print(ses_df.groupby(['choice']).count()['laser_block'])
     print('First laser block')
     print(switches['probabilityLeft'][0])
+    # plot transition info
+    plt.close()
+    ses_df = trial_within_block(ses_df)
+    ses_df = add_transition_info(ses_df, trials_forward=10)
+    plot_transition(ses_df)
+    plt.savefig(ses+'/transition.png')
+
+

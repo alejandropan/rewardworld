@@ -107,11 +107,21 @@ def load_residual(neuron_file, model_bin_size=5, final_bins=100, pre_time = -500
     neuron['residuals_outcome'] = [resample(residuals_outcome,final_bins, model_bin_size)]
     return neuron
 
+                
+
 def load_all_residuals(root_path):
     path_to_all_residuals = glob.glob(root_path+'/*_residuals.mat')
     residuals = pd.DataFrame()
     for p in enumerate(path_to_all_residuals):
         residuals = pd.concat([residuals, load_residual(p)])
+    try:
+        groups = pd.read_csv('/jukebox/witten/Alex/PYTHON/rewardworld/ephys/histology_files/simplified_regions.csv')
+    except:
+        groups = pd.read_csv('/volumes/witten/Alex/PYTHON/rewardworld/ephys/histology_files/simplified_regions.csv')
+    groups = groups.iloc[:,1:3]
+    groups = groups.set_index('original')
+    group_dict = groups.to_dict()['group']
+    residuals['location'] = pd.Series(residuals.area).map(group_dict)
     return residuals
     
     

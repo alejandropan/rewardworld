@@ -4,6 +4,7 @@ from scipy.io import loadmat
 import pandas as pd
 import mat73
 import glob
+import numpy as np
 
 ENCODING_MODEL_MAT_FILE = '/Volumes/witten/Chris/matlab/cz/ibl_da_neuropixels_2022/archive/20220913/encoding-model/encoding-model-output-2022-08-03-12-31-PM.mat'
 
@@ -82,6 +83,7 @@ def load_residual(neuron_file, model_bin_size=5, final_bins=100, pre_time = -500
     neuron['date'] = residual_struct['data']['cluster']['session'][7:17]
     neuron['session'] = residual_struct['data']['cluster']['session'][18:21]
     neuron['area'] = residual_struct['data']['cluster']['location']
+    neuron['hem'] = residual_struct['data']['cluster']['hem']
     # Make matrix
     pre_window = int(abs(pre_time/model_bin_size))
     post_window = int(abs(post_time/model_bin_size))
@@ -112,7 +114,7 @@ def load_residual(neuron_file, model_bin_size=5, final_bins=100, pre_time = -500
 def load_all_residuals(root_path):
     path_to_all_residuals = glob.glob(root_path+'/*_residuals.mat')
     residuals = pd.DataFrame()
-    for p in enumerate(path_to_all_residuals):
+    for p in path_to_all_residuals:
         residuals = pd.concat([residuals, load_residual(p)])
     try:
         groups = pd.read_csv('/jukebox/witten/Alex/PYTHON/rewardworld/ephys/histology_files/simplified_regions.csv')
@@ -124,5 +126,32 @@ def load_all_residuals(root_path):
     residuals['location'] = pd.Series(residuals.area).map(group_dict)
     return residuals
     
-    
+def common_trials(residuals):
+    for i in np.arange(len(residuals)-1):
+        if i == 0:
+            select = residuals['trials_included'].iloc[i]
+        t = residuals['trials_included'].iloc[i+1]
+        select = np.intersect1d(select,t)
+    return select
 
+def common_neural_data(residuals, trials_included):
+    reduced_residuals = pd.DataFrame()
+    for i in np.arange(len(residuals)):
+        new_neuron = pd.DataFrame()
+        neuron = residuals.iloc[i].copy()
+        assert np.array_equal(neuron['trials_included'], sorted(neuron['trials_included']))
+        trials_idx = np.searchsorted(neuron['trials_included'], trials_included)
+        new_neuron['cluster_id'] = [neuron['cluster_id']]
+        new_neuron['animal'] = [neuron['animal']]
+        new_neuron['date'] = [neuron['date']]
+        new_neuron['session'] = [neuron['session']]
+        new_neuron['area'] = [neuron['area']]
+        new_neuron['hem'] = [neuron['hem']]
+        new_neuron['location'] = [neuron['location']]
+        new_neuron['trials_included'] = [neuron['trials_included'][trials_idx].copy()]
+        new_neuron['residuals_goCue'] = [neuron['residuals_goCue'][trials_idx].copy()]
+        new_neuron['residuals_choice'] = [neuron['residuals_choice'][trials_idx].copy()]
+        new_neuron['residuals_outcome'] = [neuron['residuals_outcome'][trials_idx].copy()]
+        assert new_neuron['residuals_goCue'][0].shape[0]==len(trials_included)
+        reduced_residuals = pd.concat([reduced_residuals,new_neuron])
+    return reduced_residuals

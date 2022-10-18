@@ -6,16 +6,17 @@ from ephys_alf_summary import alf
 from pathlib import Path
 import pandas as pd
 import numpy as npm
-from encoding_model_summary_to_df import load_all_residuals
+from encoding_model_summary_to_df import load_all_residuals, common_trials, common_neural_data
 from decoding_debugging import *
 
 ##########################
 ####### Parameters #######
 ##########################
 ROOT='/jukebox/witten/Alex/Data/Subjects/'
+ROOT_NEURAL = '/jukebox/witten/Chris/data/ibl_da_neuropixels/Data/Subjects'
 id_dict = pd.read_csv('/jukebox/witten/Alex/decoder_output/id_dict.csv')
 n_neurons_minimum = 10
-alignment_time = 'response_times'
+alignment_time = 'goCue_time'
 pre_time = 0.5
 post_time  = 4
 smoothing=0
@@ -38,20 +39,25 @@ alfio.ses = Path(ses).name
 alfio.path = ses
 
 # Load neurons
+encoding_res_path = ROOT_NEURAL+'/'+ \
+                    id_dict.loc[id_dict['id']==int(sys.argv[1]),'ses'].to_string(index=False)+\
+                    '/alf/encodingmodels/inputs/neurons/' 
+neural_data = load_all_residuals(encoding_res_path)
+neural_data = neural_data.loc[neural_data['location']==area]
+
+# Trials used
+trials_included = common_trials(neural_data)
+c_neural_data = common_neural_data(neural_data, trials_included)
 
 # Load variable to be decoded and aligment times
-regressed_variable = np.copy(alfio.fQRreward) #For now qchosen
-regressed_variable[np.where(alfio.choice==-1)] = alfio.fQLreward[np.where(alfio.choice==-1)] #For now qchosen
-#weights = get_session_sample_weights(alfio.to_df(), categories = ['choice','probabilityLeft', 'outcome'])
-weights = None
-
-##
-alfio.fQRreward_cue = np.roll(alfio.fQRreward,1)
-alfio.fQLreward_cue = np.roll(alfio.fQLreward,1)
+alfio.fQRreward_cue = np.copy(np.roll(alfio.fQRreward,1))
+alfio.fQLreward_cue = np.copy(np.roll(alfio.fQLreward,1))
 alfio.fQRreward_cue[0] = 0
 alfio.fQLreward_cue[0] = 0
 regressed_variable = np.copy(alfio.fQRreward_cue) #For now qchosen
 regressed_variable[np.where(alfio.choice==-1)] = alfio.fQLreward_cue[np.where(alfio.choice==-1)] #For now qchosen
+regressed_variable = regressed_variable[trials_included.astype(int)]
+# Only trials included in analysis
 #weights = get_session_sample_weights(alfio.to_df(), categories = ['choice','probabilityLeft', 'outcome'])
 weights = None
 
@@ -67,7 +73,7 @@ for i in np.arange(200):
 ##########################
 ## Run decoder (linear) ##
 ##########################
-run_decoder_for_session_residual(area, alfio, regressed_variable, weights, etype = 'real')
-t_limit = len(regressed_variable)
+
+run_decoder_for_session_residual(c_neural_data, area, alfio, regressed_variable, weights, alignment_time, etype = 'real')
 for n, null_ses in enumerate(null_sesssions):
-    run_decoder_for_session_residual(area, alfio, regressed_variable, weights, etype = 'null', n=n)
+    run_decoder_for_session_residual(c_neural_data, area, alfio, regressed_variable, weights, alignment_time, etype = 'null', n=n)

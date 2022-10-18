@@ -74,19 +74,20 @@ def load_residual(neuron_file, model_bin_size=5, final_bins=100, pre_time = -500
     residual_struct = mat73.loadmat(neuron_file)
     # Start_dataframe
     neuron = pd.DataFrame()
+    n_trials = int(len(residual_struct['data']['Y_pred']))
     # General info
-    neuron['n_trials'] = len(residual_struct['data']['Y_pred'])
-    neuron['trials_included'] = residual_struct['data']['trials']
+    neuron['trials_included'] = [residual_struct['data']['trials']]
     neuron['cluster_id'] =  int(residual_struct['data']['cluster']['clusterid'])
     neuron['animal'] =  residual_struct['data']['cluster']['session'][:6]
     neuron['date'] = residual_struct['data']['cluster']['session'][7:17]
     neuron['session'] = residual_struct['data']['cluster']['session'][18:21]
+    neuron['area'] = residual_struct['data']['cluster']['location']
     # Make matrix
     pre_window = int(abs(pre_time/model_bin_size))
     post_window = int(abs(post_time/model_bin_size))
-    residuals_goCue = np.zeros([int(neuron['n_trials']), pre_window+post_window])
-    residuals_choice =  np.zeros([int(neuron['n_trials']), pre_window+post_window])
-    residuals_outcome = np.zeros([int(neuron['n_trials']), pre_window+post_window])
+    residuals_goCue = np.zeros([n_trials, pre_window+post_window])
+    residuals_choice =  np.zeros([n_trials, pre_window+post_window])
+    residuals_outcome = np.zeros([n_trials, pre_window+post_window])
     for i in range(n_trials):
         go = int(residual_struct['data']['times'][i][0] - 1) # -1 to account for matlab indexing
         choice =  int(residual_struct['data']['times'][i][1] - 1) # -1 to account for matlab indexing
@@ -101,15 +102,15 @@ def load_residual(neuron_file, model_bin_size=5, final_bins=100, pre_time = -500
         residuals_choice[i,:] = choice_data
         residuals_outcome[i,:] = outcome_data
     # Resample
-    neuron['residuals_goCue'] = resample(residuals_goCue,final_bins, model_bin_size)
-    neuron['residuals_choice'] =  resample(residuals_choice,final_bins, model_bin_size)
-    neuron['residuals_outcome'] = resample(residuals_outcome,final_bins, model_bin_size)
+    neuron['residuals_goCue'] = [resample(residuals_goCue,final_bins, model_bin_size)]
+    neuron['residuals_choice'] =  [resample(residuals_choice,final_bins, model_bin_size)]
+    neuron['residuals_outcome'] = [resample(residuals_outcome,final_bins, model_bin_size)]
     return neuron
 
 def load_all_residuals(root_path):
     path_to_all_residuals = glob.glob(root_path+'/*_residuals.mat')
     residuals = pd.DataFrame()
-    for p in path_to_all_residuals:
+    for p in enumerate(path_to_all_residuals):
         residuals = pd.concat([residuals, load_residual(p)])
     return residuals
     

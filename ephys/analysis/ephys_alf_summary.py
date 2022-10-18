@@ -362,6 +362,20 @@ class alf:
             self.QRreward  = np.load(path+'/alf/standard_QRreward.npy')
             self.choice_prediction  = np.load(path+'/alf/standard_choice_prediction.npy')
             self.accuracy = np.mean((1*(self.choice>0))==(1*(self.choice_prediction>0.5)))
+        
+        if os.path.isfile(path+'/alf/forgetting_QL.npy'):
+            self.fQL = np.load(path+'/alf/forgetting_QL.npy')
+            self.fQR = np.load(path+'/alf/forgetting_QR.npy')
+            if self.no_reward_block==False:
+                self.fQLlaser = np.load(path+'/alf/forgetting_QLlaser.npy')
+                self.fQRlaser = np.load(path+'/alf/forgetting_QRlaser.npy')
+            self.fQLstay  = np.load(path+'/alf/forgetting_QLstay.npy')
+            self.fQRstay  = np.load(path+'/alf/forgetting_QRstay.npy')
+            self.fQLreward  = np.load(path+'/alf/forgetting_QLreward.npy')
+            self.fQRreward  = np.load(path+'/alf/forgetting_QRreward.npy')
+            self.fchoice_prediction  = np.load(path+'/alf/forgetting_choice_prediction.npy')
+            self.faccuracy = np.mean((1*(self.choice>0))==(1*(self.choice_prediction>0.5)))
+        
         if os.path.isfile(path+'/alf/REINFORCE_mixedstay_alphalaserdecay_laser.npy'):
             if self.no_reward_block==False:
                 self.DQlaser = np.load(path+'/alf/REINFORCE_mixedstay_alphalaserdecay_laser.npy')

@@ -7,7 +7,7 @@ from tqdm import tqdm
 
 
 # Hardcoded parameters
-decoders_path = '/Volumes/witten-1/Alex/decoder_output'
+decoders_path = '/Volumes/witten/Alex/decoder_output'
 n_neuron_combos_tried = np.array([10,20,30,50])
 pre_time = -0.5
 post_time = 4
@@ -28,8 +28,8 @@ for f_path in tqdm(f):
     p_summary = np.load(f_path)
     mse_summary = np.load(f_path[:-13]+'mse_summary.npy')
     # Find optimal lambda 
-    l_performance = np.nanmean(np.nanmean(np.nanmean(mse_summary, axis=0), axis=1), axis=2)
-    l_all = np.argmin(l_performance, axis=0)
+    l_performance = np.nanmean(np.nanmean(np.nanmean(p_summary, axis=0), axis=1), axis=2)
+    l_all = np.argmax(l_performance, axis=0)
     # Get summary with optimal lambda
     acc = pd.DataFrame()
     for c in np.arange(np.shape(p_summary)[3]):
@@ -164,7 +164,7 @@ sns.despine()
 
 
 # Lambdas summary
-l = np.array([0,0.0001,0.001,0.01,0.1,1])
+l = np.logspace(-3,-0.5,100)
 os.chdir(decoders_path)
 lambdas_selected = []
 for f_path in tqdm(f):

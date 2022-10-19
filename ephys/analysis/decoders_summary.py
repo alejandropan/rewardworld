@@ -10,7 +10,7 @@ from tqdm import tqdm
 decoders_path = '/Volumes/witten/Alex/decoder_output'
 n_neuron_combos_tried = np.array([10,20,30,50])
 pre_time = -0.5
-post_time = 4
+post_time = 3
 bin_size = 0.1
 # First list all the "real"sessions
 files = []
@@ -60,7 +60,7 @@ summary  = summary.reset_index()
 
 # Plot by region  at 30 cells
 not_in_summary = ['Other','Thalamus','ZI','SSs','Amygdala','MO', 'Pallidum']
-neuron_summary = summary.loc[summary['n_neurons']==20]
+neuron_summary = summary.loc[summary['n_neurons']==10]
 to_exclude = neuron_summary.loc[neuron_summary['time_bin']==0]
 to_exclude = to_exclude.groupby(['region']).count()['id'].reset_index()
 to_exclude = to_exclude.loc[to_exclude['id']==1, 'region'].tolist() # exclude where there is only one recording
@@ -168,9 +168,9 @@ l = np.logspace(-3,-0.5,100)
 os.chdir(decoders_path)
 lambdas_selected = []
 for f_path in tqdm(f):
-    mse_summary = np.load(f_path[:-13]+'mse_summary.npy')
+    p_summary = np.load(f_path[:-13]+'mse_summary.npy')
     # Find optimal lambda 
-    l_performance = np.nanmean(np.nanmean(np.nanmean(mse_summary, axis=0), axis=1), axis=2)
+    l_performance = np.nanmean(np.nanmean(np.nanmean(p_summary, axis=0), axis=1), axis=2)
     l_all = np.argmin(l_performance, axis=0)
     lambdas_selected.append(l_all)
 lambdas_selected = np.concatenate(lambdas_selected)

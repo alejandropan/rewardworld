@@ -184,6 +184,7 @@ def reshape_psth_array(binned_spikes):
 
 def run_decoder_for_session_residual(c_neural_data, area, alfio, regressed_variable, weights, alignment_time, etype = 'real', 
                             output_folder='/jukebox/witten/Alex/decoder_output', n_neurons_minimum = 10, n=None):  
+    # Regressed variable can be a list of arrays in the case of delta q (QR-QL and QL-QR)
     hem = c_neural_data['hem']
     if alignment_time=='response_time':
         binned_spikes = c_neural_data['residuals_outcome']
@@ -197,6 +198,8 @@ def run_decoder_for_session_residual(c_neural_data, area, alfio, regressed_varia
         if cluster_selection.shape[1]<n_neurons_minimum:
             return print("Not enough neurons")
         else:
+            if len(regressed_variable)>1: #then we are decoding deltaq, need to choose R-L or L-R so that it matches contra-ipsi 
+                regressed_variable = regressed_variable[h]
             if etype=='real':
                 p_summary, mse_summary = run_decoder(cluster_selection, regressed_variable, weights, n_neurons_minimum=n_neurons_minimum)
                 np.save(output_folder+'/'+str(etype)+'_'+str(area)+'_'+str(alfio.mouse)+'_'+str(alfio.date)+'_'+str(int(h))+'_p_summary.npy', p_summary)

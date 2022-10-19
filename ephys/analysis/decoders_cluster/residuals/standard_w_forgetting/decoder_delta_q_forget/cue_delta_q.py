@@ -16,14 +16,14 @@ warnings.filterwarnings('ignore')
 ##########################
 ROOT='/jukebox/witten/Alex/Data/Subjects/'
 ROOT_NEURAL = '/jukebox/witten/Chris/data/ibl_da_neuropixels/Data/Subjects'
-id_dict = pd.read_csv('/jukebox/witten/Alex/decoder_output/id_dict.csv')
+id_dict = pd.read_csv('/jukebox/witten/Alex/decoders_residuals_results/decoder_output_deltaq_cue_forget/id_dict.csv')
 n_neurons_minimum = 10
 alignment_time = 'goCue_time'
 pre_time = 0.5
 post_time  = 4
 smoothing=0
 bin_size=0.1
-output_folder = '/jukebox/witten/Alex/decoder_output'
+output_folder = '/jukebox/witten/Alex/decoders_residuals_results/decoder_output_deltaq_cue_forget'
 temp_folder = '/jukebox/witten/Alex/decoder_wd'
 
 ##########################
@@ -79,6 +79,6 @@ for i in np.arange(200):
 ## Run decoder (linear) ##
 ##########################
 
-run_decoder_for_session_residual(c_neural_data, area, alfio, regressed_variable, weights, alignment_time, etype = 'real')
+run_decoder_for_session_residual(c_neural_data, area, alfio, regressed_variable, weights, alignment_time, etype = 'real', output_folder=output_folder)
 #for n, null_ses in enumerate(null_sesssions):
 #    run_decoder_for_session_residual(c_neural_data, area, alfio, regressed_variable, weights, alignment_time, etype = 'null', n=n)

@@ -8,6 +8,8 @@ import pandas as pd
 import numpy as npm
 from encoding_model_summary_to_df import load_all_residuals, common_trials, common_neural_data
 from decoding_debugging import *
+import warnings
+warnings.filterwarnings('ignore')
 
 ##########################
 ####### Parameters #######

@@ -184,7 +184,7 @@ def reshape_psth_array(binned_spikes):
 
 def run_decoder_for_session_residual(c_neural_data, area, alfio, regressed_variable, weights, alignment_time, etype = 'real', 
                             output_folder='/jukebox/witten/Alex/decoder_output', n_neurons_minimum = 10, n=None):  
-    hem = c_neural_data['hem'].unique()
+    hem = c_neural_data['hem']
     if alignment_time=='response_time':
         binned_spikes = c_neural_data['residuals_outcome']
     if alignment_time=='goCue_time':
@@ -194,18 +194,18 @@ def run_decoder_for_session_residual(c_neural_data, area, alfio, regressed_varia
     binned_spikes = reshape_psth_array(binned_spikes) # turn into array
     for h in np.unique(hem): # Only analyze ensambles from a single hemisphere, even if from multiple probes, they should be from the same hem
         cluster_selection = np.copy(binned_spikes[:, np.where(hem==h)[0],:])
-        if len(cluster_selection)<n_neurons_minimum:
+        if cluster_selection.shape[1]<n_neurons_minimum:
             return print("Not enough neurons")
         else:
             if etype=='real':
-                p_summary, mse_summary = run_decoder(cluster_selection, regressed_variable, weights)
+                p_summary, mse_summary = run_decoder(cluster_selection, regressed_variable, weights, n_neurons_minimum=n_neurons_minimum)
                 np.save(output_folder+'/'+str(etype)+'_'+str(area)+'_'+str(alfio.mouse)+'_'+str(alfio.date)+'_'+str(int(h))+'_p_summary.npy', p_summary)
                 np.save(output_folder+'/'+str(etype)+'_'+str(area)+'_'+str(alfio.mouse)+'_'+str(alfio.date)+'_'+str(int(h))+'_mse_summary.npy', mse_summary)
             else:
                 p_summary = np.load(output_folder+'/'+'real'+'_'+str(area)+'_'+str(alfio.mouse)+'_'+str(alfio.date)+'_'+str(int(h))+'_p_summary.npy')
                 l_performance  = np.nanmean(np.nanmean(np.nanmean(np.nanmean(p_summary, axis=0), axis=1), axis=1), axis=1)
                 l = np.linspace(0.01,10,100)[np.argmax(l_performance)]
-                p_summary, mse_summary = run_decoder(cluster_selection, regressed_variable, weights, lambdas=np.array([l]))
+                p_summary, mse_summary = run_decoder(cluster_selection, regressed_variable, weights, lambdas=np.array([l]), n_neurons_minimum=n_neurons_minimum)
                 np.save(output_folder+'/'+str(n)+'_'+str(etype)+'_'+str(area)+'_'+str(alfio.mouse)+'_'+str(alfio.date)+'_'+str(int(h))+'_p_summary.npy', p_summary)
                 np.save(output_folder+'/'+str(n)+'_'+str(etype)+'_'+str(area)+'_'+str(alfio.mouse)+'_'+str(alfio.date)+'_'+str(int(h))+'_mse_summary.npy', mse_summary)
 

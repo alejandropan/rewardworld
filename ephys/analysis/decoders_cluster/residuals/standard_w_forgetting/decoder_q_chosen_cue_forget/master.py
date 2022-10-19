@@ -5,7 +5,7 @@ from ephys_alf_summary import alf
 import numpy as np
 import subprocess
 import pandas as pd
-
+import os
 
 # Get areas in recording
 ROOT='/jukebox/witten/Alex/Data/Subjects/'

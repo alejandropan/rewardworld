@@ -8,4 +8,5 @@
 
 module load anacondapy
 source activate iblenv
-python cue_q_chosen.py $SLURM_ARRAY_TASK_ID
+python /jukebox/witten/Alex/PYTHON/rewardworld/ephys/analysis/decoders_cluster/residuals/standard_w_forgetting/decoder_q_chosen_cue_forget/cue_q_chosen.py $SLURM_ARRAY_TASK_ID
+

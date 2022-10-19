@@ -76,6 +76,6 @@ for i in np.arange(200):
 ## Run decoder (linear) ##
 ##########################
 
-run_decoder_for_session_residual(c_neural_data, area, alfio, regressed_variable, weights, alignment_time, etype = 'real')
-for n, null_ses in enumerate(null_sesssions):
-    run_decoder_for_session_residual(c_neural_data, area, alfio, regressed_variable, weights, alignment_time, etype = 'null', n=n)
+run_decoder_for_session_residual(c_neural_data, area, alfio, regressed_variable, weights, alignment_time, etype = 'real', output_folder=output_folder)
+#for n, null_ses in enumerate(null_sesssions):
+    #run_decoder_for_session_residual(c_neural_data, area, alfio, regressed_variable, weights, alignment_time, etype = 'null', n=n, output_folder=output_folder)

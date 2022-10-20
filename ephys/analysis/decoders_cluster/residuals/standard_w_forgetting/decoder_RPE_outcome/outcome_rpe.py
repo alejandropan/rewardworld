@@ -48,7 +48,7 @@ neural_data = load_all_residuals(encoding_res_path)
 neural_data = neural_data.loc[neural_data['location']==area]
 
 # Trials used
-trials_included = common_trials(neural_data)
+trials_included, neural_data = common_trials(neural_data)
 c_neural_data = common_neural_data(neural_data, trials_included)
 
 # Load variable to be decoded and aligment times
@@ -56,8 +56,8 @@ alfio.fQRreward_cue = np.copy(np.roll(alfio.fQRreward,1))
 alfio.fQLreward_cue = np.copy(np.roll(alfio.fQLreward,1))
 alfio.fQRreward_cue[0] = 0
 alfio.fQLreward_cue[0] = 0
-regressed_variable = np.copy(alfio.fQRreward_cue) #For now qchosen
-regressed_variable[np.where(alfio.choice==-1)] = alfio.fQLreward_cue[np.where(alfio.choice==-1)] #For now qchosen
+regressed_variable = np.copy(alfio.fQRreward_cue)
+regressed_variable[np.where(alfio.choice==-1)] = alfio.fQLreward_cue[np.where(alfio.choice==-1)]
 regressed_variable = alfio.outcome - regressed_variable
 regressed_variable = regressed_variable[trials_included.astype(int)]
 # Only trials included in analysis
@@ -77,6 +77,6 @@ for i in np.arange(200):
 ## Run decoder (linear) ##
 ##########################
 
-run_decoder_for_session_residual(c_neural_data, area, alfio, regressed_variable, weights, alignment_time, etype = 'real')
+run_decoder_for_session_residual(c_neural_data, area, alfio, regressed_variable, weights, alignment_time, etype = 'real', output_folder=output_folder)
 #for n, null_ses in enumerate(null_sesssions):
 #    run_decoder_for_session_residual(c_neural_data, area, alfio, regressed_variable, weights, alignment_time, etype = 'null', n=n)

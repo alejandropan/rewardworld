@@ -7,7 +7,7 @@ from tqdm import tqdm
 
 
 # Hardcoded parameters
-decoders_path = '/Volumes/witten/Alex/decoder_output'
+decoders_path = '/Volumes/witten/Alex/decoders_residuals_results/decoder_output_rpe_outcome_forget'
 n_neuron_combos_tried = np.array([10,20,30,50])
 pre_time = -0.5
 post_time = 3
@@ -28,8 +28,8 @@ for f_path in tqdm(f):
     p_summary = np.load(f_path)
     mse_summary = np.load(f_path[:-13]+'mse_summary.npy')
     # Find optimal lambda 
-    l_performance = np.nanmean(np.nanmean(np.nanmean(p_summary, axis=0), axis=1), axis=2)
-    l_all = np.argmax(l_performance, axis=0)
+    l_performance = np.nanmean(np.nanmean(np.nanmean(mse_summary, axis=0), axis=1), axis=2)
+    l_all = np.argmin(l_performance, axis=0)
     # Get summary with optimal lambda
     acc = pd.DataFrame()
     for c in np.arange(np.shape(p_summary)[3]):
@@ -60,11 +60,12 @@ summary  = summary.reset_index()
 
 # Plot by region  at 30 cells
 not_in_summary = ['Other','Thalamus','ZI','SSs','Amygdala','MO', 'Pallidum']
-neuron_summary = summary.loc[summary['n_neurons']==10]
+neuron_summary = summary.loc[summary['n_neurons']==30]
 to_exclude = neuron_summary.loc[neuron_summary['time_bin']==0]
 to_exclude = to_exclude.groupby(['region']).count()['id'].reset_index()
 to_exclude = to_exclude.loc[to_exclude['id']==1, 'region'].tolist() # exclude where there is only one recording
 to_exclude = np.concatenate([not_in_summary,to_exclude])
+
 
 fig, ax = plt.subplots(2,1)
 plt.sca(ax[0])
@@ -129,7 +130,7 @@ to_exclude = to_exclude.groupby(['region']).count()['id'].reset_index()
 to_exclude = to_exclude.loc[to_exclude['id']==1, 'region'].tolist() # exclude where there is only one recording
 to_exclude = np.concatenate([not_in_summary,to_exclude])
 
-summ = neuron_summary.loc[~np.isin(neuron_summary['region'],to_exclude)]
+summ = summary.loc[~np.isin(summary['region'],to_exclude)]
 summ = summ.loc[(summ['time_bin']>5) & (summ['time_bin']<15)]
 
 fig, ax = plt.subplots(2)
@@ -164,13 +165,13 @@ sns.despine()
 
 
 # Lambdas summary
-l = np.logspace(-3,-0.5,100)
+l = np.logspace(-5,-0.5,100)
 os.chdir(decoders_path)
 lambdas_selected = []
 for f_path in tqdm(f):
-    p_summary = np.load(f_path[:-13]+'mse_summary.npy')
+    mse_summary = np.load(f_path[:-13]+'mse_summary.npy')
     # Find optimal lambda 
-    l_performance = np.nanmean(np.nanmean(np.nanmean(p_summary, axis=0), axis=1), axis=2)
+    l_performance = np.nanmean(np.nanmean(np.nanmean(mse_summary, axis=0), axis=1), axis=2)
     l_all = np.argmin(l_performance, axis=0)
     lambdas_selected.append(l_all)
 lambdas_selected = np.concatenate(lambdas_selected)

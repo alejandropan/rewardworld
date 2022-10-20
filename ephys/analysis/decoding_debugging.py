@@ -62,7 +62,7 @@ def run_decoder_for_session(area, alfio, regressed_variable, weights, alignment_
         else:
             p_summary = np.load(output_folder+'/'+'real'+'_'+str(area)+'_'+str(alfio.mouse)+'_'+str(alfio.date)+'_'+str(int(h))+'_p_summary.npy')
             l_performance  = np.nanmean(np.nanmean(np.nanmean(np.nanmean(p_summary, axis=0), axis=1), axis=1), axis=1)
-            l = np.logspace(-3,-0.5,100)[np.argmax(l_performance)]
+            l = np.logspace(-5,-0.5,100)[np.argmax(l_performance)]
             p_summary, mse_summary = run_decoder(cluster_selection, regressed_variable, weights, lambdas=np.array([l]))
             np.save(output_folder+'/'+str(n)+'_'+str(etype)+'_'+str(area)+'_'+str(alfio.mouse)+'_'+str(alfio.date)+'_'+str(int(h))+'_p_summary.npy', p_summary)
             np.save(output_folder+'/'+str(n)+'_'+str(etype)+'_'+str(area)+'_'+str(alfio.mouse)+'_'+str(alfio.date)+'_'+str(int(h))+'_mse_summary.npy', mse_summary)
@@ -118,7 +118,7 @@ def run_decoder(xs, regressed_variable, weights, number_folds=10, decoder = LR,
     regressed_variable = zscore(regressed_variable)
     # Prepare training sets
     if lambdas is  None:
-        lambdas = np.logspace(-3,-0.5,100)
+        lambdas = np.logspace(-5,-0.5,100)
     folds  = makeXvalpartitions(len(regressed_variable),number_folds)
     neuron_samples_n = np.array([n_neurons_minimum, n_neurons_minimum*2, n_neurons_minimum*3, n_neurons_max])
     neuron_samples_n = neuron_samples_n[np.where(neuron_samples_n<=xs.shape[1])] # Ignore samples with higher n that possible neurons
@@ -198,8 +198,8 @@ def run_decoder_for_session_residual(c_neural_data, area, alfio, regressed_varia
         if cluster_selection.shape[1]<n_neurons_minimum:
             return print("Not enough neurons")
         else:
-            if len(regressed_variable)>1: #then we are decoding deltaq, need to choose R-L or L-R so that it matches contra-ipsi 
-                regressed_variable = regressed_variable[h]
+            if len(regressed_variable)==2: #then we are decoding deltaq, need to choose R-L or L-R so that it matches contra-ipsi 
+                regressed_variable = regressed_variable[int(h)]
             if etype=='real':
                 p_summary, mse_summary = run_decoder(cluster_selection, regressed_variable, weights, n_neurons_minimum=n_neurons_minimum)
                 np.save(output_folder+'/'+str(etype)+'_'+str(area)+'_'+str(alfio.mouse)+'_'+str(alfio.date)+'_'+str(int(h))+'_p_summary.npy', p_summary)
@@ -207,7 +207,7 @@ def run_decoder_for_session_residual(c_neural_data, area, alfio, regressed_varia
             else:
                 p_summary = np.load(output_folder+'/'+'real'+'_'+str(area)+'_'+str(alfio.mouse)+'_'+str(alfio.date)+'_'+str(int(h))+'_p_summary.npy')
                 l_performance  = np.nanmean(np.nanmean(np.nanmean(np.nanmean(p_summary, axis=0), axis=1), axis=1), axis=1)
-                l = np.logspace(-3,-0.5,100)[np.argmax(l_performance)]
+                l = np.logspace(-5,-0.5,100)[np.argmax(l_performance)]
                 p_summary, mse_summary = run_decoder(cluster_selection, regressed_variable, weights, lambdas=np.array([l]), n_neurons_minimum=n_neurons_minimum)
                 np.save(output_folder+'/'+str(n)+'_'+str(etype)+'_'+str(area)+'_'+str(alfio.mouse)+'_'+str(alfio.date)+'_'+str(int(h))+'_p_summary.npy', p_summary)
                 np.save(output_folder+'/'+str(n)+'_'+str(etype)+'_'+str(area)+'_'+str(alfio.mouse)+'_'+str(alfio.date)+'_'+str(int(h))+'_mse_summary.npy', mse_summary)

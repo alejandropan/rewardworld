@@ -94,9 +94,9 @@ def load_residual(neuron_file, model_bin_size=5, final_bins=100, pre_time = -500
         go = int(residual_struct['data']['times'][i][0] - 1) # -1 to account for matlab indexing
         choice =  int(residual_struct['data']['times'][i][1] - 1) # -1 to account for matlab indexing
         outcome = int(residual_struct['data']['times'][i][2] - 1) # -1 to account for matlab indexing
-        go_data = residual_struct['data']['Y_pred'][i][go-pre_window:go+post_window]
-        choice_data = residual_struct['data']['Y_pred'][i][choice-pre_window:choice+post_window]
-        outcome_data = residual_struct['data']['Y_pred'][i][outcome-pre_window:outcome+post_window]
+        go_data = residual_struct['data']['Y_resd'][i][go-pre_window:go+post_window] #
+        choice_data = residual_struct['data']['Y_resd'][i][choice-pre_window:choice+post_window] #
+        outcome_data = residual_struct['data']['Y_resd'][i][outcome-pre_window:outcome+post_window] #
         assert len(go_data) == len(residuals_goCue[i,:])
         assert len(choice_data) == len(residuals_choice[i,:])
         assert len(outcome_data) == len(residuals_outcome[i,:])
@@ -127,12 +127,20 @@ def load_all_residuals(root_path):
     return residuals
     
 def common_trials(residuals):
-    for i in np.arange(len(residuals)-1):
+    # First it excludes neurons with less than 2 std the number of trials
+    select = []
+    ts = []
+    for i in np.arange(len(residuals)-1):    
+        ts.append(len(residuals['trials_included'].iloc[i]))
+    ts = np.array(ts)
+    t_range = [int(np.median(ts)-np.std(ts)*2), int(np.median(ts)+np.std(ts)*2)]
+    residuals = residuals.iloc[np.where(ts>t_range[0])]
+    for i in np.arange(len(residuals)-1):    
         if i == 0:
             select = residuals['trials_included'].iloc[i]
         t = residuals['trials_included'].iloc[i+1]
         select = np.intersect1d(select,t)
-    return select
+    return select, residuals
 
 def common_neural_data(residuals, trials_included):
     reduced_residuals = pd.DataFrame()

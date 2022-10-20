@@ -14,16 +14,17 @@ warnings.filterwarnings('ignore')
 ##########################
 ####### Parameters #######
 ##########################
+
 ROOT='/jukebox/witten/Alex/Data/Subjects/'
 ROOT_NEURAL = '/jukebox/witten/Chris/data/ibl_da_neuropixels/Data/Subjects'
-id_dict = pd.read_csv('/jukebox/witten/Alex/decoder_output/id_dict.csv')
+id_dict = pd.read_csv('/jukebox/witten/Alex/decoders_residuals_results/decoder_output_qchosen_cue_forget/id_dict.csv')
 n_neurons_minimum = 10
 alignment_time = 'goCue_time'
 pre_time = 0.5
 post_time  = 4
 smoothing=0
 bin_size=0.1
-output_folder = '/jukebox/witten/Alex/decoder_output'
+output_folder = '/jukebox/witten/Alex/decoders_residuals_results/decoder_output_qchosen_cue_forget'
 temp_folder = '/jukebox/witten/Alex/decoder_wd'
 
 ##########################
@@ -48,7 +49,7 @@ neural_data = load_all_residuals(encoding_res_path)
 neural_data = neural_data.loc[neural_data['location']==area]
 
 # Trials used
-trials_included = common_trials(neural_data)
+trials_included, neural_data = common_trials(neural_data)
 c_neural_data = common_neural_data(neural_data, trials_included)
 
 # Load variable to be decoded and aligment times

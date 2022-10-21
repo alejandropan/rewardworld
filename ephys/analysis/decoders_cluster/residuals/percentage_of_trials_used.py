@@ -38,7 +38,13 @@ for ses in sessions:
             used.append(len(trials_included))
 
 # Calculate percent and plot
-data = used/total
-sns.histplot(data, stat='percent')
+data = np.array(used)/np.array(total)
+fig, ax = plt.subplots()
+sns.histplot(data, stat='percent', binwidth=0.05)
 plt.xlabel('Fraction of trials used')
 plt.ylabel('%')
+plt.xlim([0,1.1])
+plt.savefig('/jukebox/witten/Alex/PYTHON/rewardworld/ephys/analysis/decoders_cluster/residuals/tirals.pdf')
+np.save('/jukebox/witten/Alex/PYTHON/rewardworld/ephys/analysis/decoders_cluster/residuals/used.npy',  np.array(used))
+np.save('/jukebox/witten/Alex/PYTHON/rewardworld/ephys/analysis/decoders_cluster/residuals/total.npy', np.array(total))
+np.save('/jukebox/witten/Alex/PYTHON/rewardworld/ephys/analysis/decoders_cluster/residuals/fraction.npy', data)

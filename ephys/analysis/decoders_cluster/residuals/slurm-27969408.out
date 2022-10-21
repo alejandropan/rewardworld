@@ -1,0 +1,27 @@
+AnacondaPy 5.3.1 is deprecated and should not be used for new work.
+
+	module anacondapy/5.3.1 loaded.
+	5.3.1 contains an old version of the conda command.
+	Use 'source activate' not 'conda activate' or you will get an error.
+	Newer modules with the YYYY.MM version format do not have this problem.
+	This version (5.3.1) should continue to be used with environments
+	created with it. Otherwise, you may get GLIBCXX_version errors.
+
+discarding /usr/people/apv2/.conda/envs/iblenv/bin from PATH
+prepending /usr/people/apv2/.conda/envs/iblenv/bin to PATH
+No reward type blocks
+No reward type blocks
+No reward type blocks
+No reward type blocks
+No reward type blocks
+No reward type blocks
+No reward type blocks
+No reward type blocks
+No reward type blocks
+No reward type blocks
+No reward type blocks
+No reward type blocks
+No reward type blocks
+No reward type blocks
+No reward type blocks
+No reward type blocks

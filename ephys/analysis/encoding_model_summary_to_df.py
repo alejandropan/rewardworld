@@ -71,7 +71,7 @@ def resample (psth_array,final_bins, model_bin_size):
                                         axis = 1)
     return new_psth_array
 
-def load_residual(neuron_file, model_bin_size=5, final_bins=100, pre_time = -500, post_time = 2000): # bin sizes in ms
+def load_residual(neuron_file, model_bin_size=5, final_bins=100, pre_time = -500, post_time = 1000): # bin sizes in ms
     residual_struct = mat73.loadmat(neuron_file)
     # Start_dataframe
     neuron = pd.DataFrame()

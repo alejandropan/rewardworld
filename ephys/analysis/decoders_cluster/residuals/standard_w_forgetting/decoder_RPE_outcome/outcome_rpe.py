@@ -64,6 +64,7 @@ regressed_variable = regressed_variable[trials_included.astype(int)]
 #weights = get_session_sample_weights(alfio.to_df(), categories = ['choice','probabilityLeft', 'outcome'])
 weights = None
 
+'''
 # Load and run null distributions
 null_sesssions = []
 for i in np.arange(200):
@@ -72,6 +73,7 @@ for i in np.arange(200):
     qchosen = n_temp['QRreward'].to_numpy()
     qchosen[np.where(n_temp.choice==-1)] = n_temp.QLreward.to_numpy()[np.where(n_temp.choice==-1)]
     null_sesssions.append(qchosen)
+'''
 
 ##########################
 ## Run decoder (linear) ##

@@ -17,14 +17,14 @@ warnings.filterwarnings('ignore')
 
 ROOT='/jukebox/witten/Alex/Data/Subjects/'
 ROOT_NEURAL = '/jukebox/witten/Chris/data/ibl_da_neuropixels/Data/Subjects'
-id_dict = pd.read_csv('/jukebox/witten/Alex/decoders_residuals_results/decoder_output_qchosen_outcome_forget/id_dict.csv')
+id_dict = pd.read_csv('/jukebox/witten/Alex/decoders_raw_results/decoder_output_qchosen_outcome_forget/id_dict.csv')
 n_neurons_minimum = 10
 alignment_time = 'response_time'
 pre_time = 0.5
 post_time  = 4
 smoothing=0
 bin_size=0.1
-output_folder = '/jukebox/witten/Alex/decoders_residuals_results/decoder_output_qchosen_outcome_forget'
+output_folder = '/jukebox/witten/Alex/decoders_raw_results/decoder_output_qchosen_outcome_forget'
 temp_folder = '/jukebox/witten/Alex/decoder_wd'
 
 ##########################
@@ -45,7 +45,7 @@ alfio.path = ses
 encoding_res_path = ROOT_NEURAL+'/'+ \
                     id_dict.loc[id_dict['id']==int(sys.argv[1]),'ses'].to_string(index=False)+\
                     '/alf/encodingmodels/inputs/neurons/' 
-neural_data = load_all_residuals(encoding_res_path)
+neural_data = load_all_residuals(encoding_res_path, filetype='real')
 neural_data = neural_data.loc[neural_data['location']==area]
 
 # Trials used
@@ -79,7 +79,7 @@ for i in np.arange(200):
 run_decoder_for_session_residual(c_neural_data, area, alfio, regressed_variable, weights, alignment_time, etype = 'real', output_folder=output_folder)
 
 # run for post update
-output_folder = '/jukebox/witten/Alex/decoders_residuals_results/decoder_output_qchosen_outcome_post_forget'
+output_folder = '/jukebox/witten/Alex/decoders_raw_results/decoder_output_qchosen_outcome_post_forget'
 alfio.fQRreward_cue = np.copy(alfio.fQRreward)
 alfio.fQLreward_cue = np.copy(alfio.fQLreward)
 regressed_variable = np.copy(alfio.fQRreward_cue) #For now qchosen

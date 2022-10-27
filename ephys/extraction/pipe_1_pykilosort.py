@@ -32,7 +32,7 @@ def remove_passive_ttls(ses, n_passive=20, bpod_ch=16, audio_ch=7, laser_ch=17):
     to_del_raw = np.where(t>=first_passive_ttl)
     audio_bpod_laser_ttls =  np.where(np.isin(c, [audio_ch,bpod_ch,laser_ch]))
     to_del = np.intersect1d(to_del_raw,audio_bpod_laser_ttls)
-    t_ses = npdelete(t, to_del)
+    t_ses = np.delete(t, to_del)
     c_ses = np.delete(c, to_del)
     p_ses = np.delete(p, to_del)
     # save
@@ -59,8 +59,8 @@ if __name__=='__main__':
         ses = sys.argv[1]
         path = Path(ses)
         pre_processing(path)
-        if Path(ses+'/passive').is_dir():
-                remove_passive_ttls(ses, n_passive=20, bpod_ch=16, audio_ch=7, laser_ch=17)
+        #if Path(ses+'/passive').is_dir():
+        #        remove_passive_ttls(ses, n_passive=20, bpod_ch=16, audio_ch=7, laser_ch=17)
         extract_all(path, save=True, bin_exists=False)
         sorting_sync_and_alf(path, overwrite=False)
         move_phy_files(ses)

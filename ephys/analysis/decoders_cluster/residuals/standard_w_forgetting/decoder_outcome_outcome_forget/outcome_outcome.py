@@ -17,14 +17,14 @@ warnings.filterwarnings('ignore')
 
 ROOT='/jukebox/witten/Alex/Data/Subjects/'
 ROOT_NEURAL = '/jukebox/witten/Chris/data/ibl_da_neuropixels/Data/Subjects'
-id_dict = pd.read_csv('/jukebox/witten/Alex/decoders_residuals_results/decoder_output_qchosen_outcome_forget/id_dict.csv')
+id_dict = pd.read_csv('/jukebox/witten/Alex/decoders_residuals_results/decoder_output_outcome_outcome_forget/id_dict.csv')
 n_neurons_minimum = 10
 alignment_time = 'response_time'
 pre_time = 0.5
 post_time  = 4
 smoothing=0
 bin_size=0.1
-output_folder = '/jukebox/witten/Alex/decoders_residuals_results/decoder_output_qchosen_outcome_forget'
+output_folder = '/jukebox/witten/Alex/decoders_residuals_results/decoder_output_outcome_outcome_forget'
 temp_folder = '/jukebox/witten/Alex/decoder_wd'
 
 ##########################
@@ -53,13 +53,8 @@ trials_included, neural_data = common_trials(neural_data)
 c_neural_data = common_neural_data(neural_data, trials_included)
 
 # Load variable to be decoded and aligment times
-alfio.fQRreward_cue = np.copy(np.roll(alfio.fQRreward,1))
-alfio.fQLreward_cue = np.copy(np.roll(alfio.fQLreward,1))
-alfio.fQRreward_cue[0] = 0
-alfio.fQLreward_cue[0] = 0
-regressed_variable = np.copy(alfio.fQRreward_cue) #For now qchosen
-regressed_variable[np.where(alfio.choice==-1)] = alfio.fQLreward_cue[np.where(alfio.choice==-1)] #For now qchosen
-regressed_variable = regressed_variable[trials_included.astype(int)]
+regressed_variable = np.copy(alfio.outcome)[trials_included.astype(int)]
+
 # Only trials included in analysis
 #weights = get_session_sample_weights(alfio.to_df(), categories = ['choice','probabilityLeft', 'outcome'])
 weights = None
@@ -76,16 +71,6 @@ for i in np.arange(200):
 ##########################
 ## Run decoder (linear) ##
 ##########################
-run_decoder_for_session_residual(c_neural_data, area, alfio, regressed_variable, weights, alignment_time, etype = 'real', output_folder=output_folder)
-
-# run for post update
-output_folder = '/jukebox/witten/Alex/decoders_residuals_results/decoder_output_qchosen_outcome_post_forget'
-alfio.fQRreward_cue = np.copy(alfio.fQRreward)
-alfio.fQLreward_cue = np.copy(alfio.fQLreward)
-regressed_variable = np.copy(alfio.fQRreward_cue) #For now qchosen
-regressed_variable[np.where(alfio.choice==-1)] = alfio.fQLreward_cue[np.where(alfio.choice==-1)] #For now qchosen
-regressed_variable = regressed_variable[trials_included.astype(int)]
-
-run_decoder_for_session_residual(c_neural_data, area, alfio, regressed_variable, weights, alignment_time, etype = 'real', output_folder=output_folder)
+run_decoder_for_session_residual(c_neural_data, area, alfio, regressed_variable, weights, alignment_time, etype = 'real', output_folder=output_folder, decoder = 'logistic')
 #for n, null_ses in enumerate(null_sesssions):
     #run_decoder_for_session_residual(c_neural_data, area, alfio, regressed_variable, weights, alignment_time, etype = 'null', n=n, output_folder=output_folder)

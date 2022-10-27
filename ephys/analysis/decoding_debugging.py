@@ -2,6 +2,7 @@ import os
 os.chdir('/jukebox/witten/Alex/PYTHON/rewardworld/ephys/analysis')
 from brainbox.singlecell import calculate_peths
 from sklearn.linear_model import Lasso as LR
+from sklearn.linear_model import LogisticRegression as LLR
 from scipy.stats import pearsonr
 #import multiprocess as mp
 import sys
@@ -10,6 +11,7 @@ from pathlib import Path
 import pandas as pd
 import numpy as np
 from scipy.stats import zscore
+from sklearn.metrics import r2_score
 
 def z_score_peth(binned_spikes):
     zdata=np.zeros(binned_spikes.shape)
@@ -104,7 +106,7 @@ def makeXvalpartitions(trials,number_folds):
     return partition_train, partition_test
 
 def run_decoder(xs, regressed_variable, weights, number_folds=10, decoder = LR, 
-                n_neurons_minimum = 10, n_neurons_max = 50, lambdas = None):
+                n_neurons_minimum = 10, n_neurons_max = 50, lambdas = None, max_n_combinations=100):
     '''
     Params:
     xs (array) : This is the binned firing rates for the population of interest
@@ -115,43 +117,75 @@ def run_decoder(xs, regressed_variable, weights, number_folds=10, decoder = LR,
     acc (np.array) : accuracy from pre_time to post_time in fr_bins
     '''
     # center data
-    regressed_variable = zscore(regressed_variable)
+    if decoder == LR:
+        regressed_variable = zscore(regressed_variable)
     # Prepare training sets
     if lambdas is  None:
-        lambdas = np.logspace(-5,-0.5,100)
-    folds  = makeXvalpartitions(len(regressed_variable),number_folds)
-    neuron_samples_n = np.array([n_neurons_minimum, n_neurons_minimum*2, n_neurons_minimum*3, n_neurons_max])
-    neuron_samples_n = neuron_samples_n[np.where(neuron_samples_n<=xs.shape[1])] # Ignore samples with higher n that possible neurons
-    neuron_combinations = []
-    max_n_combinations=[]
-    for samples in neuron_samples_n:
-        neuron_selections = []
-        while np.sum(np.isin(np.arange(xs.shape[1]), neuron_selections))!=xs.shape[1]:
-            neuron_selections.append(np.random.choice(np.arange(xs.shape[1]), samples, replace=False))
-        max_n_combinations.append(len(neuron_selections))
-        neuron_combinations.append(neuron_selections) # neuron_combinations[neuron_samples_n][n_combinations_until_using_every_neurons]
-    max_n_combinations = np.max(max_n_combinations)
-    n_bins = xs.shape[2]
-    pearson_summary = np.zeros([number_folds,len(lambdas), n_bins, len(neuron_combinations), max_n_combinations])
-    mse_summary = np.zeros([number_folds,len(lambdas), n_bins, len(neuron_combinations), max_n_combinations]) 
-    # pearson_summary  = [n_folds x n_lambdas x n_timebins x n_neurons_samples x n_combinations]
-    pearson_summary[:] = np.nan
-    mse_summary[:] = np.nan
-    # Start workers and define multiprocessing function
-    #pool = mp.Pool(processes=12)    
-    for nc, nsample in enumerate(neuron_combinations):
-        for s, subsample in enumerate(nsample):
-            for f in np.arange(number_folds):
-                training_trials = np.concatenate(folds[0][:][f]).astype(int)
-                testing_trials = np.concatenate(folds[1][:][f]).astype(int)
-                for i_l, l in enumerate(lambdas):
+        lambdas = np.array([0.001,0.01,0.1,1,10])
+        if decoder == LLR:
+            lambdas = np.array([0.001,0.01,0.1,1,10])
+            lambdas = 1/(2*lambdas) #To match alphs of linear regressions
+    if lambdas == 'omit':
+        folds  = makeXvalpartitions(len(regressed_variable),number_folds)
+        neuron_samples_n = np.array([n_neurons_minimum, n_neurons_minimum*2, n_neurons_minimum*3, n_neurons_max])
+        neuron_samples_n = neuron_samples_n[np.where(neuron_samples_n<=xs.shape[1])] # Ignore samples with higher n that possible neurons
+        neuron_combinations = []
+        for samples in neuron_samples_n:
+            neuron_selections = []
+            for i in np.arange(100):
+                neuron_selections.append(np.random.choice(np.arange(xs.shape[1]), samples, replace=False))
+            neuron_combinations.append(neuron_selections) # neuron_combinations[neuron_samples_n][n_combinations_until_using_every_neurons]
+        n_bins = xs.shape[2]
+        pearson_summary = np.zeros([number_folds,1, n_bins, len(neuron_combinations), max_n_combinations])
+        mse_summary = np.zeros([number_folds,1, n_bins, len(neuron_combinations), max_n_combinations]) 
+        # pearson_summary  = [n_folds x n_lambdas x n_timebins x n_neurons_samples x n_combinations]
+        pearson_summary[:] = np.nan
+        mse_summary[:] = np.nan
+        # Start workers and define multiprocessing function
+        #pool = mp.Pool(processes=12)    
+        for nc, nsample in enumerate(neuron_combinations):
+            for s, subsample in enumerate(nsample):
+                for f in np.arange(number_folds):
+                    training_trials = np.concatenate(folds[0][:][f]).astype(int)
+                    testing_trials = np.concatenate(folds[1][:][f]).astype(int)
                     for b in np.arange(n_bins):
                         fit_qc = weighted_decoder(b, regressed_variable=regressed_variable, xs=xs, 
                                                 subsample=subsample, training_trials=training_trials, 
                                                 testing_trials=testing_trials, 
-                                                weights=weights, decoder=decoder, l=l)
-                        pearson_summary[f, i_l, b, nc, s] = fit_qc[0]
-                        mse_summary[f, i_l, b, nc, s] = fit_qc[1]
+                                                weights=weights, decoder=decoder)
+                        pearson_summary[f, 0, b, nc, s] = fit_qc[0]
+                        mse_summary[f, 0, b, nc, s] = fit_qc[1]
+    else:
+        folds  = makeXvalpartitions(len(regressed_variable),number_folds)
+        neuron_samples_n = np.array([n_neurons_minimum, n_neurons_minimum*2, n_neurons_minimum*3, n_neurons_max])
+        neuron_samples_n = neuron_samples_n[np.where(neuron_samples_n<=xs.shape[1])] # Ignore samples with higher n that possible neurons
+        neuron_combinations = []
+        for samples in neuron_samples_n:
+            neuron_selections = []
+            for i in np.arange(100):
+                neuron_selections.append(np.random.choice(np.arange(xs.shape[1]), samples, replace=False))
+            neuron_combinations.append(neuron_selections) # neuron_combinations[neuron_samples_n][n_combinations_until_using_every_neurons]
+        n_bins = xs.shape[2]
+        pearson_summary = np.zeros([number_folds,len(lambdas), n_bins, len(neuron_combinations), max_n_combinations])
+        mse_summary = np.zeros([number_folds,len(lambdas), n_bins, len(neuron_combinations), max_n_combinations]) 
+        # pearson_summary  = [n_folds x n_lambdas x n_timebins x n_neurons_samples x n_combinations]
+        pearson_summary[:] = np.nan
+        mse_summary[:] = np.nan
+        # Start workers and define multiprocessing function
+        #pool = mp.Pool(processes=12)    
+        for nc, nsample in enumerate(neuron_combinations):
+            for s, subsample in enumerate(nsample):
+                for f in np.arange(number_folds):
+                    training_trials = np.concatenate(folds[0][:][f]).astype(int)
+                    testing_trials = np.concatenate(folds[1][:][f]).astype(int)
+                    for i_l, l in enumerate(lambdas):
+                        for b in np.arange(n_bins):
+                            fit_qc = weighted_decoder(b, regressed_variable=regressed_variable, xs=xs, 
+                                                    subsample=subsample, training_trials=training_trials, 
+                                                    testing_trials=testing_trials, 
+                                                    weights=weights, decoder=decoder, l=l)
+                            pearson_summary[f, i_l, b, nc, s] = fit_qc[0]
+                            mse_summary[f, i_l, b, nc, s] = fit_qc[1]
     return pearson_summary, mse_summary
 
 def weighted_decoder(b, regressed_variable=None, xs=None, 
@@ -163,15 +197,30 @@ def weighted_decoder(b, regressed_variable=None, xs=None,
     X_test = spike_data[testing_trials]
     y_train = regressed_variable[training_trials]
     y_test = regressed_variable[testing_trials]
-    if weights!=None:
-        reg = decoder(alpha=l).fit(X_train, y_train, sample_weight=weights[training_trials]) #sample_weight
-    else:
-        reg = decoder(alpha=l).fit(X_train, y_train) #sample_weight                        
+    if decoder == LR:
+        if l is None:
+            reg = decoder().fit(X_train, y_train) #sample_weight    
+        else:
+            if weights!=None:
+                reg = decoder(alpha=l).fit(X_train, y_train, sample_weight=weights[training_trials]) #sample_weight
+            else:
+                reg = decoder(alpha=l).fit(X_train, y_train) #sample_weight    
+    if decoder == LLR:
+        if l is None:
+            reg = decoder(class_weight='balanced').fit(X_train, y_train) #sample_weight      
+        else:
+            if weights!=None:
+                reg = decoder(penalty='l1', solver='liblinear', C=l).fit(X_train, y_train, sample_weight=weights[training_trials]) #sample_weight currently not functional for LLR
+            else:
+                reg = decoder(penalty='l1', solver='liblinear', C=l, class_weight='balanced').fit(X_train, y_train) #sample_weight      
     y_pred = reg.predict(X_test)
     p = pearsonr(y_test, y_pred)[0] #pearson correlation with y-test
     if np.isnan(p)==True:
         p=0
-    mse = np.square(np.subtract(y_test,y_pred)).mean()
+    if decoder == LLR:
+        mse = np.mean(1*(y_test==y_pred))  #store accuracy instead
+    else:
+        mse = r2_score(y_test, y_pred, multioutput='uniform_average')
     return np.array([p, mse])
 
 def reshape_psth_array(binned_spikes):
@@ -183,7 +232,12 @@ def reshape_psth_array(binned_spikes):
     return spike_data
 
 def run_decoder_for_session_residual(c_neural_data, area, alfio, regressed_variable, weights, alignment_time, etype = 'real', 
-                            output_folder='/jukebox/witten/Alex/decoder_output', n_neurons_minimum = 10, n=None):  
+                            output_folder='/jukebox/witten/Alex/decoder_output', n_neurons_minimum = 10, n=None, decoder = 'lasso', lambdas=None):
+    
+    if decoder == 'lasso':
+        decoder_type = LR
+    if decoder == 'logistic':
+        decoder_type = LLR     
     # Regressed variable can be a list of arrays in the case of delta q (QR-QL and QL-QR)
     hem = c_neural_data['hem']
     if alignment_time=='response_time':
@@ -201,14 +255,16 @@ def run_decoder_for_session_residual(c_neural_data, area, alfio, regressed_varia
             if len(regressed_variable)==2: #then we are decoding deltaq, need to choose R-L or L-R so that it matches contra-ipsi 
                 regressed_variable = regressed_variable[int(h)]
             if etype=='real':
-                p_summary, mse_summary = run_decoder(cluster_selection, regressed_variable, weights, n_neurons_minimum=n_neurons_minimum)
+                p_summary, mse_summary = run_decoder(cluster_selection, regressed_variable, weights, n_neurons_minimum=n_neurons_minimum, decoder = decoder_type, lambdas=lambdas)
                 np.save(output_folder+'/'+str(etype)+'_'+str(area)+'_'+str(alfio.mouse)+'_'+str(alfio.date)+'_'+str(int(h))+'_p_summary.npy', p_summary)
                 np.save(output_folder+'/'+str(etype)+'_'+str(area)+'_'+str(alfio.mouse)+'_'+str(alfio.date)+'_'+str(int(h))+'_mse_summary.npy', mse_summary)
             else:
                 p_summary = np.load(output_folder+'/'+'real'+'_'+str(area)+'_'+str(alfio.mouse)+'_'+str(alfio.date)+'_'+str(int(h))+'_p_summary.npy')
                 l_performance  = np.nanmean(np.nanmean(np.nanmean(np.nanmean(p_summary, axis=0), axis=1), axis=1), axis=1)
-                l = np.logspace(-5,-0.5,100)[np.argmax(l_performance)]
-                p_summary, mse_summary = run_decoder(cluster_selection, regressed_variable, weights, lambdas=np.array([l]), n_neurons_minimum=n_neurons_minimum)
+                l = np.array([0.001,0.01,0.1,1,10])[np.argmax(l_performance)]
+                p_summary, mse_summary = run_decoder(cluster_selection, regressed_variable, weights, lambdas=np.array([l]), n_neurons_minimum=n_neurons_minimum, decoder = decoder_type)
                 np.save(output_folder+'/'+str(n)+'_'+str(etype)+'_'+str(area)+'_'+str(alfio.mouse)+'_'+str(alfio.date)+'_'+str(int(h))+'_p_summary.npy', p_summary)
                 np.save(output_folder+'/'+str(n)+'_'+str(etype)+'_'+str(area)+'_'+str(alfio.mouse)+'_'+str(alfio.date)+'_'+str(int(h))+'_mse_summary.npy', mse_summary)
+
+
 

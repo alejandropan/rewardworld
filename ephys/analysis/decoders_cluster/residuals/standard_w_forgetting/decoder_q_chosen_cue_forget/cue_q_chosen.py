@@ -65,18 +65,24 @@ regressed_variable = regressed_variable[trials_included.astype(int)]
 weights = None
 
 # Load and run null distributions
+ses_len = len(regressed_variable)
 null_sesssions = []
 for i in np.arange(200):
     n_temp =  pd.read_csv('/jukebox/witten/Alex/null_sessions/laser_only/'+str(i)+'.csv')
     n_temp = n_temp.iloc[:, np.where(n_temp.columns=='choice')[0][0]:]
-    qchosen = n_temp['QRreward'].to_numpy()
-    qchosen[np.where(n_temp.choice==-1)] = n_temp.QLreward.to_numpy()[np.where(n_temp.choice==-1)]
+    qchosen_R = np.roll(np.copy(n_temp['fQRreward'].to_numpy()),1)
+    qchosen_L = np.roll(np.copy(n_temp['fQLreward'].to_numpy()),1)
+    qchosen_R[0] = 0
+    qchosen_L[0] = 0   
+    qchosen = np.copy(qchosen_R)
+    qchosen[np.where(n_temp.choice==-1)] = qchosen_L[np.where(n_temp.choice==-1)] #For now qchosen
+    qchosen = qchosen[:ses_len]
     null_sesssions.append(qchosen)
 
 ##########################
 ## Run decoder (linear) ##
 ##########################
 
-run_decoder_for_session_residual(c_neural_data, area, alfio, regressed_variable, weights, alignment_time, etype = 'real', output_folder=output_folder)
-#for n, null_ses in enumerate(null_sesssions):
-    #run_decoder_for_session_residual(c_neural_data, area, alfio, regressed_variable, weights, alignment_time, etype = 'null', n=n, output_folder=output_folder)
+#run_decoder_for_session_residual(c_neural_data, area, alfio, regressed_variable, weights, alignment_time, etype = 'real', output_folder=output_folder)
+for n, null_ses in enumerate(null_sesssions):
+    run_decoder_for_session_residual(c_neural_data, area, alfio, null_ses, weights, alignment_time, etype = 'null', n=n, output_folder=output_folder)

@@ -2,6 +2,7 @@ import numpy as np
 from ephys_alf_summary import alf
 import random
 import pandas as pd
+from pathlib import Path
 random.seed(10)
 
 # PATHS

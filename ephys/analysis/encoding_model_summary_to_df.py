@@ -71,13 +71,13 @@ def resample (psth_array,final_bins, model_bin_size):
                                         axis = 1)
     return new_psth_array
 
-def load_residual(neuron_file, model_bin_size=5, final_bins=100, pre_time = -500, post_time = 1000): # bin sizes in ms
+def load_residual(neuron_file, model_bin_size=5, final_bins=100, pre_time = -500, post_time = 1000, filetype='residual'): # bin sizes in ms
     residual_struct = mat73.loadmat(neuron_file)
     # Start_dataframe
     neuron = pd.DataFrame()
     n_trials = int(len(residual_struct['data']['Y_pred']))
     # General info
-    neuron['trials_included'] = [residual_struct['data']['trials']]
+    neuron['trials_included'] = [residual_struct['data']['trials'] - 1]
     neuron['cluster_id'] =  int(residual_struct['data']['cluster']['clusterid'])
     neuron['animal'] =  residual_struct['data']['cluster']['session'][:6]
     neuron['date'] = residual_struct['data']['cluster']['session'][7:17]
@@ -94,9 +94,18 @@ def load_residual(neuron_file, model_bin_size=5, final_bins=100, pre_time = -500
         go = int(residual_struct['data']['times'][i][0] - 1) # -1 to account for matlab indexing
         choice =  int(residual_struct['data']['times'][i][1] - 1) # -1 to account for matlab indexing
         outcome = int(residual_struct['data']['times'][i][2] - 1) # -1 to account for matlab indexing
-        go_data = residual_struct['data']['Y_resd'][i][go-pre_window:go+post_window] #
-        choice_data = residual_struct['data']['Y_resd'][i][choice-pre_window:choice+post_window] #
-        outcome_data = residual_struct['data']['Y_resd'][i][outcome-pre_window:outcome+post_window] #
+        if filetype=='residual':
+            go_data = residual_struct['data']['Y_resd'][i][go-pre_window:go+post_window] #
+            choice_data = residual_struct['data']['Y_resd'][i][choice-pre_window:choice+post_window] #
+            outcome_data = residual_struct['data']['Y_resd'][i][outcome-pre_window:outcome+post_window] #
+        if filetype=='real':
+            go_data = residual_struct['data']['Y_real'][i][go-pre_window:go+post_window] #
+            choice_data = residual_struct['data']['Y_real'][i][choice-pre_window:choice+post_window] #
+            outcome_data = residual_struct['data']['Y_real'][i][outcome-pre_window:outcome+post_window] # 
+        if filetype=='prediction':
+            go_data = residual_struct['data']['Y_pred'][i][go-pre_window:go+post_window] #
+            choice_data = residual_struct['data']['Y_pred'][i][choice-pre_window:choice+post_window] #
+            outcome_data = residual_struct['data']['Y_pred'][i][outcome-pre_window:outcome+post_window] #         
         assert len(go_data) == len(residuals_goCue[i,:])
         assert len(choice_data) == len(residuals_choice[i,:])
         assert len(outcome_data) == len(residuals_outcome[i,:])
@@ -109,13 +118,11 @@ def load_residual(neuron_file, model_bin_size=5, final_bins=100, pre_time = -500
     neuron['residuals_outcome'] = [resample(residuals_outcome,final_bins, model_bin_size)]
     return neuron
 
-                
-
-def load_all_residuals(root_path):
+def load_all_residuals(root_path, filetype='residual'):
     path_to_all_residuals = glob.glob(root_path+'/*_residuals.mat')
     residuals = pd.DataFrame()
     for p in path_to_all_residuals:
-        residuals = pd.concat([residuals, load_residual(p)])
+        residuals = pd.concat([residuals, load_residual(p, filetype=filetype)])
     try:
         groups = pd.read_csv('/jukebox/witten/Alex/PYTHON/rewardworld/ephys/histology_files/simplified_regions.csv')
     except:
@@ -130,11 +137,11 @@ def common_trials(residuals):
     # First it excludes neurons with less than 2 std the number of trials
     select = []
     ts = []
-    for i in np.arange(len(residuals)-1):    
+    for i in np.arange(len(residuals)):    
         ts.append(len(residuals['trials_included'].iloc[i]))
     ts = np.array(ts)
     t_range = [int(np.median(ts)-np.std(ts)*2), int(np.median(ts)+np.std(ts)*2)]
-    residuals = residuals.iloc[np.where(ts>t_range[0])]
+    residuals = residuals.iloc[np.where(ts>=t_range[0])]
     for i in np.arange(len(residuals)-1):    
         if i == 0:
             select = residuals['trials_included'].iloc[i]

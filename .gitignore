@@ -1,4 +1,6 @@
 .DS_Store
 *.npy
 *.tif
+*.pdf
+*.out
 __pycache__/

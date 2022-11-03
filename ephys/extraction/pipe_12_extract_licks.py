@@ -1,4 +1,5 @@
 import numpy as np
+import sys 
 
 def find_nearest_past(value,array):
     d = array - value
@@ -35,3 +36,6 @@ def extract_licks(ses, laser_channel = 17, licking_channel = 18, save=True):
         np.save(ses + '/alf/_ibl_trials.feedbackTypeConsumed.npy', feedback_outcome)
     return len(not_consumed_trials)
 
+if __name__ == "__main__":
+    ses = sys.argv[1]
+    extract_licks(ses)

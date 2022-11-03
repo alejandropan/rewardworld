@@ -38,6 +38,7 @@ def make_selection(probe, min_amp=35):
     probe is a string variable with the path to the probe/clusters data
     """
     iblmetrics = pd.read_parquet(probe+'/clusters_metrics.ibl.pqt')
+    if 
     labels = pd.read_csv(probe+'/clusters.metrics.csv')
     try:
         labels_select = labels.loc[labels['group']=='good','id'].to_numpy()

@@ -12,6 +12,7 @@ import pandas as pd
 import numpy as np
 from scipy.stats import zscore
 from sklearn.metrics import r2_score
+from sklearn.model_selection import KFold
 
 def z_score_peth(binned_spikes):
     zdata=np.zeros(binned_spikes.shape)
@@ -83,6 +84,30 @@ def get_sample_weighting(n_classes,samples_per_class):
     w = w/np.sum(w) * n_classes
     return w
 
+def suffled_Xval(n_trials, k_folds):
+    x = np.arange(n_trials)
+    # outer_folds
+    k = KFold(n_splits=k_folds, shuffle=True, random_state=42)
+    outer_traning=[]
+    outer_test=[]
+    for otrainingi, otesti in k.split(x):
+        outer_traning.append(otrainingi)
+        outer_test.append(otesti)
+    outer_folds=[outer_traning,outer_test]
+    # inner_folds
+    all_inner_traning=[]
+    all_inner_test=[]
+    for f in outer_folds[0]: # go over outer traning folds
+        inner_traning=[]
+        inner_test=[]
+        for itrainingi, itesti in k.split(f):
+            inner_traning.append(f[itrainingi]) # is already an index, we dont want the index of the index hence f[it..i]
+            inner_test.append(f[itesti])
+        all_inner_traning.append(inner_traning) # is already an index, we dont want the index of the index hence f[it..i]
+        all_inner_test.append(inner_test)        
+    inner_folds = [all_inner_traning,all_inner_test]
+    return outer_folds, inner_folds
+
 def makeXvalpartitions(trials,number_folds):
     folds = np.floor(trials/number_folds) * np.ones([number_folds,1])
     if trials%number_folds> 0:
@@ -105,34 +130,37 @@ def makeXvalpartitions(trials,number_folds):
             partition_train[i] = fold_indices[np.setdiff1d(np.arange(number_folds), np.arange(i-1,i+2))]
     return partition_train, partition_test
 
-def run_decoder(xs, regressed_variable, weights, number_folds=10, decoder = LR, 
-                n_neurons_minimum = 10, n_neurons_max = 50, lambdas = None, max_n_combinations=100):
+def run_decoder(xs, regressed_variable, weights, number_folds=5, decoder = LR, 
+                n_neurons_minimum = 10, n_neurons_max = 50, lambdas = None, max_n_combinations=100, xval_type='shuffled'):
     '''
     Params:
-    xs (array) : This is the binned firing rates for the population of interest
-    fr_bin (float) :  size of the bins for the decoder
-    alignment_times (np.array): times of the variable of interest (e.g. Go Cue)
-    decoder_type(str): family of decoder support by scikitlearn 
-    Return: 
-    acc (np.array) : accuracy from pre_time to post_time in fr_bins
+    xs : This is the binned firing rates for the population of interest
+    regressed_variable : the y
+    weights: weights if avaiable (might be None)
+    max_n_combinations: Number of combination run for each set of (10,20 etc neurons)
+    xval_type: shuffled (ibl style Xval) or gap (conservative cross validation with 50t gap between train and test)
     '''
     # center data
     if decoder == LR:
         regressed_variable = zscore(regressed_variable)
+    if xval_type == 'gap':
+        folds  = makeXvalpartitions(len(regressed_variable),number_folds)
+    elif xval_type == 'shuffled': 
+        folds  = suffled_Xval(len(regressed_variable),number_folds)
     # Prepare training sets
     if lambdas is  None:
         lambdas = np.array([0.001,0.01,0.1,1,10])
         if decoder == LLR:
             lambdas = np.array([0.001,0.01,0.1,1,10])
-            lambdas = 1/(2*lambdas) #To match alphs of linear regressions
+            lambdas = 1/(2*lambdas) #To match alphs of linear regressions 
     if lambdas == 'omit':
-        folds  = makeXvalpartitions(len(regressed_variable),number_folds)
+        folds  = makeXvalpartitions(len(regressed_variable),number_folds) #shuffled Xval makes no sense if not optimizing lambda
         neuron_samples_n = np.array([n_neurons_minimum, n_neurons_minimum*2, n_neurons_minimum*3, n_neurons_max])
         neuron_samples_n = neuron_samples_n[np.where(neuron_samples_n<=xs.shape[1])] # Ignore samples with higher n that possible neurons
         neuron_combinations = []
         for samples in neuron_samples_n:
             neuron_selections = []
-            for i in np.arange(100):
+            for i in np.arange(max_n_combinations):
                 neuron_selections.append(np.random.choice(np.arange(xs.shape[1]), samples, replace=False))
             neuron_combinations.append(neuron_selections) # neuron_combinations[neuron_samples_n][n_combinations_until_using_every_neurons]
         n_bins = xs.shape[2]
@@ -156,36 +184,73 @@ def run_decoder(xs, regressed_variable, weights, number_folds=10, decoder = LR,
                         pearson_summary[f, 0, b, nc, s] = fit_qc[0]
                         mse_summary[f, 0, b, nc, s] = fit_qc[1]
     else:
-        folds  = makeXvalpartitions(len(regressed_variable),number_folds)
         neuron_samples_n = np.array([n_neurons_minimum, n_neurons_minimum*2, n_neurons_minimum*3, n_neurons_max])
         neuron_samples_n = neuron_samples_n[np.where(neuron_samples_n<=xs.shape[1])] # Ignore samples with higher n that possible neurons
         neuron_combinations = []
         for samples in neuron_samples_n:
             neuron_selections = []
-            for i in np.arange(100):
+            for i in np.arange(max_n_combinations):
                 neuron_selections.append(np.random.choice(np.arange(xs.shape[1]), samples, replace=False))
             neuron_combinations.append(neuron_selections) # neuron_combinations[neuron_samples_n][n_combinations_until_using_every_neurons]
         n_bins = xs.shape[2]
-        pearson_summary = np.zeros([number_folds,len(lambdas), n_bins, len(neuron_combinations), max_n_combinations])
-        mse_summary = np.zeros([number_folds,len(lambdas), n_bins, len(neuron_combinations), max_n_combinations]) 
-        # pearson_summary  = [n_folds x n_lambdas x n_timebins x n_neurons_samples x n_combinations]
-        pearson_summary[:] = np.nan
-        mse_summary[:] = np.nan
         # Start workers and define multiprocessing function
         #pool = mp.Pool(processes=12)    
-        for nc, nsample in enumerate(neuron_combinations):
-            for s, subsample in enumerate(nsample):
+        if xval_type == 'gap':
+            pearson_summary = np.zeros([number_folds,len(lambdas), n_bins, len(neuron_combinations), max_n_combinations])
+            mse_summary = np.zeros([number_folds,len(lambdas), n_bins, len(neuron_combinations), max_n_combinations]) 
+            # pearson_summary  = [n_folds x n_lambdas x n_timebins x n_neurons_samples x n_combinations]
+            pearson_summary[:] = np.nan
+            mse_summary[:] = np.nan
+            for nc, nsample in enumerate(neuron_combinations):
+                for s, subsample in enumerate(nsample):
+                    for f in np.arange(number_folds):
+                            training_trials = np.concatenate(folds[0][:][f]).astype(int)
+                            testing_trials = np.concatenate(folds[1][:][f]).astype(int)
+                            for i_l, l in enumerate(lambdas):
+                                for b in np.arange(n_bins):
+                                    fit_qc = weighted_decoder(b, regressed_variable=regressed_variable, xs=xs, 
+                                                            subsample=subsample, training_trials=training_trials, 
+                                                            testing_trials=testing_trials, 
+                                                            weights=weights, decoder=decoder, l=l)
+                                    pearson_summary[f, i_l, b, nc, s] = fit_qc[0]
+                                    mse_summary[f, i_l, b, nc, s] = fit_qc[1]
+
+        if xval_type == 'shuffled':
+            pearson_summary = np.zeros([number_folds,len(lambdas), n_bins, len(neuron_combinations), max_n_combinations])
+            mse_summary = np.zeros([number_folds,len(lambdas), n_bins, len(neuron_combinations), max_n_combinations]) 
+            # pearson_summary  = [n_folds x n_lambdas x n_timebins x n_neurons_samples x n_combinations]
+            pearson_summary[:] = np.nan
+            mse_summary[:] = np.nan
+            for nc, nsample in enumerate(neuron_combinations): # loop over combos of 10, 20 ... neurons
                 for f in np.arange(number_folds):
-                    training_trials = np.concatenate(folds[0][:][f]).astype(int)
-                    testing_trials = np.concatenate(folds[1][:][f]).astype(int)
-                    for i_l, l in enumerate(lambdas):
+                    outer_training = folds[0][0][f] 
+                    outer_test = folds[0][1][f] 
+                    inner_training = folds[1][0][f]
+                    inner_test = folds[1][1][f]
+                    inner_l_performance = np.zeros([len(lambdas), n_bins, max_n_combinations])
+                    inner_l_performance[:] = np.nan
+                    # Start of inner XVal
+                    for inner_f in np.arange(len(inner_training)):
+                        training_trials = inner_training[inner_f].astype(int)
+                        testing_trials = inner_test[inner_f].astype(int)
+                        for s, subsample in enumerate(nsample):
+                            for i_l, l in enumerate(lambdas):
+                                for b in np.arange(n_bins):
+                                    ifit_qc = weighted_decoder(b, regressed_variable=regressed_variable, xs=xs, 
+                                                            subsample=subsample, training_trials=training_trials, 
+                                                            testing_trials=testing_trials, 
+                                                            weights=weights, decoder=decoder, l=l)
+                                    inner_l_performance[i_l, b, nc, s] = ifit_qc[0] #currently pearson r for scoring
+                    fold_lambda = np.argmax(np.nanmean(np.nanmean(inner_l_performance, axis=1),axis=1)) # select best lambda
+                    # End of inner XVal
+                    for s, subsample in enumerate(nsample): # Now trainf and test on outer folds with best lambdas, run through all bins and samples of neurons
                         for b in np.arange(n_bins):
-                            fit_qc = weighted_decoder(b, regressed_variable=regressed_variable, xs=xs, 
-                                                    subsample=subsample, training_trials=training_trials, 
-                                                    testing_trials=testing_trials, 
-                                                    weights=weights, decoder=decoder, l=l)
-                            pearson_summary[f, i_l, b, nc, s] = fit_qc[0]
-                            mse_summary[f, i_l, b, nc, s] = fit_qc[1]
+                            ofit_qc = weighted_decoder(b, regressed_variable=regressed_variable, xs=xs, 
+                                                    subsample=subsample, training_trials=outer_training.astype(int), 
+                                                    testing_trials=outer_test.astype(int), 
+                                                    weights=weights, decoder=decoder, l=lambdas[fold_lambda])
+                            pearson_summary[f, fold_lambda, b, nc, s] = ofit_qc[0]
+                            mse_summary[f, fold_lambda, b, nc, s] = ofit_qc[1]                        
     return pearson_summary, mse_summary
 
 def weighted_decoder(b, regressed_variable=None, xs=None, 

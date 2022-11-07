@@ -130,11 +130,6 @@ def makeXvalpartitions(trials,number_folds):
             partition_train[i] = fold_indices[np.setdiff1d(np.arange(number_folds), np.arange(i-1,i+2))]
     return partition_train, partition_test
 
-
-
-p_summary, mse_summary = run_decoder(cluster_selection, regressed_variable, weights, n_neurons_minimum=n_neurons_minimum, decoder = decoder_type, lambdas=lambdas)
-
-
 def run_decoder(xs, regressed_variable, weights, number_folds=5, decoder = LR, 
                 n_neurons_minimum = 10, n_neurons_max = 50, lambdas = None, max_n_combinations=100, xval_type='shuffled'):
     '''

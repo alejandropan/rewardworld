@@ -130,6 +130,11 @@ def makeXvalpartitions(trials,number_folds):
             partition_train[i] = fold_indices[np.setdiff1d(np.arange(number_folds), np.arange(i-1,i+2))]
     return partition_train, partition_test
 
+
+
+p_summary, mse_summary = run_decoder(cluster_selection, regressed_variable, weights, n_neurons_minimum=n_neurons_minimum, decoder = decoder_type, lambdas=lambdas)
+
+
 def run_decoder(xs, regressed_variable, weights, number_folds=5, decoder = LR, 
                 n_neurons_minimum = 10, n_neurons_max = 50, lambdas = None, max_n_combinations=100, xval_type='shuffled'):
     '''
@@ -227,10 +232,10 @@ def run_decoder(xs, regressed_variable, weights, number_folds=5, decoder = LR,
                     outer_test = folds[0][1][f] 
                     inner_training = folds[1][0][f]
                     inner_test = folds[1][1][f]
-                    inner_l_performance = np.zeros([len(lambdas), n_bins, max_n_combinations])
+                    inner_l_performance = np.zeros([len(inner_training),len(lambdas), n_bins, max_n_combinations])
                     inner_l_performance[:] = np.nan
                     # Start of inner XVal
-                    for inner_f in np.arange(len(inner_training)):
+                    for i,inner_f in enumerate(np.arange(len(inner_training))):
                         training_trials = inner_training[inner_f].astype(int)
                         testing_trials = inner_test[inner_f].astype(int)
                         for s, subsample in enumerate(nsample):
@@ -240,8 +245,8 @@ def run_decoder(xs, regressed_variable, weights, number_folds=5, decoder = LR,
                                                             subsample=subsample, training_trials=training_trials, 
                                                             testing_trials=testing_trials, 
                                                             weights=weights, decoder=decoder, l=l)
-                                    inner_l_performance[i_l, b, nc, s] = ifit_qc[0] #currently pearson r for scoring
-                    fold_lambda = np.argmax(np.nanmean(np.nanmean(inner_l_performance, axis=1),axis=1)) # select best lambda
+                                    inner_l_performance[i,i_l, b, s] = ifit_qc[0] #currently pearson r for scoring
+                    fold_lambda = np.argmax(np.nanmean(np.nanmean(np.nanmean(inner_l_performance, axis=0),axis=1),axis=1)) # select best lambda
                     # End of inner XVal
                     for s, subsample in enumerate(nsample): # Now trainf and test on outer folds with best lambdas, run through all bins and samples of neurons
                         for b in np.arange(n_bins):

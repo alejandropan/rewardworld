@@ -93,7 +93,6 @@ def load_decoders(decoder_path, var = None, epoch = None, x_type = None):
     x_type = residuals or raw spikes
     '''
     # First list all the "real"sessions
-    files = []
     f=[]
     f= glob.glob(decoder_path+'/*real*p_summary.npy')
     # generate big dataframe
@@ -103,17 +102,21 @@ def load_decoders(decoder_path, var = None, epoch = None, x_type = None):
         p_summary = np.load(f_path)
         mse_summary = np.load(f_path[:-13]+'mse_summary.npy')
         # Find optimal lambda 
-        l_performance = np.nanmean(np.nanmean(np.nanmean(p_summary, axis=0), axis=1), axis=2)
-        l_all = np.argmax(l_performance, axis=0) # Change when mse is actually mse and not r2
+        l_performance = np.mean(np.nanmean(p_summary, axis=4), axis=2)
         # Get summary with optimal lambda
         acc = pd.DataFrame()
         for c in np.arange(np.shape(p_summary)[3]):
-            l = l_all[c]
             predict = []
             predict_mse = []
             for b in np.arange(np.shape(p_summary)[2]):
-                predict.append(np.nanmean(p_summary[:,l,b,c,:]))
-                predict_mse.append(np.nanmean(mse_summary[:,l,b,c,:]))
+                predict_f = []
+                predict_f_mse = []
+                for fold in np.arange(np.shape(p_summary)[0]):
+                    l = np.nanargmax(l_performance[fold,:,c])
+                    predict_f.append(np.nanmean(p_summary[fold,l,b,c,:]))
+                    predict_f_mse.append(np.nanmean(mse_summary[fold,l,b,c,:]))
+                predict.append(np.nanmean(predict_f))
+                predict_mse.append(np.nanmean(predict_f_mse))           
             acc_combo = pd.DataFrame()
             acc_combo['r'] = predict
             acc_combo['mse'] = predict_mse
@@ -354,21 +357,26 @@ if __name__=='__main__':
     plot_null_r(nsummary_restricted)
 
     # Lambdas summary
-    l = np.logspace(-5,-0.5,100)
-    os.chdir(decoders_path)
-    lambdas_selected = []
+    decoder_path = '/Volumes/witten/Alex/decoders_residuals_results/decoder_output_qchosen_cue_forget'
+    f=[]
+    f= glob.glob(decoder_path+'/*real*p_summary.npy')    
+    os.chdir(decoder_path)
+    lams = [0.001,0.01,0.1,1,10]
+    lambdas = pd.DataFrame()
     for f_path in tqdm(f):
-        mse_summary = np.load(f_path[:-13]+'p_summary.npy')
+        p_summary = np.load(f_path)
         # Find optimal lambda 
-        l_performance = np.nanmean(np.nanmean(np.nanmean(mse_summary, axis=0), axis=1), axis=2)
-        l_all = np.argmax(l_performance, axis=0)
-        lambdas_selected.append(l_all)
-    lambdas_selected = np.concatenate(lambdas_selected)
-
-
-
-
-    decoders_restricted_var_residuals = decoders_restricted.loc[(decoders_restricted['variable']=='choice') & 
-                                                        (decoders_restricted['x_type']=='residuals') & 
-                                                        (decoders_restricted['region']=='VPS') & 
-                                                        (decoders_restricted['n_neurons']==20)]
+        l_performance = np.mean(np.nanmean(p_summary, axis=4), axis=2)
+        # Get summary with optimal lambda
+        for c in np.arange(np.shape(p_summary)[3]):
+            temp_lambdas  = pd.DataFrame()
+            n_lambdas = []
+            for fold in np.arange(np.shape(p_summary)[0]):
+                n_lambdas.append(lams[np.nanargmax(l_performance[fold,:,c])])
+            temp_lambdas['l'] = n_lambdas
+            temp_lambdas['fold'] = np.arange(np.shape(p_summary)[0])
+            temp_lambdas['n_neurons'] = n_neuron_combos_tried[c]
+            lambdas = pd.concat([lambdas,temp_lambdas])
+    sns.hisplot(lambdas)
+            
+                

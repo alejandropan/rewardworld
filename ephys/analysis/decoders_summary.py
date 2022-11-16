@@ -86,7 +86,7 @@ x_types = ['raw',
 'residuals',
 'residuals']
 
-def load_decoders(decoder_path, var = None, epoch = None, x_type = None):
+def load_decoders(decoder_path, var = None, epoch = None, x_type = None, null=False):
     '''
     var = the variable being decoded
     epoch = the aligment time
@@ -94,7 +94,10 @@ def load_decoders(decoder_path, var = None, epoch = None, x_type = None):
     '''
     # First list all the "real"sessions
     f=[]
-    f= glob.glob(decoder_path+'/*real*p_summary.npy')
+    if null == True:
+        f= glob.glob(decoder_path+'/*null*p_summary.npy')
+    else:
+        f= glob.glob(decoder_path+'/*real*p_summary.npy')
     # generate big dataframe
     os.chdir(decoder_path)
     summary = pd.DataFrame()
@@ -123,7 +126,10 @@ def load_decoders(decoder_path, var = None, epoch = None, x_type = None):
             acc_combo['time_bin'] = np.arange(np.shape(p_summary)[2])
             acc_combo['n_neurons'] = n_neuron_combos_tried[c]
             acc = pd.concat([acc,acc_combo])
-        acc['region'] = f_path[len(decoder_path)+6:-34]
+        if null==True:
+            acc['region'] = f_path[len(decoders_path)+9:-34]
+        else:
+            acc['region'] = f_path[len(decoder_path)+6:-34]
         acc['mouse'] = f_path[-33:-27]
         acc['hemisphere'] = f_path[-15:-14]
         acc['date'] = f_path[-26:-16]
@@ -136,37 +142,6 @@ def load_decoders(decoder_path, var = None, epoch = None, x_type = None):
     summary['epoch'] = epoch
     summary['x_type']  = x_type
     return summary
-
-def load_null(decoders_path, var = None, epoch = None, x_type = None):
-    files_null = []
-    f_null= glob.glob(decoders_path+'/*null*p_summary.npy')
-    nsummary = pd.DataFrame()
-    for f_path in tqdm(f_null):
-        p_summary = np.load(f_path)
-        acc = pd.DataFrame()
-        for c in np.arange(np.shape(p_summary)[3]):
-            predict = []
-            for b in np.arange(np.shape(p_summary)[2]):
-                predict.append(np.nanmean(p_summary[:,:,b,c,:]))
-            acc_combo = pd.DataFrame()
-            acc_combo['r'] = predict
-            acc_combo['time_bin'] = np.arange(np.shape(p_summary)[2])
-            acc_combo['n_neurons'] = n_neuron_combos_tried[c]
-            acc = pd.concat([acc,acc_combo])
-        acc['region'] = f_path[len(decoders_path)+9:-34]
-        acc['mouse'] = f_path[-33:-27]
-        acc['hemisphere'] = f_path[-15:-14]
-        acc['date'] = f_path[-26:-16]
-        acc['type'] =  'null'
-        acc['ses_n'] = f_path[len(decoders_path)+1:len(decoders_path)+3]
-        acc['id'] =   acc['region'] + acc['type'] + \
-            acc['date'] +acc['mouse'] + acc['hemisphere'] + acc['ses_n']
-        nsummary = pd.concat([nsummary,acc])
-    nsummary['variable'] = var
-    nsummary['epoch'] = epoch
-    nsummary['x_type'] = x_type
-    nsummary  = nsummary.reset_index()
-    return nsummary
 
 def load_all_decoders(decoder_paths, varss, epochs, x_types):
     decoders_summary = pd.DataFrame()
@@ -313,7 +288,7 @@ if __name__=='__main__':
     try:
         nsummary = pd.read_csv('/Volumes/witten/Alex/decoders_raw_results/nsummary.csv')
     except:
-        nsummary = load_null(null_path, var = 'qchosen_pre', epoch = 'cue', x_type = 'residuals')
+        nsummary = load_decoders(null_path, var = 'qchosen_pre', epoch = 'cue', x_type = 'residuals', null=True)
         nsummary.to_csv('/Volumes/witten/Alex/decoders_raw_results/nsummary.csv')
 
     selected_regions = np.array(['OFC', 'NAcc', 'PFC', 'DMS', 'VPS', 'VP', 'SNr','Olfactory', 'DLS', 'GPe'])
@@ -326,6 +301,7 @@ if __name__=='__main__':
 
 
     def plot_null_analysis(decoders_restricted , nsummary_restricted, varss = None, epoch = None):
+        decoders_restricted['ses_id'] = decoders_restricted['mouse']+decoders_restricted['date']+decoders_restricted['hemisphere']
         ids = decoders_restricted['ses_id'].unique().tolist()
         colors = [list(np.random.choice(range(256), size=3)/256) for i in range(len(ids))]
         pale = dict(zip(ids,colors))
@@ -334,7 +310,7 @@ if __name__=='__main__':
             plt.sca(ax[i%5,int(i/5)])
             region_data = decoders_restricted.loc[decoders_restricted['region']==reg]
             region_null = nsummary_restricted.loc[nsummary_restricted['region']==reg]
-            sns.lineplot(data=region_data, x='time_bin', y='r', hue='ses_id', palette=pale,  errorbar=None)
+            sns.lineplot(data=region_data, x='time_bin', y='r', errorbar=None, hue='ses_id', palette='Reds')
             sns.lineplot(data=region_null, x='time_bin', y='r', errorbar=('pi', 95), color='k', alpha=0.5)
             plt.axvline(x = 4, ymin = 0, linestyle='--', color='k', alpha=0.5)
             plt.xticks(np.arange((post_time-pre_time)/bin_size)[::5], np.round(np.arange(pre_time,post_time,bin_size)[1::5],2), rotation=90)
@@ -378,5 +354,3 @@ if __name__=='__main__':
             temp_lambdas['n_neurons'] = n_neuron_combos_tried[c]
             lambdas = pd.concat([lambdas,temp_lambdas])
     sns.hisplot(lambdas)
-            
-                

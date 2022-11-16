@@ -131,6 +131,81 @@ LIST_OF_SESSIONS_ALEX = \
 
 
 
+
+ALL_NEW_SESSIONS = [
+'/Volumes/witten/Alex/Data/Subjects/dop_48/2022-06-20/001', 
+'/Volumes/witten/Alex/Data/Subjects/dop_48/2022-06-19/002', 
+'/Volumes/witten/Alex/Data/Subjects/dop_48/2022-06-28/001', 
+'/Volumes/witten/Alex/Data/Subjects/dop_48/2022-06-27/002', 
+'/Volumes/witten/Alex/Data/Subjects/dop_49/2022-06-14/001', 
+'/Volumes/witten/Alex/Data/Subjects/dop_49/2022-06-15/001', 
+'/Volumes/witten/Alex/Data/Subjects/dop_49/2022-06-16/001', 
+'/Volumes/witten/Alex/Data/Subjects/dop_49/2022-06-17/001',
+'/Volumes/witten/Alex/Data/Subjects/dop_49/2022-06-18/002',  
+'/Volumes/witten/Alex/Data/Subjects/dop_49/2022-06-19/001', 
+'/Volumes/witten/Alex/Data/Subjects/dop_49/2022-06-27/003', 
+'/Volumes/witten/Alex/Data/Subjects/dop_49/2022-06-20/001', 
+'/Volumes/witten/Alex/Data/Subjects/dop_47/2022-06-11/001',
+'/Volumes/witten/Alex/Data/Subjects/dop_47/2022-06-10/002', 
+'/Volumes/witten/Alex/Data/Subjects/dop_47/2022-06-09/003',
+'/Volumes/witten/Alex/Data/Subjects/dop_47/2022-06-05/001',
+'/Volumes/witten/Alex/Data/Subjects/dop_50/2022-09-12/001',
+'/Volumes/witten/Alex/Data/Subjects/dop_50/2022-09-13/001',
+'/Volumes/witten/Alex/Data/Subjects/dop_50/2022-09-14/003',
+'/Volumes/witten/Alex/Data/Subjects/dop_50/2022-09-16/003',
+'/Volumes/witten/Alex/Data/Subjects/dop_50/2022-09-17/001',
+'/Volumes/witten/Alex/Data/Subjects/dop_50/2022-09-18/001',
+'/Volumes/witten/Alex/Data/Subjects/dop_51/2022-09-21/002',
+'/Volumes/witten/Alex/Data/Subjects/dop_51/2022-09-22/001',
+'/Volumes/witten/Alex/Data/Subjects/dop_51/2022-09-23/001',
+'/Volumes/witten/Alex/Data/Subjects/dop_51/2022-09-26/001',
+'/Volumes/witten/Alex/Data/Subjects/dop_51/2022-09-27/001',
+'/Volumes/witten/Alex/Data/Subjects/dop_51/2022-09-28/001',
+'/Volumes/witten/Alex/Data/Subjects/dop_52/2022-10-02/001',
+'/Volumes/witten/Alex/Data/Subjects/dop_53/2022-10-07/001',
+'/Volumes/witten/Alex/Data/Subjects/dop_53/2022-10-05/001',
+'/Volumes/witten/Alex/Data/Subjects/dop_53/2022-10-04/001',
+'/Volumes/witten/Alex/Data/Subjects/dop_53/2022-10-03/001',
+'/Volumes/witten/Alex/Data/Subjects/dop_53/2022-10-02/001']
+
+LASER_ONLY = [
+'/Volumes/witten/Alex/Data/Subjects/dop_48/2022-06-20/001', 
+'/Volumes/witten/Alex/Data/Subjects/dop_48/2022-06-19/002', 
+'/Volumes/witten/Alex/Data/Subjects/dop_48/2022-06-28/001', 
+'/Volumes/witten/Alex/Data/Subjects/dop_48/2022-06-27/002', 
+'/Volumes/witten/Alex/Data/Subjects/dop_49/2022-06-14/001', 
+'/Volumes/witten/Alex/Data/Subjects/dop_49/2022-06-15/001', 
+'/Volumes/witten/Alex/Data/Subjects/dop_49/2022-06-16/001', 
+'/Volumes/witten/Alex/Data/Subjects/dop_49/2022-06-17/001',
+'/Volumes/witten/Alex/Data/Subjects/dop_49/2022-06-18/002',  
+'/Volumes/witten/Alex/Data/Subjects/dop_49/2022-06-19/001', 
+'/Volumes/witten/Alex/Data/Subjects/dop_49/2022-06-27/003', 
+'/Volumes/witten/Alex/Data/Subjects/dop_49/2022-06-20/001', 
+'/Volumes/witten/Alex/Data/Subjects/dop_47/2022-06-11/001',
+'/Volumes/witten/Alex/Data/Subjects/dop_47/2022-06-10/002', 
+'/Volumes/witten/Alex/Data/Subjects/dop_47/2022-06-09/003',
+'/Volumes/witten/Alex/Data/Subjects/dop_47/2022-06-05/001',
+'/Volumes/witten/Alex/Data/Subjects/dop_50/2022-09-12/001',
+'/Volumes/witten/Alex/Data/Subjects/dop_50/2022-09-13/001',
+'/Volumes/witten/Alex/Data/Subjects/dop_50/2022-09-14/003',
+'/Volumes/witten/Alex/Data/Subjects/dop_50/2022-09-16/003',
+'/Volumes/witten/Alex/Data/Subjects/dop_50/2022-09-17/001',
+'/Volumes/witten/Alex/Data/Subjects/dop_50/2022-09-18/001',
+'/Volumes/witten/Alex/Data/Subjects/dop_53/2022-10-07/001',
+'/Volumes/witten/Alex/Data/Subjects/dop_53/2022-10-05/001',
+'/Volumes/witten/Alex/Data/Subjects/dop_53/2022-10-04/001',
+'/Volumes/witten/Alex/Data/Subjects/dop_53/2022-10-03/001',
+'/Volumes/witten/Alex/Data/Subjects/dop_53/2022-10-02/001']
+
+DUAL_TASK = ['/Volumes/witten/Alex/Data/Subjects/dop_51/2022-09-21/002',
+'/Volumes/witten/Alex/Data/Subjects/dop_51/2022-09-22/001',
+'/Volumes/witten/Alex/Data/Subjects/dop_51/2022-09-23/001',
+'/Volumes/witten/Alex/Data/Subjects/dop_51/2022-09-26/001',
+'/Volumes/witten/Alex/Data/Subjects/dop_51/2022-09-27/001',
+'/Volumes/witten/Alex/Data/Subjects/dop_51/2022-09-28/001',
+'/Volumes/witten/Alex/Data/Subjects/dop_52/2022-10-02/001']
+
+
 def get_binned_spikes(spike_times, spike_clusters, cluster_id, epoch_time,
     pre_time=0.2,post_time=0.5, bin_size=0.025, smoothing=0.025, return_fr=True):
     binned_firing_rate = calculate_peths(
@@ -756,8 +831,8 @@ class ephys_ephys_dataset:
 
 if __name__=="__main__":
     # 1. Load all data
-    sessions = ephys_ephys_dataset(len(LIST_OF_SESSIONS_ALEX))
-    for i, ses in enumerate(LIST_OF_SESSIONS_ALEX):
+    sessions = ephys_ephys_dataset(len(ALL_NEW_SESSIONS))
+    for i, ses in enumerate(ALL_NEW_SESSIONS):
             print(ses)
             ses_data = alf(ses, ephys=True)
             ses_data.mouse = Path(ses).parent.parent.name

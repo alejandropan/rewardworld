@@ -1,36 +1,7 @@
 # RRR from https://www.biorxiv.org/content/10.1101/302208v3.full.pdf
 # 
 # 
-'''
-NAcc_full = 0.04690355418442657
-DLS_full = 0.022044002761219313
-NAcc_RRR = [
- 0.0320845000642595,
- 0.042025111131069236,
- 0.04627610296284777,
- 0.04719162916796418,
- 0.04791919571218663,
- 0.048349797497138226]
-DLS_RRR= [
- 0.019247001178581514,
- 0.023274205325874348,
- 0.023526930886544145,
- 0.023582806269355806,
- 0.023363001648494672,
- 0.02326717272803345]
 
-plt.plot(np.arange(1,7), NAcc_RRR, color='b')
-plt.scatter(np.arange(1,7), NAcc_RRR, color='b')
-plt.plot(np.arange(1,7), DLS_RRR, color='r')
-plt.scatter(np.arange(1,7), DLS_RRR, color='r')
-plt.ylim(0,0.05)
-plt.xlabel('Predicitive Dimensions')
-plt.ylabel('Performance(r2)')
-red_patch = mpatches.Patch(color='red', label='OFC->DLS')
-blue_patch = mpatches.Patch(color='blue', label='OFC->NAcc')
-plt.legend(handles=[red_patch,blue_patch])
-sns.despine()
-'''
 import sys
 sys.path.insert(0,'/jukebox/witten/Alex/PYTHON/rewardworld/ephys/analysis')
 from brainbox.singlecell import calculate_peths
@@ -281,3 +252,4 @@ for ses in SESSIONS:
     alfio.temp_folder = '/jukebox/witten/Alex/decoder_wd'
     r = run_RRR(alfio, x_area, y_area, lambdas=None, ranks=None)
     results.append(r)
+

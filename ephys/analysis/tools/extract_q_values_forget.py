@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 import model_comparison_accu as mc
 
-def save_q_values(ROOT_FOLDER,psy,data,prefix,trial_start=0,trial_end=-150, no_reward_block=True):
+def save_q_values(ROOT_FOLDER,psy,data,prefix,trial_start=0,trial_end=-150, no_reward_block=False):
     for ns, mouse in enumerate(psy['mouse'].unique()):
         animal = psy.loc[psy['mouse']==mouse]
         counter=0
@@ -70,11 +70,11 @@ def save_q_values(ROOT_FOLDER,psy,data,prefix,trial_start=0,trial_end=-150, no_r
                     np.save(alf+'/'+prefix+'_QR.npy', ses_data['QR'].to_numpy())                    
 
 ROOT_FOLDER = '/Volumes/witten/Alex/Data/Subjects'
-psy=mc.load_data_reduced(ROOT_FOLDER = '/Volumes/witten/Alex/Data/ephys_bandit/data_laser_only', trial_start=0, trial_end=None)
-standata = mc.make_stan_data_reduced(psy)
-qlearning_params = pd.read_csv('/Volumes/witten/Alex/Data/ephys_bandit/laser_stan_fits/standard_w_forgetting/output/summary.csv')
+psy=mc.load_data(ROOT_FOLDER = '/Volumes/witten/Alex/Data/ephys_bandit/data_waterlaser', trial_start=0, trial_end=None)
+standata = mc.make_stan_data(psy)
+qlearning_params = pd.read_csv('/Volumes/witten/Alex/Data/ephys_bandit/dual_task_fits/standard_w_forgetting/output/summary.csv')
 qlearning_data = pd.DataFrame()
-qlearning_data = mc.q_learning_model_reduced_stay_forgetting(standata,saved_params=qlearning_params)
+qlearning_data = mc.q_learning_model(standata,saved_params=qlearning_params)
 assert len(psy) == len(qlearning_data)
 prefix='forgetting'
 save_q_values(ROOT_FOLDER,psy,qlearning_data,prefix,trial_start=0,trial_end=None)

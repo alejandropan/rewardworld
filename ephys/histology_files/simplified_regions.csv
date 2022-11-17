@@ -56,144 +56,186 @@
 54,SSp-ul4,SSs,1
 55,SSp-ul5,SSs,1
 56,SSp-ul6a,SSs,1
-57,SSp-un6b,SSs,1
-58,MOp1,MO,1
-59,MOp2/3,MO,1
-60,MOp5,MO,1
-61,MOp6a,MO,1
-62,MOp6b,MO,1
-63,MOs2/3,MO,1
-64,MOs5,MO,1
-65,MOs6a,MO,1
-66,MOs6b,MO,1
-67,"Caudoputamen- caudal, dorsal, dorsolateral",DLS,1
-68,"Caudoputamen- caudal, intermediate, dorsal",DLS,1
-69,"Caudoputamen- caudal, ventral",DLS,1
-70,"Caudoputamen- intermediate, dorsolateral, dorsal",DLS,1
-71,"Caudoputamen- intermediate, dorsolateral, intermedial dorsal",DLS,1
-72,"Caudoputamen- rostral, lateral, lateral strip",DLS,1
-73,"Caudoputamen- caudal, dorsal, dorsomedial",DMS,1
-74,"Caudoputamen- caudal, dorsal",DMS,1
-75,"Caudoputamen- intermediate, dorsomedial, central dorsal",DMS,1
-76,"Caudoputamen- intermediate, dorsomedial, dorsal tip",DMS,1
-77,"Caudoputamen- intermediate, dorsomedial, dorsolateral",DMS,1
-78,"Caudoputamen- intermediate, dorsomedial, intermedial",DMS,1
-79,Caudoputamen- rostral extreme,DMS,1
-80,"Caudoputamen- rostral, intermediate, dorsal",DMS,1
-81,"Caudoputamen- rostral, medial",DMS,1
-82,"Caudoputamen- caudal, intermediate, ventrolateral",VPS,1
-83,"Caudoputamen- caudal, intermediate, ventromedial",VPS,1
-84,"Caudoputamen- intermediate, ventrolateral, central ventrolateral",VPS,1
-85,"Caudoputamen- intermediate, ventrolateral, intermedial ventral",VPS,1
-86,"Caudoputamen- intermediate, ventrolateral, ventral",VPS,1
-87,"Caudoputamen- intermediate, ventrolateral, ventral tip",VPS,1
-88,"Caudoputamen- intermediate, ventromedial, central ventromedial",VPS,1
-89,"Caudoputamen- intermediate, ventromedial, ventral",VPS,1
-90,"Caudoputamen- intermediate, ventromedial, ventromedial",VPS,1
-91,"Caudoputamen- rostral, intermediate, ventral",VPS,1
-92,"Caudoputamen- rostra,l lateral, ventromedial",VPS,1
-93,Striatum ventral region,VPS,1
-94,"Accumbens nucleus, core region",NAcc,1
-95,"Accumbens nucleus, shell region",NAcc,1
-96,"Lateral accumbens, shell region",NAcc,1
-97,FS,VP,1
-98,MA,VP,1
-99,PAL,VP,1
-100,SI,VP,1
-101,Ventral pallidum,VP,1
-102,GPe,GPe,1
-103,GPi,GPi,1
-104,MB,MB,1
-105,SNr,SNr,1
-106,AON,Olfactory,1
-107,"Dorsal tenia tecta, layer 1",Olfactory,1
-108,"Dorsal tenia tecta, layer 4",Olfactory,1
-109,MOB,Olfactory,1
-110,OLF,Olfactory,1
-111,OT,Olfactory,1
-112,TTd,Olfactory,1
-113,TTv,Olfactory,1
-114,PIR,Olfactory,1
-115,Olfactory tubercle 3,Olfactory,1
-116,IA,Amygdala,1
-117,BMAa,Amygdala,1
-118,BST,Amygdala,1
-119,CEAc,Amygdala,1
-120,CEAl,Amygdala,1
-121,CEAm,Amygdala,1
-122,COAa,Amygdala,1
-123,Extension of the amygdala,Amygdala,1
-124,"Interstitial nucleus of the posterior limb of the anterior commissure, lateral part",Amygdala,1
-125,"Interstitial nucleus of the posterior limb of the anterior commissure, medial part",Amygdala,1
-126,MEA,Amygdala,1
-127,AAA,Amygdala,1
-128,LSr,Septum,1
-129,LSv,Septum,1
-130,"Lateral septal nucleus, dorsal part",Septum,1
-131,"Lateral septal nucleus, intermediate part",Septum,1
-132,MS,Septum,1
-133,Medial septal nucleus,Septum,1
-134,LD,Thalamus,1
-135,RT,Thalamus,1
-136,VAL,Thalamus,1
-137,VPL,Thalamus,1
-138,VPM,Thalamus,1
-139,AV,Thalamus,1
-140,LGd-co,Thalamus,1
-141,LP,Thalamus,1
-142,MD,Thalamus,1
-143,PF,Thalamus,1
-144,TH,Thalamus,1
-145,CL,Thalamus,1
-146,AHN,Hypothalamus,1
-147,HY,Hypothalamus,1
-148,LHA,Hypothalamus,1
-149,LPO,Hypothalamus,1
-150,MPN,Hypothalamus,1
-151,MPO,Hypothalamus,1
-152,PS,Hypothalamus,1
-153,PeF,Hypothalamus,1
-154,AVPV,Hypothalamus,1
-155,ZI,ZI,1
-156,STN,STN,1
-157,Claustrum,Claustrum,1
-158,CLA,Other,1
-159,AId6a,Other,1
-160,"Dysgranular insular cortex, layer 6b",Other,1
-161,"Granular insular cortex, layer 6b",Other,1
-162,GU5,Other,1
-163,GU6a,Other,1
-164,Intermediate endopiriform claustrum,Other,1
-165,Dorsal endopiriform nucleus,Other,1
-166,EPd,Other,1
-167,CA3,Other,1
-168,DG-mo,Other,1
-169,NDB,Pallidum,1
-170,Nucleus of the horizontal limb of the diagonal band,Pallidum,1
-171,Navicular nucleus of the basal forebrain,Pallidum,1
-172,Nucleus of the vertical limb of the diagonal band,Pallidum,1
-173,aco,Other,1
-174,act,Other,1
-175,"anterior commissure, anterior part",Other,1
-176,ccb,Other,1
-177,ccg,Other,1
-178,chpl,Other,1
-179,cing,Other,1
-180,corpus callosum,Other,1
-181,em,Other,1
-182,external capsule,Other,1
-183,fa,Other,1
-184,fiber tracts,Other,1
-185,forceps minor of the corpus callosum,Other,1
-186,fx,Other,1
-187,genu of the corpus callosum,Other,1
-188,int,Other,1
-189,lateral ventricle,Other,1
-190,root,Other,1
-191,scwm,Other,1
-192,SEZ,Other,1
-193,VL,Other,1
-194,alv,Other,1
-195,fi,Other,1
-196,ml,Other,1
-197,or,Other,1
+57,MOp1,MO,1
+58,MOp2/3,MO,1
+59,MOp5,MO,1
+60,MOp6a,MO,1
+61,MOp6b,MO,1
+62,MOs2/3,MO,1
+63,MOs5,MO,1
+64,MOs6a,MO,1
+65,MOs6b,MO,1
+66,"Caudoputamen- caudal, dorsal, dorsolateral",TS,1
+67,"Caudoputamen- caudal, intermediate, dorsal",TS,1
+68,"Caudoputamen- caudal, ventral",TS,1
+69,"Caudoputamen- intermediate, dorsolateral, dorsal",DLS,1
+70,"Caudoputamen- intermediate, dorsolateral, intermedial dorsal",DLS,1
+71,"Caudoputamen- rostral, lateral, lateral strip",DLS,1
+72,"Caudoputamen- caudal, dorsal, dorsomedial",DMS,1
+73,"Caudoputamen- caudal, dorsal",DMS,1
+74,"Caudoputamen- intermediate, dorsomedial, central dorsal",DMS,1
+75,"Caudoputamen- intermediate, dorsomedial, dorsal tip",DMS,1
+76,"Caudoputamen- intermediate, dorsomedial, dorsolateral",DMS,1
+77,"Caudoputamen- intermediate, dorsomedial, intermedial",DMS,1
+78,Caudoputamen- rostral extreme,DMS,1
+79,"Caudoputamen- rostral, intermediate, dorsal",DMS,1
+80,"Caudoputamen- rostral, medial",DMS,1
+81,"Caudoputamen- caudal, intermediate, ventrolateral",VPS,1
+82,"Caudoputamen- caudal, intermediate, ventromedial",VPS,1
+83,"Caudoputamen- intermediate, ventrolateral, central ventrolateral",VPS,1
+84,"Caudoputamen- intermediate, ventrolateral, intermedial ventral",VPS,1
+85,"Caudoputamen- intermediate, ventrolateral, ventral",VPS,1
+86,"Caudoputamen- intermediate, ventrolateral, ventral tip",VPS,1
+87,"Caudoputamen- intermediate, ventromedial, central ventromedial",VPS,1
+88,"Caudoputamen- intermediate, ventromedial, ventral",VPS,1
+89,"Caudoputamen- intermediate, ventromedial, ventromedial",VPS,1
+90,"Caudoputamen- rostral, intermediate, ventral",VPS,1
+91,"Caudoputamen- rostra,l lateral, ventromedial",VPS,1
+92,Striatum ventral region,VPS,1
+93,"Accumbens nucleus, core region",NAcc,1
+94,"Accumbens nucleus, shell region",NAcc,1
+95,"Lateral accumbens, shell region",NAcc,1
+96,FS,VP,1
+97,MA,VP,1
+98,PAL,VP,1
+99,SI,VP,1
+100,Ventral pallidum,VP,1
+101,GPe,GPe,1
+102,GPi,GPi,1
+103,MB,MB,1
+104,SNr,SNr,1
+105,AON,Olfactory,1
+106,"Dorsal tenia tecta, layer 1",Olfactory,1
+107,"Dorsal tenia tecta, layer 4",Olfactory,1
+108,MOB,Olfactory,1
+109,OLF,Olfactory,1
+110,OT,Olfactory,1
+111,TTd,Olfactory,1
+112,TTv,Olfactory,1
+113,PIR,Olfactory,1
+114,Olfactory tubercle 3,Olfactory,1
+115,IA,Amygdala,1
+116,BMAa,Amygdala,1
+117,BST,Amygdala,1
+118,CEAc,Amygdala,1
+119,CEAl,Amygdala,1
+120,CEAm,Amygdala,1
+121,COAa,Amygdala,1
+122,Extension of the amygdala,Amygdala,1
+123,"Interstitial nucleus of the posterior limb of the anterior commissure, lateral part",Amygdala,1
+124,"Interstitial nucleus of the posterior limb of the anterior commissure, medial part",Amygdala,1
+125,MEA,Amygdala,1
+126,AAA,Amygdala,1
+127,LSr,Septum,1
+128,LSv,Septum,1
+129,"Lateral septal nucleus, dorsal part",Septum,1
+130,"Lateral septal nucleus, intermediate part",Septum,1
+131,MS,Septum,1
+132,Medial septal nucleus,Septum,1
+133,LD,Thalamus,1
+134,RT,Thalamus,1
+135,VAL,Thalamus,1
+136,VPL,Thalamus,1
+137,VPM,Thalamus,1
+138,AV,Thalamus,1
+139,LGd-co,Thalamus,1
+140,LP,Thalamus,1
+141,MD,Thalamus,1
+142,PF,Thalamus,1
+143,TH,Thalamus,1
+144,CL,Thalamus,1
+145,AHN,Hypothalamus,1
+146,HY,Hypothalamus,1
+147,LHA,Hypothalamus,1
+148,LPO,Hypothalamus,1
+149,MPN,Hypothalamus,1
+150,MPO,Hypothalamus,1
+151,PS,Hypothalamus,1
+152,PeF,Hypothalamus,1
+153,AVPV,Hypothalamus,1
+154,ZI,ZI,1
+155,STN,STN,1
+156,Claustrum,Claustrum,1
+157,CLA,Other,1
+158,AId6a,Other,1
+159,"Dysgranular insular cortex, layer 6b",Other,1
+160,"Granular insular cortex, layer 6b",Other,1
+161,GU5,Other,1
+162,GU6a,Other,1
+163,Intermediate endopiriform claustrum,Other,1
+164,Dorsal endopiriform nucleus,Other,1
+165,EPd,Other,1
+166,CA3,Other,1
+167,DG-mo,Other,1
+168,NDB,Pallidum,1
+169,Nucleus of the horizontal limb of the diagonal band,Pallidum,1
+170,Navicular nucleus of the basal forebrain,Pallidum,1
+171,Nucleus of the vertical limb of the diagonal band,Pallidum,1
+172,aco,Other,1
+173,act,Other,1
+174,"anterior commissure, anterior part",Other,1
+175,ccb,Other,1
+176,ccg,Other,1
+177,chpl,Other,1
+178,cing,Other,1
+179,corpus callosum,Other,1
+180,em,Other,1
+181,external capsule,Other,1
+182,fa,Other,1
+183,fiber tracts,Other,1
+184,forceps minor of the corpus callosum,Other,1
+185,fx,Other,1
+186,genu of the corpus callosum,Other,1
+187,int,Other,1
+188,lateral ventricle,Other,1
+189,root,Other,1
+190,scwm,Other,1
+191,SEZ,Other,1
+192,VL,Other,1
+193,alv,Other,1
+194,fi,Other,1
+195,ml,Other,1
+196,or,Other,1
+197,ACAd6a,ACC,1
+198,ACAd6b,ACC,1
+199,AId5,Other,1
+200,AId6b,Other,1
+201,AIv1,Other,1
+202,AIv2/3,Other,1
+203,AIv5,Other,1
+204,AIv6a,Other,1
+205,AMv,Thalamus,1
+206,"Agranular insular cortex, ventral part, layer6a",Other,1
+207,Amygdalostriatal transition area,Amygdala,1
+208,Anterior olfactory area,Olfactory,1
+209,BLAa,Amygdala,1
+210,BLAp,Amygdala,1
+211,BMAp,Amygdala,1
+212,"Bed nucleus of the stria terminalis, intraamygdaloid",Pallidum,1
+213,Caudoputamen- caudal extreme,TS,1
+214,"Caudoputamen- caudal, dorsal, ventromedial",TS,1
+215,"Caudoputamen- intermediate, dorsomedial, dorsal tip ",VPS,1
+216,"Central amygdaloid nucleus, lateral part",Amygdala,1
+217,Intercalated nuclei of the amygdala,Amygdala,1
+218,LA,Thalamus,1
+219,MOs1,MO,1
+220,ORBvl6a,OFC,1
+221,Olfactory tubercle,Olfactory,1
+222,SSp-bfd1,SSs,1
+223,SSp-ll6a,SSs,1
+224,SSp-m1,SSs,1
+225,SSp-m2/3,SSs,1
+226,SSp-m4,SSs,1
+227,SSp-n1,SSs,1
+228,SSp-n2/3,SSs,1
+229,SSp-ul6b,SSs,1
+230,SSp-un1,SSs,1
+231,VM,Thalamus,1
+232,Ventral claustrum,Other,1
+233,"anterior commissure, posterior limb",Other,1
+234,ec,Other,1
+235,internal capsule,Other,1
+236,nst,Other,1
+237,opt,Other,1
+238,st,Other,1
+239,void,Other,1

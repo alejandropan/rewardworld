@@ -4053,11 +4053,11 @@ def q_learning_model_w_forgetting(standata,saved_params=None, fit=None, csv=True
                     stay_mouse = float(saved_params.loc[saved_params['name']=='stay_ses['+str(ms_i+1)+']', 'Mean'])
                     side_mouse = float(saved_params.loc[saved_params['name']=='sides['+str(ms_i+1)+']', 'Mean'])
                     laser_mouse = float(saved_params.loc[saved_params['name']=='laser_ses['+str(ms_i+1)+']', 'Mean'])
-                    alpha = float(phi_approx(saved_params.loc[saved_params['name']=='alpha_ses['+str(ms_i+1)+']', 'Mean']/np.sqrt(2)))
-                    alphalaser = float(phi_approx(saved_params.loc[saved_params['name']=='alphalaser_ses['+str(ms_i+1)+']', 'Mean']/np.sqrt(2)))
-                    alphastay = float(phi_approx(saved_params.loc[saved_params['name']=='alphastay_ses['+str(ms_i+1)+']', 'Mean']/np.sqrt(2)))
-                    alphaforgetting= float(phi_approx(saved_params.loc[saved_params['name']=='alphaforgetting_ses['+str(ms_i+1)+']', 'Mean']/np.sqrt(2)))
-                    alphalaserforgetting= float(phi_approx(saved_params.loc[saved_params['name']=='alphalaserforgetting_ses['+str(ms_i+1)+']', 'Mean']/np.sqrt(2)))
+                    alpha = float(saved_params.loc[saved_params['name']=='alpha_ses['+str(ms_i+1)+']', 'Mean']/np.sqrt(2))
+                    alphalaser = float(saved_params.loc[saved_params['name']=='alphalaser_ses['+str(ms_i+1)+']', 'Mean']/np.sqrt(2))
+                    alphastay = float(saved_params.loc[saved_params['name']=='alphastay_ses['+str(ms_i+1)+']', 'Mean']/np.sqrt(2))
+                    alphaforgetting= float(saved_params.loc[saved_params['name']=='alphaforgetting_ses['+str(ms_i+1)+']', 'Mean']/np.sqrt(2))
+                    alphalaserforgetting= float(saved_params.loc[saved_params['name']=='alphalaserforgetting_ses['+str(ms_i+1)+']', 'Mean']/np.sqrt(2))
                 else:
                     print('Error only CSV version available')
 
@@ -4122,6 +4122,8 @@ def q_learning_model_w_forgetting(standata,saved_params=None, fit=None, csv=True
                 ses_data['acc'] = np.mean(acc)
                 data = pd.concat([data,ses_data])
     return make_deltas(data)
+
+
 def simulate_q_learning_w_forgetting(standata_recovery,saved_params=None, fit=None, csv=True):
     b =  standata_recovery['b']
     p =  standata_recovery['p']

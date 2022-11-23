@@ -4,6 +4,8 @@ from pathlib import Path
 from ibllib.oneibl import registration as r
 import numpy as np
 from pykilosort_to_alf import extract_all, sorting_sync_and_alf, move_phy_files
+import matplotlib.pyplot as plt
+plt.ioff()
 
 def remove_passive_ttls(ses, n_passive=20, bpod_ch=16, audio_ch=7, laser_ch=17):
     t = np.load(ses + '/raw_ephys_data/_spikeglx_sync.times.npy')
@@ -53,14 +55,14 @@ def pre_processing(path):
         ep.RawEphysQC(path).run()
         ep.EphysMtscomp(path).run()
         ep.SpikeSorting(path).run()
-        ep.SpikeSorting(path).run()
+        #ep.SpikeSorting(path).run()
 
 if __name__=='__main__':
         ses = sys.argv[1]
         path = Path(ses)
-        pre_processing(path)
-        if Path(ses+'/passive').is_dir():
-                remove_passive_ttls(ses, n_passive=20, bpod_ch=16, audio_ch=7, laser_ch=17)
+        #pre_processing(path)
+        #if Path(ses+'/passive').is_dir():
+        #        remove_passive_ttls(ses, n_passive=20, bpod_ch=16, audio_ch=7, laser_ch=17)
         extract_all(path, save=True, bin_exists=False)
         sorting_sync_and_alf(path, overwrite=False)
         move_phy_files(ses)

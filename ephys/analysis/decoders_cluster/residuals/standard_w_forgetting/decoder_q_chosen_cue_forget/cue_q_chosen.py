@@ -9,6 +9,7 @@ import numpy as npm
 from encoding_model_summary_to_df import load_all_residuals, common_trials, common_neural_data
 from decoding_debugging import *
 import warnings
+import glob
 warnings.filterwarnings('ignore')
 
 ##########################
@@ -64,10 +65,30 @@ regressed_variable = regressed_variable[trials_included.astype(int)]
 #weights = get_session_sample_weights(alfio.to_df(), categories = ['choice','probabilityLeft', 'outcome'])
 weights = None
 
-# Load and run null distributions
+
+##########################
+## Run decoder (linear) ##
+##########################
+
+#run_decoder_for_session_residual(c_neural_data, area, alfio, regressed_variable, weights, alignment_time, etype = 'real', output_folder=output_folder)
+
+##########################
+## Run nulls (linear) ##
+##########################
+# Run nulls (first look for missing nulls)
+path_search_0 = output_folder+'/*null_' + area + '_' + alfio.mouse + '_' + alfio.date+'*0_p_summary.npy'
+files_0 = glob.glob(path_search_0)
+files_max_0 = len(files_0)
+path_search_1 = output_folder+'/*null_' + area + '_' + alfio.mouse + '_' + alfio.date+'*1_p_summary.npy'
+files_1 = glob.glob(path_search_1)
+files_max_1 = len(files_1)-1
+files_max = np.min(files_max_0,files_max_1)
+objective = np.arange(files_max,200)
+
 ses_len = len(regressed_variable)
 null_sesssions = []
-for i in np.arange(200):
+
+for i in objective:
     n_temp =  pd.read_csv('/jukebox/witten/Alex/null_sessions/laser_only/'+str(i)+'.csv')
     n_temp = n_temp.iloc[:, np.where(n_temp.columns=='choice')[0][0]:]
     qchosen_R = np.roll(np.copy(n_temp['fQRreward'].to_numpy()),1)
@@ -79,10 +100,6 @@ for i in np.arange(200):
     qchosen = qchosen[:ses_len]
     null_sesssions.append(qchosen)
 
-##########################
-## Run decoder (linear) ##
-##########################
 
-#run_decoder_for_session_residual(c_neural_data, area, alfio, regressed_variable, weights, alignment_time, etype = 'real', output_folder=output_folder)
 for n, null_ses in enumerate(null_sesssions):
     run_decoder_for_session_residual(c_neural_data, area, alfio, null_ses, weights, alignment_time, etype = 'null', n=n, output_folder=output_folder)

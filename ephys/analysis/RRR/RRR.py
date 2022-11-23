@@ -31,6 +31,7 @@ blue_patch = mpatches.Patch(color='blue', label='OFC->NAcc')
 plt.legend(handles=[red_patch,blue_patch])
 sns.despine()
 '''
+from itertools import permutations
 import sys
 sys.path.insert(0,'/jukebox/witten/Alex/PYTHON/rewardworld/ephys/analysis')
 from brainbox.singlecell import calculate_peths
@@ -42,6 +43,7 @@ from pathlib import Path
 import pandas as pd
 import numpy as np
 import random
+from chord import Chord
 
 
 def qc(x_data_p,trials_edges = 10):
@@ -266,7 +268,7 @@ for ses in SESSIONS:
     ##########################
     print(ses)
     alfio = alf(ses, ephys=True)
-    print(len(ses.choice))
+    print(len(alfio.choice))
     alfio.mouse = Path(ses).parent.parent.name
     alfio.date = Path(ses).parent.name
     alfio.ses = Path(ses).name
@@ -281,3 +283,47 @@ for ses in SESSIONS:
     alfio.temp_folder = '/jukebox/witten/Alex/decoder_wd'
     r = run_RRR(alfio, x_area, y_area, lambdas=None, ranks=None)
     results.append(r)
+
+
+# Plot paired connectivity map
+
+criterion=['good','mua']
+n_neurons_minimum = 20
+
+pooled_region_info = pd.DataFrame()
+for ses in SESSIONS:
+    print(ses)
+    alfio = alf(ses, ephys=True)
+    region_info = pd.DataFrame()
+    for hemisphere in np.array([0,1]):
+        regions = pd.DataFrame()
+        for probe_id in np.arange(len(alfio.probe.probes)):
+                    unique_regions = alfio.probe[probe_id].cluster_group_locations[np.where(
+                        np.isin(alfio.probe[probe_id].cluster_metrics,criterion) & 
+                        (alfio.probe[probe_id].cluster_hem==hemisphere))[0]].value_counts()
+                    unique_regions = unique_regions[unique_regions>=n_neurons_minimum]
+                    regions = pd.concat([regions,unique_regions])
+        regions = regions.reset_index().groupby('index').sum().reset_index()
+        regions['hemisphere'] = hemisphere
+        region_info=pd.concat([region_info, regions])
+    region_info['mouse'] = Path(ses).parent.parent.name
+    region_info['date'] = Path(ses).parent.name
+    region_info['ses'] = Path(ses).name
+    region_info['id'] = region_info['mouse']+region_info['date']+region_info['ses']+ region_info['hemisphere'].astype(str)
+    pooled_region_info = pd.concat([pooled_region_info,region_info])
+
+# Plot connectivity map
+chord_data = pooled_region_info.copy()
+selected_regions = np.array(['OFC', 'NAcc', 'PFC', 'DMS', 'VPS', 'VP', 'SNr','Olfactory', 'DLS', 'GPe'])
+summary = np.zeros([len(selected_regions),len(selected_regions)])
+chord_data = chord_data.loc[np.isin(chord_data['index'],selected_regions)]
+for id in chord_data.id.unique():
+    s_chord_data_r = chord_data.loc[chord_data['id']==id,'index']
+    idx = [np.where(selected_regions==r)[0][0] for r in s_chord_data_r]
+    lidx = np.array(list(permutations(idx,2)))
+    for l in lidx:        
+        summary[l[0],l[1]]+=1
+
+chord_diagram(summary, names=selected_regions, rotate_names=True, cmap='Dark2')
+plt.show()
+

@@ -28,11 +28,12 @@ def plot_binned_performance(ses):
     data = data.iloc[:bin_np*100,:]
     data['bin'] = pd.cut(data['trial'], bin_np)
     #sns.pointplot(data=data, x='bin', y='high_prob_choices', ci=66)
-    sns.pointplot(data=data, x='bin', y='high_prob_choices_s', ci=66)
+    sns.pointplot(data=data[200:], x='bin', y='high_prob_choices_s', errorbar='se')
     plt.xlabel('Trial Bin')
     plt.ylabel('Performance')
     sns.despine()
     plt.savefig(ses+'/performance.pdf')
+    return data['high_prob_choices_s'].mean()
 
 if __name__ == "__main__":
     ses = sys.argv[1]

@@ -9,6 +9,7 @@ from session_maker import TrialParamHandler
 from scipy.stats import zscore
 import scipy.stats as ss
 # Common Functions
+
 def inv_logit(arr):
     '''Elementwise inverse logit (logistic) function.'''
     return 1 / (1 + np.exp(-arr))
@@ -17,6 +18,18 @@ def phi_approx(arr):
     For details, see Bowling et al. (2009). "A logistic approximation
     to the cumulative normal distribution."'''
     return inv_logit(0.07056 * arr ** 3 + 1.5976 * arr)
+
+def  num_to_name(psy):
+    ses_id=[]
+    for ns, mouse in enumerate(psy['mouse'].unique()):
+        animal = psy.loc[psy['mouse']==mouse]
+        counter=0
+        for d, day in enumerate(animal['date'].unique()):
+            day_s = animal.loc[animal['date']==day]
+            for nsess, ses in enumerate(day_s['ses'].unique()):
+                ses_id.append(mouse+'_'+day+'_'+ses)
+    return ses_id
+
 def load_data(ROOT_FOLDER = '/Volumes/witten/Alex/Data/ephys_bandit/data_reduced', REEXTRACT=False, trial_start=0,trial_end=-150):
     root_path = Path(ROOT_FOLDER)
     psy = pd.DataFrame()
@@ -2540,6 +2553,7 @@ def simulate_q_learning_model_noqlaser_new(standata_recovery,saved_params=None, 
                 ses_data['ses'] = sess_idx[ms_i]
                 sim_data = pd.concat([sim_data,ses_data])
     return c_sim, l_sim, r_sim, sim_data
+    
 def simulate_q_learning_model_noqwater_new(standata_recovery,saved_params=None, fit=None, csv=True):
     NS =standata_recovery['NS']
     NSESS=standata_recovery['NSESS']
@@ -3907,6 +3921,7 @@ def simulate_q_learning_model_laserdecay_same_trials(standata_recovery,saved_par
                 ses_data['qlaser'] = buffer_qlaser
                 sim_data = pd.concat([sim_data,ses_data])
     return c_sim, l_sim, r_sim, sim_data
+
 def simulate_q_learning_model_laserdecay(standata_recovery,saved_params=None, fit=None, csv=True):
     NS =standata_recovery['NS']
     NSESS=standata_recovery['NSESS']
@@ -4013,6 +4028,7 @@ def simulate_q_learning_model_laserdecay(standata_recovery,saved_params=None, fi
                 ses_data['qlaser'] = buffer_qlaser
                 sim_data = pd.concat([sim_data,ses_data])
     return c_sim, l_sim, r_sim, sim_data
+
 def q_learning_model_w_forgetting(standata,saved_params=None, fit=None, csv=True):
     if saved_params is not None:
         r =  standata['r']
@@ -4040,11 +4056,11 @@ def q_learning_model_w_forgetting(standata,saved_params=None, fit=None, csv=True
                     stay_mouse = float(saved_params.loc[saved_params['name']=='stay_ses['+str(ms_i+1)+']', 'Mean'])
                     side_mouse = float(saved_params.loc[saved_params['name']=='sides['+str(ms_i+1)+']', 'Mean'])
                     laser_mouse = float(saved_params.loc[saved_params['name']=='laser_ses['+str(ms_i+1)+']', 'Mean'])
-                    alpha = float(phi_approx(saved_params.loc[saved_params['name']=='alpha_ses['+str(ms_i+1)+']', 'Mean']/np.sqrt(2)))
-                    alphalaser = float(phi_approx(saved_params.loc[saved_params['name']=='alphalaser_ses['+str(ms_i+1)+']', 'Mean']/np.sqrt(2)))
-                    alphastay = float(phi_approx(saved_params.loc[saved_params['name']=='alphastay_ses['+str(ms_i+1)+']', 'Mean']/np.sqrt(2)))
-                    alphaforgetting= float(phi_approx(saved_params.loc[saved_params['name']=='alphaforgetting_ses['+str(ms_i+1)+']', 'Mean']/np.sqrt(2)))
-                    alphalaserforgetting= float(phi_approx(saved_params.loc[saved_params['name']=='alphalaserforgetting_ses['+str(ms_i+1)+']', 'Mean']/np.sqrt(2)))
+                    alpha = float(saved_params.loc[saved_params['name']=='alpha_ses['+str(ms_i+1)+']', 'Mean']/np.sqrt(2))
+                    alphalaser = float(saved_params.loc[saved_params['name']=='alphalaser_ses['+str(ms_i+1)+']', 'Mean']/np.sqrt(2))
+                    alphastay = float(saved_params.loc[saved_params['name']=='alphastay_ses['+str(ms_i+1)+']', 'Mean']/np.sqrt(2))
+                    alphaforgetting= float(saved_params.loc[saved_params['name']=='alphaforgetting_ses['+str(ms_i+1)+']', 'Mean']/np.sqrt(2))
+                    alphalaserforgetting= float(saved_params.loc[saved_params['name']=='alphalaserforgetting_ses['+str(ms_i+1)+']', 'Mean']/np.sqrt(2))
                 else:
                     print('Error only CSV version available')
 
@@ -4109,6 +4125,9 @@ def q_learning_model_w_forgetting(standata,saved_params=None, fit=None, csv=True
                 ses_data['acc'] = np.mean(acc)
                 data = pd.concat([data,ses_data])
     return make_deltas(data)
+
+
+
 def simulate_q_learning_w_forgetting(standata_recovery,saved_params=None, fit=None, csv=True):
     b =  standata_recovery['b']
     p =  standata_recovery['p']
@@ -4195,8 +4214,8 @@ def simulate_q_learning_w_forgetting(standata_recovery,saved_params=None, fit=No
                 ses_data['mouse'] = sub_idx[ms_i]
                 ses_data['ses'] = sess_idx[ms_i]
                 sim_data = pd.concat([sim_data,ses_data])
-
     return c_sim, l_sim, r_sim, sim_data
+    
 def reinforce_model_mixed_perseveration(standata,saved_params=None, fit=None, csv=True):
     if saved_params is not None:
         r =  standata['r']
@@ -5446,6 +5465,7 @@ def simulate_reinforce_model(standata_recovery,saved_params=None, fit=None, csv=
                 sim_data = pd.concat([sim_data,ses_data])
 
     return c_sim, l_sim, r_sim, sim_data
+
 def reinforce_model_w_stay(standata,saved_params=None, fit=None, csv=True):
     if saved_params is not None:
         r =  standata['r']

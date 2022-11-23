@@ -70,9 +70,9 @@ def save_q_values(ROOT_FOLDER,psy,data,prefix,trial_start=0,trial_end=-150, no_r
                     np.save(alf+'/'+prefix+'_QR.npy', ses_data['QR'].to_numpy())                    
 
 ROOT_FOLDER = '/Volumes/witten/Alex/Data/Subjects'
-psy=mc.load_data_reduced(ROOT_FOLDER = '/Volumes/witten/Alex/Data/ephys_bandit/data_laser_only', trial_start=0, trial_end=None)
+psy=mc.load_data_reduced(ROOT_FOLDER = '/Volumes/witten/Alex/Data/ephys_bandit/data_waterlaser', trial_start=0, trial_end=None)
 standata = mc.make_stan_data_reduced(psy)
-qlearning_params = pd.read_csv('/Volumes/witten/Alex/Data/ephys_bandit/laser_stan_fits/standard_reduced_stay/output/summary.csv')
+qlearning_params = pd.read_csv('/Volumes/witten/Alex/Data/ephys_bandit/dual_task_fits/standard_reduced_stay/output/summary.csv')
 qlearning_data = pd.DataFrame()
 qlearning_data = mc.q_learning_model_reduced_stay(standata,saved_params=qlearning_params)
 assert len(psy) == len(qlearning_data)

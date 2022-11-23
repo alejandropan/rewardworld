@@ -16,6 +16,8 @@ from sklearn.preprocessing import scale
 import copy
 import logistic_regression as lr
 from scipy.stats import ttest_rel as pttest
+from mpl_chord_diagram import chord_diagram
+from itertools import permutations 
 
 LIST_OF_SESSIONS_YFP = ['/Volumes/witten/Alex/Data/Subjects/dop_18/2021-04-15/008',
 '/Volumes/witten/Alex/Data/Subjects/dop_18/2021-04-15/002',
@@ -129,6 +131,81 @@ LIST_OF_SESSIONS_ALEX = \
 '/Volumes/witten/Alex/Data/Subjects/dop_16/2021-04-30/001',
 '/Volumes/witten/Alex/Data/Subjects/dop_16/2021-04-26/001']
 
+
+
+
+ALL_NEW_SESSIONS = [
+'/Volumes/witten/Alex/Data/Subjects/dop_48/2022-06-20/001', 
+'/Volumes/witten/Alex/Data/Subjects/dop_48/2022-06-19/002', 
+'/Volumes/witten/Alex/Data/Subjects/dop_48/2022-06-28/001', 
+'/Volumes/witten/Alex/Data/Subjects/dop_48/2022-06-27/002', 
+'/Volumes/witten/Alex/Data/Subjects/dop_49/2022-06-14/001', 
+'/Volumes/witten/Alex/Data/Subjects/dop_49/2022-06-15/001', 
+'/Volumes/witten/Alex/Data/Subjects/dop_49/2022-06-16/001', 
+'/Volumes/witten/Alex/Data/Subjects/dop_49/2022-06-17/001',
+'/Volumes/witten/Alex/Data/Subjects/dop_49/2022-06-18/002',  
+'/Volumes/witten/Alex/Data/Subjects/dop_49/2022-06-19/001', 
+'/Volumes/witten/Alex/Data/Subjects/dop_49/2022-06-27/003', 
+'/Volumes/witten/Alex/Data/Subjects/dop_49/2022-06-20/001', 
+'/Volumes/witten/Alex/Data/Subjects/dop_47/2022-06-11/001',
+'/Volumes/witten/Alex/Data/Subjects/dop_47/2022-06-10/002', 
+'/Volumes/witten/Alex/Data/Subjects/dop_47/2022-06-09/003',
+'/Volumes/witten/Alex/Data/Subjects/dop_47/2022-06-05/001',
+'/Volumes/witten/Alex/Data/Subjects/dop_50/2022-09-12/001',
+'/Volumes/witten/Alex/Data/Subjects/dop_50/2022-09-13/001',
+'/Volumes/witten/Alex/Data/Subjects/dop_50/2022-09-14/003',
+'/Volumes/witten/Alex/Data/Subjects/dop_50/2022-09-16/003',
+'/Volumes/witten/Alex/Data/Subjects/dop_50/2022-09-17/001',
+'/Volumes/witten/Alex/Data/Subjects/dop_50/2022-09-18/001',
+'/Volumes/witten/Alex/Data/Subjects/dop_51/2022-09-21/002',
+'/Volumes/witten/Alex/Data/Subjects/dop_51/2022-09-22/001',
+'/Volumes/witten/Alex/Data/Subjects/dop_51/2022-09-23/001',
+'/Volumes/witten/Alex/Data/Subjects/dop_51/2022-09-26/001',
+'/Volumes/witten/Alex/Data/Subjects/dop_51/2022-09-27/001',
+'/Volumes/witten/Alex/Data/Subjects/dop_51/2022-09-28/001',
+'/Volumes/witten/Alex/Data/Subjects/dop_52/2022-10-02/001',
+'/Volumes/witten/Alex/Data/Subjects/dop_53/2022-10-07/001',
+'/Volumes/witten/Alex/Data/Subjects/dop_53/2022-10-05/001',
+'/Volumes/witten/Alex/Data/Subjects/dop_53/2022-10-04/001',
+'/Volumes/witten/Alex/Data/Subjects/dop_53/2022-10-03/001',
+'/Volumes/witten/Alex/Data/Subjects/dop_53/2022-10-02/001']
+
+LASER_ONLY = [
+'/Volumes/witten/Alex/Data/Subjects/dop_48/2022-06-20/001', 
+'/Volumes/witten/Alex/Data/Subjects/dop_48/2022-06-19/002', 
+'/Volumes/witten/Alex/Data/Subjects/dop_48/2022-06-28/001', 
+'/Volumes/witten/Alex/Data/Subjects/dop_48/2022-06-27/002', 
+'/Volumes/witten/Alex/Data/Subjects/dop_49/2022-06-14/001', 
+'/Volumes/witten/Alex/Data/Subjects/dop_49/2022-06-15/001', 
+'/Volumes/witten/Alex/Data/Subjects/dop_49/2022-06-16/001', 
+'/Volumes/witten/Alex/Data/Subjects/dop_49/2022-06-17/001',
+'/Volumes/witten/Alex/Data/Subjects/dop_49/2022-06-18/002',  
+'/Volumes/witten/Alex/Data/Subjects/dop_49/2022-06-19/001', 
+'/Volumes/witten/Alex/Data/Subjects/dop_49/2022-06-27/003', 
+'/Volumes/witten/Alex/Data/Subjects/dop_49/2022-06-20/001', 
+'/Volumes/witten/Alex/Data/Subjects/dop_47/2022-06-11/001',
+'/Volumes/witten/Alex/Data/Subjects/dop_47/2022-06-10/002', 
+'/Volumes/witten/Alex/Data/Subjects/dop_47/2022-06-09/003',
+'/Volumes/witten/Alex/Data/Subjects/dop_47/2022-06-05/001',
+'/Volumes/witten/Alex/Data/Subjects/dop_50/2022-09-12/001',
+'/Volumes/witten/Alex/Data/Subjects/dop_50/2022-09-13/001',
+'/Volumes/witten/Alex/Data/Subjects/dop_50/2022-09-14/003',
+'/Volumes/witten/Alex/Data/Subjects/dop_50/2022-09-16/003',
+'/Volumes/witten/Alex/Data/Subjects/dop_50/2022-09-17/001',
+'/Volumes/witten/Alex/Data/Subjects/dop_50/2022-09-18/001',
+'/Volumes/witten/Alex/Data/Subjects/dop_53/2022-10-07/001',
+'/Volumes/witten/Alex/Data/Subjects/dop_53/2022-10-05/001',
+'/Volumes/witten/Alex/Data/Subjects/dop_53/2022-10-04/001',
+'/Volumes/witten/Alex/Data/Subjects/dop_53/2022-10-03/001',
+'/Volumes/witten/Alex/Data/Subjects/dop_53/2022-10-02/001']
+
+DUAL_TASK = ['/Volumes/witten/Alex/Data/Subjects/dop_51/2022-09-21/002',
+'/Volumes/witten/Alex/Data/Subjects/dop_51/2022-09-22/001',
+'/Volumes/witten/Alex/Data/Subjects/dop_51/2022-09-23/001',
+'/Volumes/witten/Alex/Data/Subjects/dop_51/2022-09-26/001',
+'/Volumes/witten/Alex/Data/Subjects/dop_51/2022-09-27/001',
+'/Volumes/witten/Alex/Data/Subjects/dop_51/2022-09-28/001',
+'/Volumes/witten/Alex/Data/Subjects/dop_52/2022-10-02/001']
 
 
 def get_binned_spikes(spike_times, spike_clusters, cluster_id, epoch_time,
@@ -309,7 +386,7 @@ class probe:
             try:
                 groups = pd.read_csv('/jukebox/witten/Alex/PYTHON/rewardworld/ephys/histology_files/simplified_regions.csv')
             except:
-                groups = pd.read_csv('/volumes/witten/Alex/PYTHON/rewardworld/ephys/histology_files/simplified_regions.csv')
+                groups = pd.read_csv('/Volumes/witten/Alex/PYTHON/rewardworld/ephys/histology_files/simplified_regions.csv')
             #groups = pd.read_csv('/mnt/s0/PYTHON/rewardworld/ephys/histology_files/simplified_regions.csv')
             groups = groups.iloc[:,1:3]
             groups = groups.set_index('original')
@@ -374,7 +451,7 @@ class alf:
             self.fQLreward  = np.load(path+'/alf/forgetting_QLreward.npy')
             self.fQRreward  = np.load(path+'/alf/forgetting_QRreward.npy')
             self.fchoice_prediction  = np.load(path+'/alf/forgetting_choice_prediction.npy')
-            self.faccuracy = np.mean((1*(self.choice>0))==(1*(self.choice_prediction>0.5)))
+            self.faccuracy = np.mean((1*(self.choice>0))==(1*(self.fchoice_prediction>0.5)))
         
         if os.path.isfile(path+'/alf/REINFORCE_mixedstay_alphalaserdecay_laser.npy'):
             if self.no_reward_block==False:
@@ -753,11 +830,64 @@ class ephys_ephys_dataset:
                         simplified_regions.to_csv('simplified_regions_raw.csv')
                     return simplified_regions['original'].unique()
 
+def plot_connectivity_map(SESSIONS, criterion=['good'], n_neurons_minimum = 20):
+    pooled_region_info = pd.DataFrame()
+    for ses in SESSIONS:
+        print(ses)
+        alfio = alf(ses, ephys=True)
+        region_info = pd.DataFrame()
+        for hemisphere in np.array([0,1]):
+            regions = pd.DataFrame()
+            for probe_id in np.arange(len(alfio.probe.probes)):
+                        unique_regions = alfio.probe[probe_id].cluster_group_locations[np.where(
+                            np.isin(alfio.probe[probe_id].cluster_metrics,criterion) & 
+                            (alfio.probe[probe_id].cluster_hem==hemisphere))[0]].value_counts()
+                        unique_regions = unique_regions[unique_regions>=n_neurons_minimum]
+                        regions = pd.concat([regions,unique_regions])
+            regions = regions.reset_index().groupby('index').sum().reset_index()
+            regions['hemisphere'] = hemisphere
+            region_info=pd.concat([region_info, regions])
+        region_info['mouse'] = Path(ses).parent.parent.name
+        region_info['date'] = Path(ses).parent.name
+        region_info['ses'] = Path(ses).name
+        region_info['id'] = region_info['mouse']+region_info['date']+region_info['ses']+ region_info['hemisphere'].astype(str)
+        pooled_region_info = pd.concat([pooled_region_info,region_info])
+
+    # Plot connectivity map
+    chord_data = pooled_region_info.copy()
+    selected_regions = np.array(['OFC', 'NAcc', 'PFC', 'DMS', 'VPS', 'VP', 'SNr','Olfactory', 'DLS', 'GPe'])
+    summary = np.zeros([len(selected_regions),len(selected_regions)])
+    chord_data = chord_data.loc[np.isin(chord_data['index'],selected_regions)]
+    for id in chord_data.id.unique():
+        s_chord_data_r = chord_data.loc[chord_data['id']==id,'index']
+        idx = [np.where(selected_regions==r)[0][0] for r in s_chord_data_r]
+        lidx = np.array(list(permutations(idx,2)))
+        for l in lidx:        
+            summary[l[0],l[1]]+=1
+    chord_diagram(summary, names=selected_regions, rotate_names=True, cmap='Dark2')
+    return summary
+
+
+
+
+def yield_by_region(yields):
+        summary = yields.groupby(['regions']).sum().reset_index().iloc[:,:-1]
+        pen_by_reg = np.zeros(len(summary))
+        mouse_by_reg = np.zeros(len(summary))
+        good_y = yields.loc[yields['count']>=15]
+        good_y = good_y.groupby(['regions','mouse','id']).count().reset_index()
+        for i, reg  in enumerate(summary.regions.unique()):
+            pen_by_reg[i] = good_y.loc[good_y['regions']==reg].id.unique().shape[0]
+            mouse_by_reg[i] = good_y.loc[good_y['regions']==reg].mouse.unique().shape[0]
+        summary['n_insertions'] = pen_by_reg
+        summary['n_mice'] = mouse_by_reg
+        return summary.sort_values('count', ascending=False)
+
 
 if __name__=="__main__":
     # 1. Load all data
-    sessions = ephys_ephys_dataset(len(LIST_OF_SESSIONS_ALEX))
-    for i, ses in enumerate(LIST_OF_SESSIONS_ALEX):
+    sessions = ephys_ephys_dataset(len(ALL_NEW_SESSIONS))
+    for i, ses in enumerate(ALL_NEW_SESSIONS):
             print(ses)
             ses_data = alf(ses, ephys=True)
             ses_data.mouse = Path(ses).parent.parent.name
@@ -780,211 +910,54 @@ if __name__=="__main__":
             ses_data.transition_analysis = \
                         add_transition_info(ses_data.to_df())['transition_analysis']
             sessions[i] = ses_data
-    '''
+    
+    # Load at unique regions
+    loc = [] 
+    for i in np.arange(len(ALL_NEW_SESSIONS)):
+        ses = sessions[i]
+        for j in np.arange(4):
+            try:
+                loc.append(np.unique(ses.probe[j].cluster_locations.astype(str)))
+            except:
+                continue
+    unique_regions = np.unique(np.concatenate(loc))
+    unique_regions = unique_regions[np.where(unique_regions!='nan')]
+    # Look for any unreferenced regions
+    groups = pd.read_csv('/Volumes/witten/Alex/PYTHON/rewardworld/ephys/histology_files/simplified_regions.csv')
+    groups = groups.iloc[:,1:3]
+    groups = groups.set_index('original')
+    group_dict = groups.to_dict()['group']
+    current_regions = groups.original.unique()
+    [group_dict[r] for r in current_regions] # This will error if dictionary is not complete
 
+    # Stats by regions
+    yields = pd.DataFrame()
+    for i in np.arange(len(ALL_NEW_SESSIONS)):
+        ses = sessions[i]
+        for j in np.arange(4):
+            try:
+                prob = pd.DataFrame()
+                good_units = ses.probe[j].cluster_selection
+                prob[['regions','count']] = pd.Series(ses.probe[j].cluster_locations[good_units]).map(group_dict).value_counts().reset_index()
+                prob['mouse'] = ses.mouse
+                prob['date'] = ses.date
+                prob['ses'] = ses.ses
+                prob['probe'] = j 
+                prob['id'] =  ses.mouse + '_' + ses.date + '_' + ses.ses + '_' + str(j) 
+                yields = pd.concat([yields,prob])
+            except:
+                continue
 
-    # 2. Make a PCA plot
-    trial_based=False # Whether we care about trials
-    transition_based=True # 5 last , 5 first of every block type
-    epoch_of_interest = 'goCue_trigger_times'
-    pre_time=1.0
-    post_time=0
-    bin_size=1
-
-
-    selected_regions = [['NAcc', 'NAcsh'], ['DMS','VMS'],
-        'PFC', 'FA', 'VP', 'SPT', 'MOC']
-
-
-    def very_good_clusters():
-        sessions[s].probe[p].sp
-
-
-    for reg in selected_regions:
-        counter=0
-        for s in np.arange(len(sessions.sessions)):
-            for p in np.arange(len(sessions[s].probe.probes)):
-                loc_clusters = \
-                    np.where(np.isin(sessions[s].probe[p].cluster_group_locations,reg))[0]
-                if len(loc_clusters)==0:
-                    continue
-                counter+=1
-                good_clusters = \
-                    np.where(sessions[s].probe[p].cluster_metrics=='good')[0]
-                cluster_selection = np.intersect1d(loc_clusters,good_clusters)
-                binned_fr = get_binned_spikes(sessions[s].probe[p].spike_times,
-                                sessions[s].probe[p].spike_clusters,
-                                cluster_selection, getattr(sessions[s],epoch_of_interest),
-                                pre_time=pre_time, post_time=post_time,
-                                bin_size=bin_size)/bin_size
-                #Flatten matrix to n_neuron n_neuron x n_trials
-                binned_fr_flat = np.squeeze(binned_fr,axis=2).T
-                if transition_based==True:
-                    left_block = np.where(sessions[s].probabilityLeft==0.7)[0]
-                    right_block = np.where(sessions[s].probabilityLeft==0.1)[0]
-                    water_block = np.where(sessions[s].opto_block==0)[0]
-                    laser_block =  np.where(sessions[s].opto_block==1)[0]
-
-                    # Select spikes based on interesting trials
-
-                    left_water = np.intersect1d(left_block,water_block)
-                    right_water = np.intersect1d(right_block,water_block)
-                    left_laser = np.intersect1d(left_block,laser_block)
-                    right_laser = np.intersect1d(right_block,laser_block)
-
-                    X = np.zeros([binned_fr_flat.shape[0],40])#Start matrix that will hold data
-                    X[:]=np.nan
-                    # This matrix has been triple checked test below
-                    for j,i in enumerate(np.arange(-5,5)):
-                        if i<0:
-                            X[:,j]=binned_fr_flat[:,np.intersect1d(np.where(sessions[s].trial_within_block==i)[0],
-                                        left_water)].mean(axis=1) # last 5 t of left water
-                            X[:,10+j]=binned_fr_flat[:,np.intersect1d(np.where(sessions[s].trial_within_block==i)[0],
-                                        right_water)].mean(axis=1) # last 5 t of right water
-                            X[:,20+j]=binned_fr_flat[:,np.intersect1d(np.where(sessions[s].trial_within_block==i)[0],
-                                        left_laser)].mean(axis=1) # last 5 t of left laser
-                            X[:,30+j]=binned_fr_flat[:,np.intersect1d(np.where(sessions[s].trial_within_block==i)[0],
-                                        right_laser)].mean(axis=1) # last 5 t of right laser
-                        if i>-1:
-                            X[:,5+i]=binned_fr_flat[:,np.intersect1d(np.where(sessions[s].trial_within_block==i)[0],
-                                        left_water)].mean(axis=1) # first 5 t of left water
-                            X[:,15+i]=binned_fr_flat[:,np.intersect1d(np.where(sessions[s].trial_within_block==i)[0],
-                                        right_water)].mean(axis=1) # first 5 t of right water
-                            X[:,25+i]=binned_fr_flat[:,np.intersect1d(np.where(sessions[s].trial_within_block==i)[0],
-                                        left_laser)].mean(axis=1) # first 5 t of left laser
-                            X[:,35+i]=binned_fr_flat[:,np.intersect1d(np.where(sessions[s].trial_within_block==i)[0],
-                                        right_laser)].mean(axis=1) # first 5 t of right laser
-
-                    if counter==1:
-                        X_reg=X
-                    else:
-                        X_reg = np.concatenate([X_reg, X])
+    yield_by_region(yields)
+    laser_mice = ['dop_47','dop_48','dop_49','dop_50','dop_53']
+    laser_yield  = yields.loc[np.isin(yields['mouse'], laser_mice)]
+    yield_by_region(laser_yield)
+    water_yield  =  yields.loc[~(np.isin(yields['mouse'], laser_mice))]
+    yield_by_region(water_yield)
 
 
 
-        #Plot PCA 3D
-        Z_reg = scale(X_reg.T)
-        pca = PCA(n_components=3)
-        pca.fit(Z_reg)
-        DX = pca.transform(Z_reg)
-        fig = plt.figure(1, figsize=(4, 3))
-        ax = Axes3D(fig, rect=[0, 0, .95, 1], elev=48, azim=134)
-        ax.scatter(DX[:4, 0], DX[:4, 1], DX[:4, 2], color='blue') # last 5 t of left water
-        ax.plot(DX[:5, 0], DX[:5, 1], DX[:5, 2], color='blue') # last 5 t of left water
-        ax.scatter(DX[4, 0], DX[4, 1], DX[4, 2], marker='>', color='blue', s=50) # last 5 t of left water
 
-        ax.scatter(DX[25:29, 0], DX[25:29, 1], DX[25:29, 2], color='salmon') # first 5 t of right water
-        ax.plot(DX[25:30, 0], DX[25:30, 1], DX[25:30, 2], color='salmon') # first 5 t of right water
-        ax.scatter(DX[29, 0], DX[29, 1], DX[29, 2], marker='>', color='salmon', s=50) # last 5 t of left water
-
-        ax.scatter(DX[5:9, 0], DX[5:9, 1], DX[5:9, 2], color='red') # last 5 t of right water
-        ax.plot(DX[5:10, 0], DX[5:10, 1], DX[5:10, 2], color='red') # last 5 t of right water
-        ax.scatter(DX[9, 0], DX[9, 1], DX[9, 2], marker='>', color='red', s=50) # last 5 t of left water
-
-        ax.scatter(DX[20:24, 0], DX[20:24, 1], DX[20:24, 2], color='deepskyblue') # first 5 t of left water
-        ax.plot(DX[20:25, 0], DX[20:25, 1], DX[20:25, 2], color='deepskyblue') # first 5 t of left water
-        ax.scatter(DX[24, 0], DX[24, 1], DX[24, 2], marker='>', color='deepskyblue', s=50) # last 5 t of left water
-
-        ax.scatter(DX[10:14, 0], DX[10:14, 1], DX[10:14, 2], color='magenta') # last 5 t of left laser
-        ax.plot(DX[10:15, 0], DX[10:15, 1], DX[10:15, 2], color='magenta') # last 5 t of left laser
-        ax.scatter(DX[14, 0], DX[14, 1], DX[14, 2], marker='>', color='magenta', s=50) # last 5 t of left water
-
-        ax.scatter(DX[35:39, 0], DX[35:39, 1], DX[35:39, 2], color='navajowhite') # first 5 t of right laser
-        ax.plot(DX[35:40, 0], DX[35:40, 1], DX[35:40, 2], color='navajowhite') # first 5 t of right laser
-        ax.scatter(DX[39, 0], DX[39, 1], DX[39, 2], marker='>', color='navajowhite', s=50) # last 5 t of left water
-
-        ax.scatter(DX[15:19, 0], DX[15:19, 1], DX[15:19, 2], color='darkorange') # last 5 t of right laser
-        ax.plot(DX[15:20, 0], DX[15:20, 1], DX[15:20, 2], color='darkorange') # last 5 t of right laser
-        ax.scatter(DX[19, 0], DX[19, 1], DX[19, 2], marker='>', color='darkorange', s=50) # last 5 t of left water
-
-        ax.scatter(DX[30:34, 0], DX[30:34, 1], DX[30:34, 2], color='violet') # first 5 t of left laser
-        ax.plot(DX[30:35, 0], DX[30:35, 1], DX[30:35, 2], color='violet') # first 5 t of left laser
-        ax.scatter(DX[34, 0], DX[34, 1], DX[34, 2], marker='>', color='violet', s=50) # last 5 t of left water
-
-        ax.text2D(0.05, 0.95,reg, transform=ax.transAxes)
-        plt.show()
-
-        del X_reg
-                    """
-                    X = np.empty((binned_fr_flat.shape[0],40),  dtype="S10")#Start matrix that will hold data
-                    X[:]='nan'
-                    for j,i in enumerate(np.arange(-5,5)):
-                        if i<0:
-                            X[:,j]="%dLW" % i # last 5 t of left water
-                            X[:,10+j]="%dRW" % i
-                            X[:,20+j]="%dLL" % i
-                            X[:,30+j]="%dLW" % i
-                        if i>-1:
-                            X[:,5+i]="%dFLW" % i # first 5 t of left water
-                            X[:,15+i]="%dFRW" % i
-                            X[:,25+i]="%dFLL" % i
-                            X[:,35+i]="%dFLW" % i
-                    '''
-
-    #### Plots for annual meeting 2021
-    # t25=alf('/Volumes/witten/Alex/Data/Subjects/dop_24/2021-03-25/004')
-    # fr = t25.fr_bytrial(234, t25.goCue_trigger_times, probe_name='probe00')
-    # Logistic regression
-
-    '''
-
-    def plot_error_dist(data):
-        data =  data.loc[~np.isnan(data['choice_prediction'])]
-        data['correct_prediction'] = 1*((1*data['choice_prediction']>0.5) == \
-                                            1*(data['choice_1']))
-        fig, ax = plt.subplots(2,2)
-        plt.sca(ax[0,0])
-        sns.lineplot(data=data, x='index', y=data['correct_prediction'].rolling(5).mean(),
-                color='k', ci=68)
-        plt.title('Accuracy by trial no')
-        plt.xlabel('Trial number')
-        plt.ylabel('Accuracy')
-        plt.sca(ax[0,1])
-        sns.barplot(data=data, x='probabilityLeft', y='correct_prediction', color='k', ci=68)
-        plt.title('Accuracy by side block')
-        plt.xlabel('Probability Left')
-        plt.ylabel('Accuracy')
-        plt.sca(ax[1,0])
-        negative_trials = data.loc[data['trial_within_block']<0].copy()
-        positive_trials = data.loc[data['trial_within_block_real']>=0].copy()
-        positive_trials['trial_within_block']=positive_trials['trial_within_block_real']
-        positive_trials['transition_type']=positive_trials['transition_type_real']
-        ses_df = pd.concat([negative_trials,positive_trials])
-        sns.lineplot(data = ses_df.loc[(ses_df['transition_type']=='0.1 to 0.7') |
-            (ses_df['transition_type']=='0.7 to 0.1')], x='trial_within_block', y='correct_prediction',
-            ci=68, hue='transition_type', err_style='bars', style='opto_block', palette=['dodgerblue','orange'])
-        plt.ylim(0,1)
-        plt.xlim(-5,15)
-        plt.vlines(0,0,1,linestyles='dashed', color='k')
-        plt.title('Accuracy by transition type')
-        plt.ylabel('Accuracy')
-        plt.xlabel('Trials from block switch')
-        plt.sca(ax[1,1])
-        sns.barplot(data=data, x='opto_block', y='correct_prediction', palette=['dodgerblue', 'orange'], ci=68)
-        plt.title('Accuracy by reward indentity block')
-        plt.xlabel('Opto block')
-        plt.ylabel('Accuracy')
-        sns.despine()
-        plt.tight_layout()
-        # Rolling average of the prediction derivative
-        mice = len(data.mouse.unique())
-        ses_max = 6
-        fig, ax = plt.subplots(mice, ses_max, figsize=(20,15))
-        for m , mouse in enumerate(data.mouse.unique()):
-            data_mouse = data.loc[data['mouse']==mouse]
-            for s , ses in enumerate(data_mouse.date.unique()):
-                plt.sca(ax[m,s])
-                data_ses = data_mouse.loc[data_mouse['date']==ses]
-                sns.lineplot(data=data_ses, x='index', y=data['correct_prediction'].rolling(5).mean(),
-                            color='gray', ci=68)
-                plt.xlim(0,400)
-                plt.vlines(np.where(data_ses['opto_block']==1), 0, 1, linestyles='solid', alpha=0.25, color='orange')
-                plt.vlines(np.where(data_ses['opto_block']==0), 0, 1, linestyles='solid', alpha=0.25, color='dodgerblue')
-                plt.vlines(np.where(data_ses['block_change']==1), 0, 1, linestyles='dashed', color='k')
-                plt.xlabel('trial no')
-                plt.ylabel('Accuracy')
-        sns.despine()
-        plt.tight_layout()
-
-        '''
-
+    # Interconnected pairs
+    mat = plot_connectivity_map(LASER_ONLY)
+    mat = plot_connectivity_map(DUAL_TASK)

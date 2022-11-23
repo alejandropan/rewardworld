@@ -1,7 +1,5 @@
-
-
 from model_comparison_accu import load_data_reduced, make_stan_data_reduced, load_sim_data_reduced
-from model_comparison_accu import q_learning_model_reduced_stay, simulate_q_learning_model_reduced_stay
+from model_comparison_accu import q_learning_model_reduced_stay,q_learning_model_reduced_stay_forgetting, num_to_name
 from model_comparison_accu import reinforce_model_reduced, simulate_reinforce_reduced
 from model_comparison_accu import reinforce_model_reduced_stay, simulate_reinforce_reduced_stay
 from model_comparison_accu import reduced_uchida_model, simulate_reduced_uchida_model
@@ -178,12 +176,19 @@ def laserdecayanalysis(df):
 data=load_data_reduced(ROOT_FOLDER = '/Volumes/witten/Alex/Data/ephys_bandit/data_laser_only', trial_start=0, trial_end=None)
 standata = make_stan_data_reduced(data)
 standata_recovery = load_sim_data_reduced(ROOT_FOLDER = '/Volumes/witten/Alex/Data/ephys_bandit/data_laser_only', trial_start=0, trial_end=None)
+ses_id = num_to_name(data)
+
 # Q-learning
 model_standard = pd.read_csv('/Volumes/witten/Alex/Data/ephys_bandit/laser_stan_fits/standard_reduced_stay/output/summary.csv')
 accu_standard = pd.DataFrame()
 accu_standard['Accuracy'] = q_learning_model_reduced_stay(standata,saved_params=model_standard).groupby(['id']).mean()['acc']
 accu_standard['Model'] = 'Q-Learning'
-_, _, sim_standard = simulate_q_learning_model_reduced_stay(standata_recovery,saved_params=model_standard)
+_, _, sim_standard = q_learning_model_reduced_stay(standata_recovery,saved_params=model_standard)
+# 2. Forgetting
+model_forgetting = pd.read_csv('/Volumes/witten/Alex/Data/ephys_bandit/laser_stan_fits/standard_w_forgetting/output/summary.csv')
+qlearning_w_forgetting = pd.DataFrame()
+qlearning_w_forgetting['Accuracy'] = q_learning_model_reduced_stay_forgetting(standata,saved_params=model_forgetting)['acc'].unique()
+qlearning_w_forgetting['Model'] = 'F-Q'
 # REINFORCE
 model_reinforce = pd.read_csv('/Volumes/witten/Alex/Data/ephys_bandit/laser_stan_fits/REINFORCE_reduced/output/summary.csv')
 accu_reinforce = pd.DataFrame()
@@ -209,6 +214,10 @@ accu_double['Accuracy'] = double_update_model(standata,saved_params=double_model
 accu_double['Model'] = 'Double-update'
 _, _, sim_double = simulate_double_update_model(standata_recovery,saved_params=double_model)
 
+
+# Flag bad session
+bad_sessions_n = np.where(qlearning_w_forgetting['Accuracy']<0.7)
+bad_sessions = np.array(ses_id)[bad_sessions]
 
 # Start summary figures
 # 0. Raw data performance (justification for not decay)

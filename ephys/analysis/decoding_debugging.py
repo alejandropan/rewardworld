@@ -172,6 +172,11 @@ def run_decoder(xs, regressed_variable, weights, number_folds=5, decoder = LR,
         # Start workers and define multiprocessing function
         #pool = mp.Pool(processes=12)    
         for nc, nsample in enumerate(neuron_combinations):
+
+# Here start the edits for updating sampling: To chose folds i must first 1) have a selection of neurons, 2) look at the common set on those neurons and 3) make folds
+
+
+
             for s, subsample in enumerate(nsample):
                 for f in np.arange(number_folds):
                     training_trials = np.concatenate(folds[0][:][f]).astype(int)

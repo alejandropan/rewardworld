@@ -132,8 +132,15 @@ def load_all_residuals(root_path, filetype='residual'):
     group_dict = groups.to_dict()['group']
     residuals['location'] = pd.Series(residuals.area).map(group_dict)
     return residuals
-    
-def common_trials(residuals):
+
+def common_neural_data(residuals,n_trials_minimum=100):
+    included = []
+    for i in np.arange(len(residuals)):
+        if len(residuals.iloc[i]['trials_included'])>=n_trials_minimum:
+             included.append(i)
+    return residuals.iloc[included,:]
+
+def common_trials_old(residuals):
     # First it excludes neurons with less than 2 std the number of trials
     select = []
     ts = []
@@ -149,7 +156,7 @@ def common_trials(residuals):
         select = np.intersect1d(select,t)
     return select, residuals
 
-def common_neural_data(residuals, trials_included):
+def common_neural_data_old(residuals, trials_included):
     reduced_residuals = pd.DataFrame()
     for i in np.arange(len(residuals)):
         new_neuron = pd.DataFrame()

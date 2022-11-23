@@ -23,12 +23,11 @@ def update_block_params(tph):
     high_press = (tph.stim_probability_left<0.5)*1 # whether right choices are favored in block,1 yes 0 no
     left_right_total = [len(np.where(last_10==0)[0]),len(np.where(last_10==1)[0])]
     if (tph.block_trial_num > tph.block_len):
-        if left_right_total[high_press]<5:
+        if left_right_total[high_press]<7:
             tph.block_len = tph.block_len + 1
-            print('Debiasing')
-            print()
+            #print('Debiasing')
         else:
-            print('Block change')
+            #print('Block change')
             tph.block_num += 1
             tph.block_trial_num = 1
             tph.block_len = get_block_len(
@@ -55,11 +54,11 @@ def update_probability_left(tph):
         return np.random.choice(tph.block_probability_set)
     else:
         block = np.random.choice(tph.block_probability_set)
-        print(block)
+        #print(block)
         if block != tph.stim_probability_left:
             return block
         else:
-            print('second', block)
+            #print('second', block)
             return update_probability_left(tph)
 
 def draw_reward(stim_probability_left):

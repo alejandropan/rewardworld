@@ -2553,6 +2553,7 @@ def simulate_q_learning_model_noqlaser_new(standata_recovery,saved_params=None, 
                 ses_data['ses'] = sess_idx[ms_i]
                 sim_data = pd.concat([sim_data,ses_data])
     return c_sim, l_sim, r_sim, sim_data
+    
 def simulate_q_learning_model_noqwater_new(standata_recovery,saved_params=None, fit=None, csv=True):
     NS =standata_recovery['NS']
     NSESS=standata_recovery['NSESS']
@@ -3920,6 +3921,7 @@ def simulate_q_learning_model_laserdecay_same_trials(standata_recovery,saved_par
                 ses_data['qlaser'] = buffer_qlaser
                 sim_data = pd.concat([sim_data,ses_data])
     return c_sim, l_sim, r_sim, sim_data
+
 def simulate_q_learning_model_laserdecay(standata_recovery,saved_params=None, fit=None, csv=True):
     NS =standata_recovery['NS']
     NSESS=standata_recovery['NSESS']
@@ -4026,6 +4028,7 @@ def simulate_q_learning_model_laserdecay(standata_recovery,saved_params=None, fi
                 ses_data['qlaser'] = buffer_qlaser
                 sim_data = pd.concat([sim_data,ses_data])
     return c_sim, l_sim, r_sim, sim_data
+
 def q_learning_model_w_forgetting(standata,saved_params=None, fit=None, csv=True):
     if saved_params is not None:
         r =  standata['r']
@@ -4122,6 +4125,7 @@ def q_learning_model_w_forgetting(standata,saved_params=None, fit=None, csv=True
                 ses_data['acc'] = np.mean(acc)
                 data = pd.concat([data,ses_data])
     return make_deltas(data)
+
 
 
 def simulate_q_learning_w_forgetting(standata_recovery,saved_params=None, fit=None, csv=True):

@@ -6,7 +6,7 @@ import mat73
 import glob
 import numpy as np
 
-ENCODING_MODEL_MAT_FILE = '/Volumes/witten/Chris/matlab/cz/ibl_da_neuropixels_2022/archive/20220913/encoding-model/encoding-model-output-2022-08-03-12-31-PM.mat'
+ENCODING_MODEL_MAT_FILE = '/Volumes/witten/Chris/matlab/cz/ibl_da_neuropixels_2022/encoding-model/encoding-model-output-2022-11-28-01-06-PM.mat'
 
 def load_encoding_model(model_path = ENCODING_MODEL_MAT_FILE):
     model_dict = loadmat(model_path)
@@ -22,8 +22,6 @@ def load_encoding_model(model_path = ENCODING_MODEL_MAT_FILE):
     [id.append(i[0]) for i in model_dict['EncodingSummary']['recording_name'][0][0][0]]
     [probe.append(int(i[0][6])) for i in model_dict['EncodingSummary']['probe'][0][0][0]]
     encoding_model['pretest'] = model_dict['EncodingSummary']['pvalues'][0][0]['pretest'][0][0][0]
-    encoding_model['choice'] = model_dict['EncodingSummary']['pvalues'][0][0]['choice'][0][0][0]
-    encoding_model['outcome'] = model_dict['EncodingSummary']['pvalues'][0][0]['outcome'][0][0][0]
     encoding_model['policy'] = model_dict['EncodingSummary']['pvalues'][0][0]['policy'][0][0][0]
     encoding_model['value'] = model_dict['EncodingSummary']['pvalues'][0][0]['value'][0][0][0]
     encoding_model['value_laser'] = model_dict['EncodingSummary']['pvalues'][0][0]['value_laser'][0][0][0]
@@ -71,8 +69,17 @@ def resample (psth_array,final_bins, model_bin_size):
                                         axis = 1)
     return new_psth_array
 
-def load_residual(neuron_file, model_bin_size=5, final_bins=100, pre_time = -500, post_time = 1000, filetype='residual'): # bin sizes in ms
+def load_residual(neuron_file, model_bin_size=5, final_bins=100, pre_time = -500, post_time = 1000, filetype='residual', criterion='good'): # bin sizes in ms
+    if criterion == 'good':
+        acceptable_labels = 1
+    elif criterion == 'mua':
+        acceptable_labels = 2
+    else:
+        acceptable_labels = [1,2]
     residual_struct = mat73.loadmat(neuron_file)
+    if ~np.isin(residual_struct['data']['cluster']['label'], acceptable_labels):
+        return None
+    residual_struct['data']['cluster']['label']
     # Start_dataframe
     neuron = pd.DataFrame()
     n_trials = int(len(residual_struct['data']['Y_pred']))
@@ -118,45 +125,7 @@ def load_residual(neuron_file, model_bin_size=5, final_bins=100, pre_time = -500
     neuron['residuals_outcome'] = [resample(residuals_outcome,final_bins, model_bin_size)]
     return neuron
 
-def load_all_residuals(root_path, filetype='residual'):
-    path_to_all_residuals = glob.glob(root_path+'/*_residuals.mat')
-    residuals = pd.DataFrame()
-    for p in path_to_all_residuals:
-        residuals = pd.concat([residuals, load_residual(p, filetype=filetype)])
-    try:
-        groups = pd.read_csv('/jukebox/witten/Alex/PYTHON/rewardworld/ephys/histology_files/simplified_regions.csv')
-    except:
-        groups = pd.read_csv('/volumes/witten/Alex/PYTHON/rewardworld/ephys/histology_files/simplified_regions.csv')
-    groups = groups.iloc[:,1:3]
-    groups = groups.set_index('original')
-    group_dict = groups.to_dict()['group']
-    residuals['location'] = pd.Series(residuals.area).map(group_dict)
-    return residuals
-
-def common_neural_data(residuals,n_trials_minimum=100):
-    included = []
-    for i in np.arange(len(residuals)):
-        if len(residuals.iloc[i]['trials_included'])>=n_trials_minimum:
-             included.append(i)
-    return residuals.iloc[included,:]
-
-def common_trials_old(residuals):
-    # First it excludes neurons with less than 2 std the number of trials
-    select = []
-    ts = []
-    for i in np.arange(len(residuals)):    
-        ts.append(len(residuals['trials_included'].iloc[i]))
-    ts = np.array(ts)
-    t_range = [int(np.median(ts)-np.std(ts)*2), int(np.median(ts)+np.std(ts)*2)]
-    residuals = residuals.iloc[np.where(ts>=t_range[0])]
-    for i in np.arange(len(residuals)-1):    
-        if i == 0:
-            select = residuals['trials_included'].iloc[i]
-        t = residuals['trials_included'].iloc[i+1]
-        select = np.intersect1d(select,t)
-    return select, residuals
-
-def common_neural_data_old(residuals, trials_included):
+def homogenize_neural_data(residuals, trials_included):
     reduced_residuals = pd.DataFrame()
     for i in np.arange(len(residuals)):
         new_neuron = pd.DataFrame()
@@ -177,3 +146,52 @@ def common_neural_data_old(residuals, trials_included):
         assert new_neuron['residuals_goCue'][0].shape[0]==len(trials_included)
         reduced_residuals = pd.concat([reduced_residuals,new_neuron])
     return reduced_residuals
+
+def load_all_residuals(root_path, filetype='residual', criterion='good'):
+    path_to_all_residuals = glob.glob(root_path+'/*_residuals.mat')
+    residuals = pd.DataFrame()
+    for p in path_to_all_residuals:
+        residuals = pd.concat([residuals, load_residual(p, filetype=filetype, criterion=criterion)])
+    try:
+        groups = pd.read_csv('/jukebox/witten/Alex/PYTHON/rewardworld/ephys/histology_files/simplified_regions.csv')
+    except:
+        groups = pd.read_csv('/volumes/witten/Alex/PYTHON/rewardworld/ephys/histology_files/simplified_regions.csv')
+    groups = groups.iloc[:,1:3]
+    groups = groups.set_index('original')
+    group_dict = groups.to_dict()['group']
+    residuals['location'] = pd.Series(residuals.area).map(group_dict)
+    return residuals
+
+def common_neural_data(residuals,n_trials_minimum=100):
+    included = []
+    for i in np.arange(len(residuals)):
+        if len(residuals.iloc[i]['trials_included'])>=n_trials_minimum:
+             included.append(i)
+    return residuals.iloc[included,:]
+
+def common_trials(neural_data, subsample):
+    hem_neural_data = neural_data.iloc[subsample].copy()
+    for i in np.arange(len(hem_neural_data)-1):    
+        if i == 0:
+            trials_included = hem_neural_data['trials_included'].iloc[i]
+        t = hem_neural_data['trials_included'].iloc[i+1]
+        trials_included = np.intersect1d(trials_included,t)
+    reduced_residuals = homogenize_neural_data(hem_neural_data, trials_included)
+    return reduced_residuals, trials_included
+
+def common_trials_old(residuals):
+    # First it excludes neurons with less than 2 std the number of trials
+    select = []
+    ts = []
+    for i in np.arange(len(residuals)):    
+        ts.append(len(residuals['trials_included'].iloc[i]))
+    ts = np.array(ts)
+    t_range = [int(np.median(ts)-np.std(ts)*2), int(np.median(ts)+np.std(ts)*2)]
+    residuals = residuals.iloc[np.where(ts>=t_range[0])]
+    for i in np.arange(len(residuals)-1):    
+        if i == 0:
+            select = residuals['trials_included'].iloc[i]
+        t = residuals['trials_included'].iloc[i+1]
+        select = np.intersect1d(select,t)
+    return select, residuals
+

@@ -49,7 +49,6 @@ neural_data = load_all_residuals(encoding_res_path)
 neural_data = neural_data.loc[neural_data['location']==area]
 
 # Trials used
-trials_included, neural_data = common_trials(neural_data)
 c_neural_data = common_neural_data(neural_data, trials_included)
 
 # Load variable to be decoded and aligment times

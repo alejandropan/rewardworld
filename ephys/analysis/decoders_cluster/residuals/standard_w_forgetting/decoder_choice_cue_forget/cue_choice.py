@@ -6,7 +6,7 @@ from ephys_alf_summary import alf
 from pathlib import Path
 import pandas as pd
 import numpy as npm
-from encoding_model_summary_to_df import load_all_residuals, common_trials, common_neural_data
+from encoding_model_summary_to_df import load_all_residuals, common_neural_data
 from decoding_debugging import *
 import warnings
 warnings.filterwarnings('ignore')
@@ -72,4 +72,4 @@ for i in np.arange(200):
 ##########################
 run_decoder_for_session_residual(c_neural_data, area, alfio, regressed_variable, weights, alignment_time, etype = 'real', output_folder=output_folder, decoder = 'logistic')
 #for n, null_ses in enumerate(null_sesssions):
-    #run_decoder_for_session_residual(c_neural_data, area, alfio, regressed_variable, weights, alignment_time, etype = 'null', n=n, output_folder=output_folder)
+#    run_decoder_for_session_residual(c_neural_data, area, alfio, regressed_variable, weights, alignment_time, etype = 'null', n=n, output_folder=output_folder)

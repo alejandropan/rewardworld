@@ -48,7 +48,6 @@ neural_data = load_all_residuals(encoding_res_path)
 neural_data = neural_data.loc[neural_data['location']==area]
 
 # Trials used
-trials_included, neural_data = common_trials(neural_data)
 c_neural_data = common_neural_data(neural_data, trials_included)
 
 # Load variable to be decoded and aligment times
@@ -58,8 +57,8 @@ alfio.fQRreward_cue[0] = 0
 alfio.fQLreward_cue[0] = 0
 regressed_variable_rl = alfio.fQRreward_cue - alfio.fQLreward_cue
 regressed_variable_lr = alfio.fQLreward_cue - alfio.fQRreward_cue
-regressed_variable_rl = regressed_variable_rl[trials_included.astype(int)]
-regressed_variable_lr = regressed_variable_lr[trials_included.astype(int)]
+regressed_variable_rl = regressed_variable_rl
+regressed_variable_lr = regressed_variable_lr
 regressed_variable = [regressed_variable_lr, regressed_variable_rl]
 
 # Only trials included in analysis

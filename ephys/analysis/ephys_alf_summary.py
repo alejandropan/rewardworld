@@ -11,12 +11,11 @@ from brainbox.singlecell import calculate_peths
 from sklearn.decomposition import PCA
 from scipy.stats import zscore
 from functools import reduce
-from mpl_toolkits.mplot3d import Axes3D
 from sklearn.preprocessing import scale
 import copy
 import logistic_regression as lr
 from scipy.stats import ttest_rel as pttest
-from mpl_chord_diagram import chord_diagram
+
 from itertools import permutations 
 
 LIST_OF_SESSIONS_YFP = ['/Volumes/witten/Alex/Data/Subjects/dop_18/2021-04-15/008',

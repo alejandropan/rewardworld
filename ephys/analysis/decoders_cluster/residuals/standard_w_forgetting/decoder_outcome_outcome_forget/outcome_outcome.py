@@ -49,13 +49,11 @@ neural_data = load_all_residuals(encoding_res_path)
 neural_data = neural_data.loc[neural_data['location']==area]
 
 # Trials used
-trials_included, neural_data = common_trials(neural_data)
-c_neural_data = common_neural_data(neural_data, trials_included)
+c_neural_data = common_neural_data(neural_data)
 
 # Load variable to be decoded and aligment times
-regressed_variable = np.copy(alfio.outcome)[trials_included.astype(int)]
+regressed_variable = np.copy(alfio.outcome)
 
-# Only trials included in analysis
 #weights = get_session_sample_weights(alfio.to_df(), categories = ['choice','probabilityLeft', 'outcome'])
 weights = None
 

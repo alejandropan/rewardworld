@@ -95,22 +95,33 @@ def get_gains(SESSIONS, variable = 'value_laser', model=None):
     values = np.concatenate(all_var)
     return values    
 
-SESSIONS = ['/volumes/witten/Alex/Data/Subjects/dop_48/2022-06-20/001', 
-'/volumes/witten/Alex/Data/Subjects/dop_48/2022-06-19/002', 
-'/volumes/witten/Alex/Data/Subjects/dop_48/2022-06-28/001', 
-'/volumes/witten/Alex/Data/Subjects/dop_48/2022-06-27/002', 
-'/volumes/witten/Alex/Data/Subjects/dop_49/2022-06-14/001', 
-'/volumes/witten/Alex/Data/Subjects/dop_49/2022-06-15/001', 
-'/volumes/witten/Alex/Data/Subjects/dop_49/2022-06-16/001', 
-'/volumes/witten/Alex/Data/Subjects/dop_49/2022-06-17/001',
-'/volumes/witten/Alex/Data/Subjects/dop_49/2022-06-18/002',  
-'/volumes/witten/Alex/Data/Subjects/dop_49/2022-06-19/001', 
-'/volumes/witten/Alex/Data/Subjects/dop_49/2022-06-27/003', 
-'/volumes/witten/Alex/Data/Subjects/dop_49/2022-06-20/001', 
-'/volumes/witten/Alex/Data/Subjects/dop_47/2022-06-11/001',
-'/volumes/witten/Alex/Data/Subjects/dop_47/2022-06-10/002', 
-'/volumes/witten/Alex/Data/Subjects/dop_47/2022-06-09/003',
-'/volumes/witten/Alex/Data/Subjects/dop_47/2022-06-05/001']
+# End of functions
+SESSIONS = [
+ '/volumes/witten/Alex/Data/Subjects/dop_47/2022-06-05/001',
+ '/volumes/witten/Alex/Data/Subjects/dop_47/2022-06-06/001',
+ '/volumes/witten/Alex/Data/Subjects/dop_47/2022-06-07/001',
+ #'/volumes/witten/Alex/Data/Subjects/dop_47/2022-06-09/003',
+ '/volumes/witten/Alex/Data/Subjects/dop_47/2022-06-10/002',
+ '/volumes/witten/Alex/Data/Subjects/dop_47/2022-06-11/001',
+ '/volumes/witten/Alex/Data/Subjects/dop_48/2022-06-20/001',
+ '/volumes/witten/Alex/Data/Subjects/dop_48/2022-06-27/002',
+ '/volumes/witten/Alex/Data/Subjects/dop_48/2022-06-28/001',
+ '/volumes/witten/Alex/Data/Subjects/dop_49/2022-06-14/001',
+ '/volumes/witten/Alex/Data/Subjects/dop_49/2022-06-15/001',
+ '/volumes/witten/Alex/Data/Subjects/dop_49/2022-06-16/001',
+ '/volumes/witten/Alex/Data/Subjects/dop_49/2022-06-17/001',
+ '/volumes/witten/Alex/Data/Subjects/dop_49/2022-06-18/002',
+ '/volumes/witten/Alex/Data/Subjects/dop_49/2022-06-19/001',
+ '/volumes/witten/Alex/Data/Subjects/dop_49/2022-06-20/001',
+ '/volumes/witten/Alex/Data/Subjects/dop_49/2022-06-27/003',
+ '/volumes/witten/Alex/Data/Subjects/dop_50/2022-09-12/001',
+ '/volumes/witten/Alex/Data/Subjects/dop_50/2022-09-13/001',
+ '/volumes/witten/Alex/Data/Subjects/dop_50/2022-09-14/003',
+ '/volumes/witten/Alex/Data/Subjects/dop_53/2022-10-02/001',
+ '/volumes/witten/Alex/Data/Subjects/dop_53/2022-10-03/001',
+ '/volumes/witten/Alex/Data/Subjects/dop_53/2022-10-04/001',
+ '/volumes/witten/Alex/Data/Subjects/dop_53/2022-10-05/001',
+ '/volumes/witten/Alex/Data/Subjects/dop_53/2022-10-07/001']
 
 output_path = '/Users/alexpan/Documents/neurons'
 model = load_encoding_model() 
@@ -121,8 +132,6 @@ ba = AllenAtlas()
 
 #bin plotting array
 plotting_array, plotting_array_selection, sig, locations = get_map(SESSIONS, variable = 'value_laser', thresh = 0.01, model=model)
-
-
 fig,ax = plt.subplots(2)
 plt.sca(ax[0])
 sns.histplot(plotting_array[locations=='VPS'][:,1]*1e6)
@@ -132,27 +141,8 @@ plt.sca(ax[1])
 sns.histplot(plotting_array[sel,1][0]*1e6)
 plt.xlabel('AP coord VPS value neurons')
 
-his = pd.DataFrame()
-his['loc'] = locations
-his['coord'] = plotting_array[:,1]
-his['significant'] = sig
-hiss = his.loc[his['loc']=='VPS']
-
-total = np.arange(-200,1300,100)[np.digitize(plotting_array[locations=='VPS'][:,1]*1e6, np.arange(-200,1300,100))]
-sele = np.arange(-200,1300,100)[np.digitize(plotting_array[sel,1][0]*1e6, np.arange(-200,1300,100))]
-bins = np.histogram(sele, bins=np.arange(-200,1300,100))[0]/np.histogram(total,  bins=np.arange(-200,1300,100))[0]
-x = np.histogram(sele, bins=np.arange(-200,1300,100))[1]
-plt.plot(x,bins)
-
-
-binned_plotting_array = np.copy(plotting_array)
-bins= np.arange(0,-3500, -500)/1000000
-val = np.digitize(plotting_array[:,0],bins)
-val[np.where(val==len(bins))] = len(bins)-1
-binned_plotting_array[:,0]=bins[val]
-
 ### Current work, map where significant are colored by gain
-plotting_array, plotting_array_selection, sig = get_map(SESSIONS, variable = 'value_laser', thresh = 0.01, model=model)
+plotting_array, plotting_array_selection, sig, locations = get_map(SESSIONS, variable = 'value_laser', thresh = 0.01, model=model)
 o_gains = get_gains(SESSIONS, variable = 'outcome_laser_gain',  model=model)
 c_gains = get_gains(SESSIONS, variable = 'laser_contra_gain',  model=model)
 cu_gains = get_gains(SESSIONS, variable = 'laser_cue_gain',  model=model)
@@ -178,12 +168,13 @@ for i in  np.arange(len(bins)):
     sig_point_value = bin_points[sig_points]
     x_noise = np.random.normal(-noise_level,noise_level,len(points))
     z_noise = np.random.normal(-noise_level,noise_level,len(points))    
-    plt.scatter(points[:,0] + x_noise,points[:,2] + z_noise, s=1, c='grey',edgecolors=None)
+    plt.scatter(points[:,0] + x_noise,points[:,2] + z_noise, s=0.5, c='grey',edgecolors=None)
     plt.scatter(points[sig_points,0] + x_noise[sig_points], points[sig_points,2] + z_noise[sig_points], 
-                s=1, c=sig_point_value, cmap='seismic', edgecolors=None, vmin=-1,vmax=1)
+                s=0.5, c=sig_point_value, cmap='seismic', edgecolors=None, vmin=-1,vmax=1)
     ax[0,i].set_xlim(-5000,0)
     ax[0,i].set_axis_off()
     sns.despine()
+
 value=c_gains*sig
 for i in  np.arange(len(bins)):
     plt.sca(ax[1,i])
@@ -194,12 +185,13 @@ for i in  np.arange(len(bins)):
     sig_point_value = bin_points[sig_points]
     x_noise = np.random.normal(-noise_level,noise_level,len(points))
     z_noise = np.random.normal(-noise_level,noise_level,len(points))    
-    plt.scatter(points[:,0] + x_noise,points[:,2] + z_noise, s=1, c='grey',edgecolors=None)
+    plt.scatter(points[:,0] + x_noise,points[:,2] + z_noise, s=0.5, c='grey',edgecolors=None)
     plt.scatter(points[sig_points,0] + x_noise[sig_points], points[sig_points,2] + z_noise[sig_points], 
-                s=1, c=sig_point_value, cmap='seismic',edgecolors=None, vmin=-1,vmax=1)
+                s=0.5, c=sig_point_value, cmap='seismic',edgecolors=None, vmin=-1,vmax=1)
     ax[1,i].set_xlim(-5000,0)
     ax[1,i].set_axis_off()
     sns.despine()
+
 value=o_gains*sig
 for i in  np.arange(len(bins)):
     plt.sca(ax[2,i])
@@ -210,15 +202,53 @@ for i in  np.arange(len(bins)):
     sig_point_value = bin_points[sig_points]
     x_noise = np.random.normal(-noise_level,noise_level,len(points))
     z_noise = np.random.normal(-noise_level,noise_level,len(points))    
-    plt.scatter(points[:,0] + x_noise,points[:,2] + z_noise, s=1, c='grey',edgecolors=None)
+    plt.scatter(points[:,0] + x_noise,points[:,2] + z_noise, s=0.5, c='grey',edgecolors=None)
     plt.scatter(points[sig_points,0] + x_noise[sig_points], points[sig_points,2] + z_noise[sig_points], 
-                s=1, c=sig_point_value, cmap='seismic', edgecolors=None, vmin=-1,vmax=1)
+                s=0.5, c=sig_point_value, cmap='seismic', edgecolors=None, vmin=-1,vmax=1)
     ax[2,i].set_xlim(-5000,0)
     ax[2,i].set_axis_off()
     sns.despine()
 
+# Plot cue gains with further resolution
+
+plotting_array, plotting_array_selection, sig, locations = get_map(SESSIONS, variable = 'value_laser', thresh = 0.01, model=model)
+o_gains = get_gains(SESSIONS, variable = 'outcome_laser_gain',  model=model)
+c_gains = get_gains(SESSIONS, variable = 'laser_contra_gain',  model=model)
+cu_gains = get_gains(SESSIONS, variable = 'laser_cue_gain',  model=model)
+
+noise_level=100
+bins= np.array([-1750,-1500,-1250,-1000,-750,-500,-250, 0,250, 500,750, 1000,1250, 1500,1750, 2000, 2250, 2500])
+binned_plotting_array = np.copy(plotting_array*1e6)
+slices = bins-125
+val = np.digitize(binned_plotting_array[:,1],bins)
+val[val==len(bins)]=len(bins)-1
+binned_plotting_array[:,1]=bins[val]
+cmap_bound = matplotlib.cm.get_cmap("bone_r").copy()
+cmap_bound.set_under([1, 1, 1], 0)
+
+fig,ax = plt.subplots(3,6)
+value=cu_gains*sig
+for i in  np.arange(len(bins)):
+    plt.sca(ax[int(i/6),int(i%6)])
+    ba.plot_cslice(slices[i]/1e06, volume='boundary', mapping='Allen', cmap=cmap_bound)
+    points = binned_plotting_array[np.where(binned_plotting_array[:,1]==bins[i])[0],:]
+    bin_points =  value[np.where(binned_plotting_array[:,1]==bins[i])]
+    sig_points = np.where(bin_points!=0)[0]
+    sig_point_value = bin_points[sig_points]
+    x_noise = np.random.normal(-noise_level,noise_level,len(points))
+    z_noise = np.random.normal(-noise_level,noise_level,len(points))    
+    plt.scatter(points[:,0] + x_noise,points[:,2] + z_noise, s=0.5, c='grey',edgecolors=None)
+    plt.scatter(points[sig_points,0] + x_noise[sig_points], points[sig_points,2] + z_noise[sig_points], 
+                s=0.5, c=sig_point_value, cmap='seismic', edgecolors=None, vmin=-1,vmax=1)
+    ax[int(i/6),int(i%6)].set_xlim(-5000,0)
+    ax[int(i/6),int(i%6)].set_axis_off()
+    sns.despine()
+
+
+
+
 # deltaq version
-plotting_array, plotting_array_selection, sig = get_map(SESSIONS, variable = 'policy_laser', thresh = 0.01, model=model)
+plotting_array, plotting_array_selection, sig, locations = get_map(SESSIONS, variable = 'policy_laser', thresh = 0.01, model=model)
 o_gains = get_gains(SESSIONS, variable = 'doutcome_laser_gain',  model=model)
 c_gains = get_gains(SESSIONS, variable = 'dlaser_contra_gain',  model=model)
 cu_gains = get_gains(SESSIONS, variable = 'dlaser_cue_gain',  model=model)
@@ -244,9 +274,9 @@ for i in  np.arange(len(bins)):
     sig_point_value = bin_points[sig_points]
     x_noise = np.random.normal(-noise_level,noise_level,len(points))
     z_noise = np.random.normal(-noise_level,noise_level,len(points))    
-    plt.scatter(points[:,0] + x_noise,points[:,2] + z_noise, s=1, c='grey',edgecolors=None)
+    plt.scatter(points[:,0] + x_noise,points[:,2] + z_noise, s=0.5, c='grey',edgecolors=None)
     plt.scatter(points[sig_points,0] + x_noise[sig_points], points[sig_points,2] + z_noise[sig_points], 
-                s=1, c=sig_point_value, cmap='seismic', edgecolors=None, vmin=-1,vmax=1)
+                s=0.5, c=sig_point_value, cmap='seismic', edgecolors=None, vmin=-1,vmax=1)
     ax[0,i].set_xlim(-5000,0)
     ax[0,i].set_axis_off()
     sns.despine()
@@ -260,9 +290,9 @@ for i in  np.arange(len(bins)):
     sig_point_value = bin_points[sig_points]
     x_noise = np.random.normal(-noise_level,noise_level,len(points))
     z_noise = np.random.normal(-noise_level,noise_level,len(points))    
-    plt.scatter(points[:,0] + x_noise,points[:,2] + z_noise, s=1, c='grey',edgecolors=None)
+    plt.scatter(points[:,0] + x_noise,points[:,2] + z_noise, s=0.5, c='grey',edgecolors=None)
     plt.scatter(points[sig_points,0] + x_noise[sig_points], points[sig_points,2] + z_noise[sig_points], 
-                s=1, c=sig_point_value, cmap='seismic',edgecolors=None, vmin=-1,vmax=1)
+                s=0.5, c=sig_point_value, cmap='seismic',edgecolors=None, vmin=-1,vmax=1)
     ax[1,i].set_xlim(-5000,0)
     ax[1,i].set_axis_off()
     sns.despine()
@@ -276,9 +306,9 @@ for i in  np.arange(len(bins)):
     sig_point_value = bin_points[sig_points]
     x_noise = np.random.normal(-noise_level,noise_level,len(points))
     z_noise = np.random.normal(-noise_level,noise_level,len(points))    
-    plt.scatter(points[:,0] + x_noise,points[:,2] + z_noise, s=1, c='grey',edgecolors=None)
+    plt.scatter(points[:,0] + x_noise,points[:,2] + z_noise, s=0.5, c='grey',edgecolors=None)
     plt.scatter(points[sig_points,0] + x_noise[sig_points], points[sig_points,2] + z_noise[sig_points], 
-                s=1, c=sig_point_value, cmap='seismic', edgecolors=None, vmin=-1,vmax=1)
+                s=0.5, c=sig_point_value, cmap='seismic', edgecolors=None, vmin=-1,vmax=1)
     ax[2,i].set_xlim(-5000,0)
     ax[2,i].set_axis_off()
     sns.despine()
@@ -308,7 +338,7 @@ for i in  np.arange(len(bins)):
     sig_point_value = bin_points[sig_points]
     x_noise = np.random.normal(-noise_level,noise_level,len(points))
     z_noise = np.random.normal(-noise_level,noise_level,len(points))    
-    plt.scatter(points[:,0] + x_noise,points[:,2] + z_noise, s=1, c='grey',edgecolors=None)
+    plt.scatter(points[:,0] + x_noise,points[:,2] + z_noise, s=0.5, c='grey',edgecolors=None)
     plt.scatter(points[sig_points,0] + x_noise[sig_points], points[sig_points,2] + z_noise[sig_points], 
                 s=0.01, c='black', edgecolors=None)
     ax[i].set_xlim(-5000,0)
@@ -386,9 +416,9 @@ for i,binn in enumerate(bins):
     z_noise = np.random.normal(-noise_level,noise_level,len(points))
     fig, ax = plt.subplots()    
     ba.plot_cslice(slices[i]/1e06, volume='boundary', mapping='Allen', cmap=cmap_bound)
-    plt.scatter(points[:,0] + x_noise,points[:,2] + z_noise, s=1, c='grey',edgecolors=None)
+    plt.scatter(points[:,0] + x_noise,points[:,2] + z_noise, s=0.5, c='grey',edgecolors=None)
     plt.scatter(points[sig_points,0] + x_noise[sig_points], points[sig_points,2] + z_noise[sig_points], 
-                s=1, c='black', edgecolors=None)
+                s=0.5, c='black', edgecolors=None)
     ax.set_xlim(-5000,0)
     ax.set_axis_off()
     sns.despine()

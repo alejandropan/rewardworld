@@ -40,7 +40,7 @@ def save_q_values(ROOT_FOLDER,psy,data,prefix,trial_start=0,trial_end=-150):
 
 
 ROOT_FOLDER = '/Volumes/witten/Alex/Data/Subjects'
-psy=mc.load_data(trial_start=0,trial_end=-150)
+psy=mc.load_data(trial_start=0,trial_end=None)
 standata = mc.make_stan_data(psy)
 reinforce_params = pd.read_csv('/Volumes/witten/Alex/Data/ephys_bandit/stan_fits/REINFORCE_laserdecaywin_mixedstay/output/summary.csv')
 reinforce_data = pd.DataFrame()

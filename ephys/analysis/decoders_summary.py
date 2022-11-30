@@ -86,6 +86,66 @@ x_types = ['raw',
 'residuals',
 'residuals']
 
+def load_decoders_new(decoder_path, var = None, epoch = None, x_type = None, null=False):
+    '''
+    This load decoders that were run with decoders that each combination of neurons is free to 
+    have a different number of trials, depending on when then neurons were active
+    var = the variable being decoded
+    epoch = the aligment time
+    x_type = residuals or raw spikes
+    '''
+    # First list all the "real"sessions
+    f=[]
+    if null == True:
+        f= glob.glob(decoder_path+'/*null*p_summary.npy')
+    else:
+        f= glob.glob(decoder_path+'/*real*p_summary.npy')
+    # generate big dataframe
+    os.chdir(decoder_path)
+    summary = pd.DataFrame()
+    for f_path in tqdm(f):
+        p_summary = np.load(f_path)
+        mse_summary = np.load(f_path[:-13]+'mse_summary.npy')
+        # Find optimal lambda 
+        # Get summary with optimal lambda
+        acc = pd.DataFrame()
+        for c in np.arange(np.shape(p_summary)[3]):
+            predict = []
+            predict_mse = []
+            for b in np.arange(np.shape(p_summary)[2]):
+                predict_f = []
+                predict_f_mse = []
+                for fold in np.arange(np.shape(p_summary)[0]):
+                    for combo in np.arange(np.shape(p_summary)[4]):
+                        predict_f.append(np.nanmean(p_summary[fold,:,b,c,combo])) # this nan mean is the same as selecting the lambda asigned, since only one value will be non nan
+                        predict_f_mse.append(np.nanmean(mse_summary[fold,:,b,c,:]))
+                predict.append(np.nanmean(predict_f))
+                predict_mse.append(np.nanmean(predict_f_mse))           
+            acc_combo = pd.DataFrame()
+            acc_combo['r'] = predict
+            acc_combo['mse'] = predict_mse
+            acc_combo['time_bin'] = np.arange(np.shape(p_summary)[2])
+            acc_combo['n_neurons'] = n_neuron_combos_tried[c]
+            acc = pd.concat([acc,acc_combo])
+        if null==True:
+            acc['region'] = f_path[len(decoder_path)+9:-34]
+        else:
+            acc['region'] = f_path[len(decoder_path)+6:-34]
+        acc['mouse'] = f_path[-33:-27]
+        acc['hemisphere'] = f_path[-15:-14]
+        acc['date'] = f_path[-26:-16]
+        acc['type'] = 'real'
+        acc['id'] =   acc['region'] + acc['type'] + \
+            acc['date'] +acc['mouse'] + acc['hemisphere'] + acc['type']
+        summary = pd.concat([summary,acc])
+    summary  = summary.reset_index()
+    summary['variable'] = var
+    summary['epoch'] = epoch
+    summary['x_type']  = x_type
+    return summary
+
+
+
 def load_decoders(decoder_path, var = None, epoch = None, x_type = None, null=False):
     '''
     var = the variable being decoded
@@ -354,3 +414,33 @@ if __name__=='__main__':
             temp_lambdas['n_neurons'] = n_neuron_combos_tried[c]
             lambdas = pd.concat([lambdas,temp_lambdas])
     sns.hisplot(lambdas)
+
+    # Run Q_chosen with new decoders (combinations have different number of trials)
+    def plot_pilot_analysis(decoders_restricted, selected_regions):
+        decoders_restricted['ses_id'] = decoders_restricted['mouse']+decoders_restricted['date']+decoders_restricted['hemisphere'].astype(str)
+        fig,ax  = plt.subplots(6,2, sharey=True, sharex=True)
+        for i, reg in enumerate(selected_regions):
+            plt.sca(ax[i%6,int(i/6)])
+            region_data = decoders_restricted.loc[decoders_restricted['region']==reg]
+            sns.lineplot(data=region_data, x='time_bin', y='r', errorbar='se', palette='Reds')
+            plt.axvline(x = 4, ymin = 0, linestyle='--', color='k', alpha=0.5)
+            plt.xticks(np.arange((post_time-pre_time)/bin_size)[::5], np.round(np.arange(pre_time,post_time,bin_size)[1::5],2), rotation=90)
+            plt.xlabel('Time from cue')
+            plt.ylabel('Pearson - r')
+            plt.title(reg)
+            if i!=len(selected_regions):
+                plt.legend().remove()
+            sns.despine()
+        plt.tight_layout()
+
+        sns.lineplot(data=decoders_restricted, x='time_bin', y='r', errorbar='se', hue='region')
+        plt.axvline(x = 4, ymin = 0, linestyle='--', color='k', alpha=0.5)
+        plt.xticks(np.arange((post_time-pre_time)/bin_size)[::5], np.round(np.arange(pre_time,post_time,bin_size)[1::5],2), rotation=90)  
+
+
+
+    decoder_path = '/Volumes/witten/Alex/decoders_residuals_results/decoder_output_qchosen_cue_forget'
+    d_data = load_decoders_new(decoder_path, var = 'qchosen', epoch = 'cue', x_type = 'residuals', null=False)
+    selected_regions = np.array(['OFC', 'NAcc', 'PFC', 'DMS', 'VPS', 'VP','Olfactory', 'DLS', 'GPe', 'MO'])
+    decoders_restricted =  d_data.loc[np.isin(d_data['region'], selected_regions)]
+    decoders_restricted = decoders_restricted.loc[(decoders_restricted['n_neurons']==20)]

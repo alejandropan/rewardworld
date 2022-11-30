@@ -131,9 +131,6 @@ LIST_OF_SESSIONS_ALEX = \
 '/Volumes/witten/Alex/Data/Subjects/dop_16/2021-04-30/001',
 '/Volumes/witten/Alex/Data/Subjects/dop_16/2021-04-26/001']
 
-
-
-
 ALL_NEW_SESSIONS = [
 '/Volumes/witten/Alex/Data/Subjects/dop_48/2022-06-20/001', 
 '/Volumes/witten/Alex/Data/Subjects/dop_48/2022-06-19/002', 
@@ -412,7 +409,7 @@ class alf:
         self.right_reward  = np.load(path+'/alf/_ibl_trials.right_reward.npy')
         self.probabilityLeft  = np.load(path+'/alf/_ibl_trials.probabilityLeft.npy')
         self.no_reward_block = False
-        if Path(path+'/alf/standard_QRlaser.npy').is_file()==True:
+        if Path(path+'/alf/forgetting_QRlaser.npy').is_file()==True:
             self.opto_block = np.load(path+'/alf/_ibl_trials.opto_block.npy')
         else:
             self.opto_block = np.zeros(len(self.choice))
@@ -488,10 +485,10 @@ class alf:
         example = self.to_df()
         example['choice_r'] = (example['choice']==1)*1
         example['choice_l'] = (example['choice']==-1)*1
-        if self.no_reward_block==False:
-            example['value_laser'] = example['QRlaser']-example['QLlaser']
-        example['value_reward'] = example['QRreward']-example['QLreward']
-        example['value_stay'] = example['QRstay']-example['QLstay']
+        if self.no_reward_block==False: 
+            example['value_laser'] = example['fQRlaser']-example['fQLlaser'] 
+        example['value_reward'] = example['fQRreward']-example['fQLreward']
+        example['value_stay'] = example['fQRstay']-example['fQLstay']
         example['probabilityRight']=0.1
         example.loc[example['probabilityLeft']==0.1, 'probabilityRight'] = 0.7
         example['reward_r'] = example['outcome']*example['choice_r']*(1*(example['opto_block']!=1))
@@ -505,7 +502,7 @@ class alf:
         spec.update(wspace=0.025, hspace=0.05)
         ax1 = fig.add_subplot(spec[1])
         ax1.plot(example['choice_r'].rolling(10, center=False).mean(),color='k')
-        ax1.plot(example['choice_prediction'].rolling(10,center=False).mean(),color='k', linestyle='dashed', linewidth=2)
+        ax1.plot(example['fchoice_prediction'].rolling(10,center=False).mean(),color='k', linestyle='dashed', linewidth=2)
         ax1.spines['top'].set_visible(False)
         ax2 = ax1.twinx()  # instantiate a second axes that shares the same x-axis
         if self.no_reward_block==False:
@@ -532,6 +529,7 @@ class alf:
         plt.axis('off')
         plt.ylabel('Reward probability')
         return fig
+
     def plot_session_REINFORCE(self):
         example = self.to_df()
         example['choice_r'] = (example['choice']==1)*1

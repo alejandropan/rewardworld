@@ -74,10 +74,6 @@ if __name__=='__main__':
         path = '/Volumes/witten/Alex/Data/ephys_bandit/laser_stan_fits/REINFORCE_mixedperseveration'
         model = mc.reinforce_model_reduced_stay
         WAIC_reinforcelaseronly_w_stay = lppd_from_chain(path, model, standata, save=True, save_name='reinforcelaseronly_w_stay')
-        # 4
-        path = '/Volumes/witten/Alex/Data/ephys_bandit/laser_stan_fits/standard_uchida'
-        model = mc.reduced_uchida_model
-        WAIC_uchidalaseronly = lppd_from_chain(path, model, standata, save=True, save_name='uchidalaseronly')
         # 5
         path = '/Volumes/witten/Alex/Data/ephys_bandit/laser_stan_fits/standard_w_forgetting'
         model = mc.q_learning_model_reduced_stay_forgetting
@@ -86,7 +82,6 @@ if __name__=='__main__':
         qlaseronly=np.mean(np.log(np.load('qlaseronly.npy')))
         reinforcelaseronly=np.mean(np.log(np.load('reinforcelaseronly.npy')))
         reinforcelaseronly_w_stay=np.mean(np.log(np.load('reinforcelaseronly_w_stay.npy')))
-        uchidalaseronly=np.mean(np.log(np.load('uchidalaseronly.npy')))
         qlaserforgetting=np.mean(np.log(np.load('qlaserforgetting.npy')))
 
     # no_loss models were worse so not including them in the model
@@ -94,19 +89,16 @@ if __name__=='__main__':
     waics['WAIC'] = [WAIC_qlaseronly,
                     WAIC_qlaserforgetting,
                     WAIC_reinforcelaseronly,
-                    WAIC_reinforcelaseronly_w_stay,
-                    WAIC_uchidalaseronly]
+                    WAIC_reinforcelaseronly_w_stay]
     waics['LL'] = [qlaseronly,
                     qlaserforgetting,
                    reinforcelaseronly,
-                   reinforcelaseronly_w_stay,
-                   uchidalaseronly]
+                   reinforcelaseronly_w_stay]
 
     waics['name'] = ['Q-Learning',
                     'Q-Learning with forgetting',
                      'REINFORCE',
-                     'REINFORCE-w-stay',
-                     'Q-Two-Accumulators'] 
+                     'REINFORCE-w-stay'] 
 
     fig, ax = plt.subplots(1,2)
     plt.sca(ax[0])

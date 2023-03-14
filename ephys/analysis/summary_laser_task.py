@@ -1,16 +1,11 @@
-from model_comparison_accu import load_data_reduced, make_stan_data_reduced, load_sim_data_reduced
-from model_comparison_accu import q_learning_model_reduced_stay,q_learning_model_reduced_stay_forgetting, num_to_name
-from model_comparison_accu import reinforce_model_reduced, simulate_reinforce_reduced
-from model_comparison_accu import reinforce_model_reduced_stay, simulate_reinforce_reduced_stay
-from model_comparison_accu import reduced_uchida_model, simulate_reduced_uchida_model
-from model_comparison_accu import double_update_model, simulate_double_update_model
-from model_comparison_accu import plot_params_reduced, stan_data_to_df_reduced
+from model_comparison_accu import *
 import pandas as pd
 import numpy as np
 from pathlib import Path
 import matplotlib.pyplot as plt
 from investigating_laser_expdecaymodel import transform_data_laserdecay, trial_within_block, add_transition_info, laserdecayanalysis, plot_laserdecay_summary
 import seaborn as sns
+from ephys_alf_summary import alf, LASER_ONLY
 
 def assign_section (df):
     df['section'] = np.nan
@@ -129,7 +124,7 @@ def add_transition_info(ses_d, trials_forward=20):
 
     return ses_df
 
-def transition_plot(df, trials_forward=30):
+def transition_plot(df, trials_forward=25):
             ses_df = df.copy()
             ses_df['id'] =  ses_df['mouse']*100 + ses_df['ses']
             negative_trials = ses_df.loc[ses_df['trial_within_block']<0].copy()
@@ -141,7 +136,7 @@ def transition_plot(df, trials_forward=30):
                 (ses_df['transition_type']=='0.1 to 0.7')].reset_index()
             ses_df_ses = ses_df.groupby(['id','transition_type','trial_within_block']).mean()['choice_1'].reset_index()
             sns.lineplot(data = ses_df_ses, x='trial_within_block', y='choice_1',
-                ci=68, err_style='bars', style='transition_type')
+                errorbar='se', err_style='bars', style='transition_type', color='k')
             plt.ylim(0,1)
             plt.xlim(-5,trials_forward)
             plt.vlines(0,0,1,linestyles='dashed', color='k')
@@ -177,6 +172,7 @@ data=load_data_reduced(ROOT_FOLDER = '/Volumes/witten/Alex/Data/ephys_bandit/dat
 standata = make_stan_data_reduced(data)
 standata_recovery = load_sim_data_reduced(ROOT_FOLDER = '/Volumes/witten/Alex/Data/ephys_bandit/data_laser_only', trial_start=0, trial_end=None)
 ses_id = num_to_name(data)
+standata_recovery['NT'] = 10000
 
 # Q-learning
 model_standard = pd.read_csv('/Volumes/witten/Alex/Data/ephys_bandit/laser_stan_fits/standard_reduced_stay/output/summary.csv')
@@ -189,6 +185,8 @@ model_forgetting = pd.read_csv('/Volumes/witten/Alex/Data/ephys_bandit/laser_sta
 qlearning_w_forgetting = pd.DataFrame()
 qlearning_w_forgetting['Accuracy'] = q_learning_model_reduced_stay_forgetting(standata,saved_params=model_forgetting)['acc'].unique()
 qlearning_w_forgetting['Model'] = 'F-Q'
+_, _, sim_forgetting = simulate_q_learning_w_forgetting(standata_recovery,saved_params=model_forgetting)
+
 # REINFORCE
 model_reinforce = pd.read_csv('/Volumes/witten/Alex/Data/ephys_bandit/laser_stan_fits/REINFORCE_reduced/output/summary.csv')
 accu_reinforce = pd.DataFrame()
@@ -201,23 +199,11 @@ accu_reinforce_stay = pd.DataFrame()
 accu_reinforce_stay['Accuracy'] = reinforce_model_reduced_stay(standata,saved_params=model_reinforce_stay).groupby(['id']).mean()['acc']
 accu_reinforce_stay['Model'] = 'REINFORCE w stay'
 _, _, sim_reinforce_stay = simulate_reinforce_reduced_stay(standata_recovery,saved_params=model_reinforce_stay)
-# Uchida
-model_uchida = pd.read_csv('/Volumes/witten/Alex/Data/ephys_bandit/laser_stan_fits/standard_uchida/output/summary.csv')
-accu_uchida = pd.DataFrame()
-accu_uchida['Accuracy'] = reduced_uchida_model(standata,saved_params=model_uchida).groupby(['id']).mean()['acc']
-accu_uchida['Model'] = 'Two-Accumulators'
-_, _, sim_uchida = simulate_reduced_uchida_model(standata_recovery,saved_params=model_uchida)
-# Double-update
-double_model = pd.read_csv('/Volumes/witten/Alex/Data/ephys_bandit/laser_stan_fits/double_update/output/summary.csv')
-accu_double = pd.DataFrame()
-accu_double['Accuracy'] = double_update_model(standata,saved_params=double_model).groupby(['id']).mean()['acc']
-accu_double['Model'] = 'Double-update'
-_, _, sim_double = simulate_double_update_model(standata_recovery,saved_params=double_model)
 
 
 # Flag bad session
-bad_sessions_n = np.where(qlearning_w_forgetting['Accuracy']<0.7)
-bad_sessions = np.array(ses_id)[bad_sessions]
+bad_sessions_n = np.where(qlearning_w_forgetting['Accuracy']<0.65)
+bad_sessions = np.array(ses_id)[bad_sessions_n]
 
 # Start summary figures
 # 0. Raw data performance (justification for not decay)
@@ -226,7 +212,7 @@ realdata = realdata.rename(columns={'choices':'choice'})
 realdata = trial_within_block(realdata)
 realdata = add_transition_info(realdata, trials_forward=30)
 
-simulation = sim_reinforce.copy()
+simulation = sim_forgetting.copy()
 simulation = simulation.rename(columns={'choices':'choice'})
 simulation = trial_within_block(simulation)
 simulation = add_transition_info(simulation, trials_forward=30)
@@ -248,21 +234,43 @@ plt.sca(ax[1,0])
 plot_params_reduced(model_reinforce_stay, standata)
 plt.title('REINFORCE w stay')
 plt.sca(ax[1,1])
-plot_params_reduced(model_uchida, standata)
-plt.title('Two accumulators')
-plt.sca(ax[1,1])
+plot_params_reduced(model_forgetting, standata)
+plt.title('F-Q')
 plt.tight_layout(h_pad=-4.5, w_pad=-2)
 
+# 2. Plot session example and model
 
-plot_params_reduced(double_model, standata)
-plt.title('Q-learning with state inference')
+ses = '/Volumes/witten/Alex/Data/Subjects/dop_49/2022-06-14/001'
+qdata = alf(ses)
+qdata.plot_session()
 
-# 2. Accuracy
-accu = pd.concat([accu_standard, accu_reinforce, accu_reinforce_stay, accu_uchida]).reset_index()
-sns.lineplot(data=accu, x = 'Model', hue='id', y='Accuracy', palette=sns.color_palette(['black'], accu.id.unique().shape[0]))
-sns.barplot(data=accu, x = 'Model', y='Accuracy', ci=68, palette='winter')
-plt.ylim(0.2,1)
-plt.legend().remove()
-sns.despine()
 
-# 3. Log-likelihood
+# Plot recovery
+model_forgetting = pd.read_csv('/Volumes/witten/Alex/Data/ephys_bandit/laser_stan_fits/standard_w_forgetting/output/summary.csv')
+f_model_forgetting_recovery = pd.read_csv('/Volumes/witten/Alex/Data/ephys_bandit/laser_stan_fits/recovery_models/standard_w_forgetting_recovery/output/summary.csv')
+f_model_forgetting_recovery = f_model_forgetting_recovery.rename(columns={'Unnamed: 0': 'name'})
+model_o = plot_params_reduced(model_forgetting, standata)
+model_o['mean_type'] = 'orginal'
+model_r = plot_params_reduced(f_model_forgetting_recovery, standata)
+model_r['mean_type'] = 'recovery'
+model_comp = pd.concat([model_o,model_r])
+
+# Load the example exercise dataset
+# Draw a pointplot to show pulse as a function of three categorical factors
+g = sns.catplot(
+    data=model_comp, x='mean_type', y='Mean', hue='name', col='parameter',
+    capsize=.2, palette='YlGnBu_d', errorbar="se",
+    kind='point', height=6, aspect=.75)
+
+g.despine(left=True)
+
+####
+qlearning_values =  load_qdata_from_list(LASER_ONLY, prefix='forgetting_')
+reinforce_values =  load_REINFORCE_from_list(LASER_ONLY, prefix='REINFORCE_')
+model_labels = ['QLearning', 'REINFORCE']
+all_values_corr_laser = np.corrcoef([qlearning_values['DQreward'].dropna().to_numpy(),reinforce_values['DQreward'].dropna().to_numpy()])
+
+plot_corr_matrix(all_values_corr_laser, model_labels,vmin=0.5,vmax=1)
+plt.title('DeltaLaser')
+
+correlation_matrix_variables(standata,model_forgetting)

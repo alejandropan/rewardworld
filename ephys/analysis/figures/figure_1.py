@@ -17,7 +17,6 @@ all_values_corr_water = np.corrcoef([qlearning_values['DQwater'].dropna().to_num
 all_values_corr_laser = np.corrcoef([qlearning_values['DQlaser'].dropna().to_numpy(),reinforce_values['DQlaser'].dropna().to_numpy()])
 all_values_corr_delta = np.corrcoef([qlearning_values['choice_prediction'].dropna().to_numpy(),reinforce_values['choice_prediction'].dropna().to_numpy()])
 
-
 fig, ax = plt.subplots(1,4, sharey=True)
 plt.sca(ax[0])
 plot_corr_matrix(all_values_corr_delta, model_labels,vmin=0.5,vmax=1)
@@ -32,9 +31,6 @@ plt.sca(ax[3])
 plot_corr_matrix(all_values_corr_stay, model_labels,vmin=0.5,vmax=1)
 plt.title('DeltaStay')
 plt.tight_layout()
-
-
-
 
 # Winners plots
 standata = make_stan_data(load_data())

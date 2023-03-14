@@ -19,8 +19,6 @@ def load_cmd_stan_output(chains):
         output = pd.concat([output,chain])
     return output
 
-
-
 def lppd_from_chain(path, model, standata, save=False, save_name=None):
     p_chain1 =  list(glob.glob(path+'/output/*1.csv'))[-1] #Latest 1 chain
     p_chain2 =  list(glob.glob(path+'/output/*2.csv'))[-1] #Latest 1 chain
@@ -51,18 +49,34 @@ def lppd_from_chain(path, model, standata, save=False, save_name=None):
         np.save(save_name+'.npy', posterior)
     return WAIC
 
+def WAIC_from_posterior(posterior):
+    LPPD = np.sum(np.log(posterior.mean(axis=0)))
+    P = np.sum(np.var(np.log(posterior), axis=0))
+    WAIC = -2*(LPPD-P)   
+    return WAIC
 
 if __name__=='__main__':
 
     try:
         qlaseronly=np.mean(np.log(np.load('qlaseronly.npy')))
-        qlaserforgetting=np.mean(np.log(np.load('qlaserforgetting.npy')))
         reinforcelaseronly=np.mean(np.log(np.load('reinforcelaseronly.npy')))
         reinforcelaseronly_w_stay=np.mean(np.log(np.load('reinforcelaseronly_w_stay.npy')))
-        uchidalaseronly=np.mean(np.log(np.load('uchidalaseronly.npy')))
+        qlaserforgetting=np.mean(np.log(np.load('qlaserforgetting.npy')))
+        qlaserforgettingnostay = np.mean(np.log(np.load('qlaserforgettingnostay.npy')))
+        qsuperreduced = np.mean(np.log(np.load('qsuperreduced.npy')))
+
+
+        WAIC_qlaseronly = WAIC_from_posterior(np.load('qlaseronly.npy'))
+        WAIC_reinforcelaseronly =  WAIC_from_posterior(np.load('reinforcelaseronly.npy'))
+        WAIC_reinforcelaseronly_w_stay = WAIC_from_posterior(np.load('reinforcelaseronly_w_stay.npy'))
+        WAIC_qlaserforgetting =  WAIC_from_posterior(np.load('qlaserforgetting.npy'))
+        WAIC_standard_w_forgetting_nostay =  WAIC_from_posterior(np.load('qlaserforgettingnostay.npy'))
+        WAIC_qlaseronly_nostay =  WAIC_from_posterior(np.load('qsuperreduced.npy'))
+
+
     except:
-        # 1
         standata = mc.make_stan_data_reduced(mc.load_data_reduced(ROOT_FOLDER = '/Volumes/witten/Alex/Data/ephys_bandit/data_laser_only', trial_start=0, trial_end=None))
+        # 1
         path = '/Volumes/witten/Alex/Data/ephys_bandit/laser_stan_fits/standard_reduced_stay'
         model = mc.q_learning_model_reduced_stay
         WAIC_qlaseronly = lppd_from_chain(path, model, standata, save=True, save_name='qlaseronly')
@@ -74,20 +88,38 @@ if __name__=='__main__':
         path = '/Volumes/witten/Alex/Data/ephys_bandit/laser_stan_fits/REINFORCE_mixedperseveration'
         model = mc.reinforce_model_reduced_stay
         WAIC_reinforcelaseronly_w_stay = lppd_from_chain(path, model, standata, save=True, save_name='reinforcelaseronly_w_stay')
-        # 4
-        path = '/Volumes/witten/Alex/Data/ephys_bandit/laser_stan_fits/standard_uchida'
-        model = mc.reduced_uchida_model
-        WAIC_uchidalaseronly = lppd_from_chain(path, model, standata, save=True, save_name='uchidalaseronly')
         # 5
         path = '/Volumes/witten/Alex/Data/ephys_bandit/laser_stan_fits/standard_w_forgetting'
         model = mc.q_learning_model_reduced_stay_forgetting
         WAIC_qlaserforgetting = lppd_from_chain(path, model, standata, save=True, save_name='qlaserforgetting')
 
+        # 6
+        path = '/Volumes/witten/Alex/Data/ephys_bandit/laser_stan_fits/standard_w_forgetting_nostay'
+        model = mc.q_learning_model_reduced_forgetting
+        WAIC_standard_w_forgetting_nostay = lppd_from_chain(path, model, standata, save=True, save_name='qlaserforgettingnostay')
+
+        # 7
+        path = '/Volumes/witten/Alex/Data/ephys_bandit/laser_stan_fits/standard_nostay'
+        model = mc.q_learning_model_reduced_nostay
+        WAIC_qlaseronly_nostay = lppd_from_chain(path, model, standata, save=True, save_name='qsuperreduced')
+
+
         qlaseronly=np.mean(np.log(np.load('qlaseronly.npy')))
         reinforcelaseronly=np.mean(np.log(np.load('reinforcelaseronly.npy')))
         reinforcelaseronly_w_stay=np.mean(np.log(np.load('reinforcelaseronly_w_stay.npy')))
-        uchidalaseronly=np.mean(np.log(np.load('uchidalaseronly.npy')))
         qlaserforgetting=np.mean(np.log(np.load('qlaserforgetting.npy')))
+        qlaserforgettingnostay = np.mean(np.log(np.load('qlaserforgettingnostay.npy')))
+        qsuperreduced = np.mean(np.log(np.load('qsuperreduced.npy')))
+
+
+    # Calculate accuracy
+
+    acc_qlaseronly=mc.q_learning_model_reduced_stay(standata,saved_params=pd.read_csv('/Volumes/witten/Alex/Data/ephys_bandit/laser_stan_fits/standard_reduced_stay/output/summary.csv')).groupby(['id']).mean()['acc'].mean()
+    acc_reinforcelaseronly=mc.reinforce_model_reduced(standata,saved_params=pd.read_csv('/Volumes/witten/Alex/Data/ephys_bandit/laser_stan_fits/REINFORCE_reduced/output/summary.csv')).groupby(['id']).mean()['acc'].mean()
+    acc_reinforcelaseronly_w_stay=mc.reinforce_model_reduced_stay(standata,saved_params=pd.read_csv('/Volumes/witten/Alex/Data/ephys_bandit/laser_stan_fits/REINFORCE_mixedperseveration/output/summary.csv')).groupby(['id']).mean()['acc'].mean()
+    acc_qlaserforgetting=mc.q_learning_model_reduced_stay_forgetting(standata,saved_params=pd.read_csv('/Volumes/witten/Alex/Data/ephys_bandit/laser_stan_fits/standard_w_forgetting/output/summary.csv')).groupby(['id']).mean()['acc'].mean()
+    acc_qlaserforgettingnostay=mc.q_learning_model_reduced_forgetting(standata,saved_params=pd.read_csv('/Volumes/witten/Alex/Data/ephys_bandit/laser_stan_fits/standard_w_forgetting_nostay/output/summary.csv')).groupby(['id']).mean()['acc'].mean()
+    acc_qsuperreduced=mc.q_learning_model_reduced_nostay(standata,saved_params=pd.read_csv('/Volumes/witten/Alex/Data/ephys_bandit/laser_stan_fits/standard_nostay/output/summary.csv')).groupby(['id']).mean()['acc'].mean()
 
     # no_loss models were worse so not including them in the model
     waics=pd.DataFrame()
@@ -95,20 +127,31 @@ if __name__=='__main__':
                     WAIC_qlaserforgetting,
                     WAIC_reinforcelaseronly,
                     WAIC_reinforcelaseronly_w_stay,
-                    WAIC_uchidalaseronly]
+                    WAIC_standard_w_forgetting_nostay,
+                    WAIC_qlaseronly_nostay]
     waics['LL'] = [qlaseronly,
-                    qlaserforgetting,
+                   qlaserforgetting,
                    reinforcelaseronly,
                    reinforcelaseronly_w_stay,
-                   uchidalaseronly]
+                   qlaserforgettingnostay,
+                   qsuperreduced]
 
-    waics['name'] = ['Q-Learning',
-                    'Q-Learning with forgetting',
+    waics['Accuracy'] = [acc_qlaseronly,
+                   acc_qlaserforgetting,
+                   acc_reinforcelaseronly,
+                   acc_reinforcelaseronly_w_stay,
+                   acc_qlaserforgettingnostay,
+                   acc_qsuperreduced]
+
+    waics['name'] = ['Q-Learning-w-stay',
+                    'Q-Learning-w-forgetting-&-stay',
                      'REINFORCE',
                      'REINFORCE-w-stay',
-                     'Q-Two-Accumulators'] 
+                     'Q-Learning-w-forgetting',
+                     'Q-Learning'
+                     ] 
 
-    fig, ax = plt.subplots(1,2)
+    fig, ax = plt.subplots(1,3)
     plt.sca(ax[0])
     sns.pointplot(data=waics.sort_values(by=['WAIC']), x='name',y='WAIC', color='k')
     plt.xticks(rotation=90)
@@ -116,6 +159,12 @@ if __name__=='__main__':
     sns.despine()
     plt.sca(ax[1])
     sns.pointplot(data=waics.sort_values(by=['LL'],ascending=[False]), x='name',y='LL', color='k')
+    plt.xticks(rotation=90)
+    plt.tight_layout()
+    sns.despine()
+    plt.tight_layout()
+    plt.sca(ax[2])
+    sns.pointplot(data=waics.sort_values(by=['Accuracy'],ascending=[False]), x='name',y='Accuracy', color='k')
     plt.xticks(rotation=90)
     plt.tight_layout()
     sns.despine()

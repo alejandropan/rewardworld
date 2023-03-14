@@ -74,7 +74,7 @@ psy=mc.load_data(ROOT_FOLDER = '/Volumes/witten/Alex/Data/ephys_bandit/data_wate
 standata = mc.make_stan_data(psy)
 qlearning_params = pd.read_csv('/Volumes/witten/Alex/Data/ephys_bandit/dual_task_fits/standard_w_forgetting/output/summary.csv')
 qlearning_data = pd.DataFrame()
-qlearning_data = mc.q_learning_model(standata,saved_params=qlearning_params)
+qlearning_data = mc.q_learning_model_w_forgetting(standata,saved_params=qlearning_params)
 assert len(psy) == len(qlearning_data)
 prefix='forgetting'
 save_q_values(ROOT_FOLDER,psy,qlearning_data,prefix,trial_start=0,trial_end=None)

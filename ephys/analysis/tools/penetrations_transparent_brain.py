@@ -11,8 +11,11 @@ from atlaselectrophysiology import rendering
 import ibllib.atlas as atlas
 
 one = ONE(base_url='https://alyx.internationalbrainlab.org')
-subjects = ['dop_24','dop_14', 'dop_13', 'dop_16', 'dop_21', 'dop_22', 'dop_36']
+subjects = ['dop_47', 'dop_48', 'dop_49', 'dop_50', 'dop_53']
 
+
+
+subjects = ['dop_51', 'dop_52']
 fig = rendering.figure()
 
 for subject in subjects:
@@ -20,7 +23,7 @@ for subject in subjects:
     channels_rest = one.alyx.rest('channels', 'list', subject=subject)
     channels = Bunch({
             'atlas_id': np.array([ch['brain_region'] for ch in channels_rest]),
-            'xyz': np.c_[np.array([ch['x'] for ch in channels_rest]),
+            'xyz': np.c_[np.array([abs(ch['x']) for ch in channels_rest]),
                          np.array([ch['y'] for ch in channels_rest]),
                          np.array([ch['z'] for ch in channels_rest])] / 1e6,
             'axial_um': np.array([ch['axial'] for ch in channels_rest]),
@@ -45,13 +48,11 @@ for subject in subjects:
         mlab.plot3d(mlapdv[:, 1], mlapdv[:, 2], mlapdv[:, 0],
                     line_width=3, color=color, tube_radius=20)
     # Plot fibers and dopamine neurons [ytop,ybottom],[ztop,zbottom],[xtop,xbottom]
-    mlab.plot3d(np.array([8500., 8500.]),
-                    np.array([0, 5032.]),
-                    np.array([4639., 5239.]),
-                line_width=3, color=(0., 0.72, 1.), tube_radius=300)
-    mlab.plot3d(np.array([8500., 8500.]),
-                    np.array([0, 5032.]),
-                    np.array([6839., 6339.]),
-                line_width=3, color=(0, 0.72, 1.), tube_radius=300)
-
-    mlab.savefig('penetrations.tiff', size=(1024, 1024))
+mlab.plot3d(np.array([8500., 8500.]),
+                np.array([0, 5032.]),
+                np.array([4639., 5239.]),
+            line_width=3, color=(0., 0.72, 1.), tube_radius=300)
+mlab.plot3d(np.array([8500., 8500.]),
+                np.array([0, 5032.]),
+                np.array([6839., 6339.]),
+            line_width=3, color=(0, 0.72, 1.), tube_radius=300)

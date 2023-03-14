@@ -7,7 +7,6 @@ import os
 from ibllib.io.extractors.biased_trials import extract_all
 import rewardworld.behavior_analysis.bandit_version.full_bandit_fix as full_bandit_fix
 from rewardworld.behavior_analysis.bandit_version.session_summary_10 import *
-from rewardworld.behavior_analysis.bandit_version.block_bandit_summary import *
 import one.alf as alf
 from ibllib.io.raw_data_loaders import load_settings
 import zipfile
@@ -36,10 +35,14 @@ def mouse_data_loader(rootdir):
                 s = os.path.join(d, ses)
                 if os.path.isdir(s):
                     try:
-                        if Path(s+'/alf').is_dir()==False:
-                            extract_all(s, save=True)
+                        if Path(s+'/raw_ephys_data').is_dir()==False:
+                            extract_all(s, save=True, settings={'IBLRIG_VERSION_TAG': '4.9.0'})
+                            try:
+                                os.remove(s+'/alf/_ibl_trials.table.pqt') 
+                            except:
+                                print('np pq table')
                             if Path(s+'/alf/probe00').is_dir()==False:    
-                                full_bandit_fix(s)
+                                full_bandit_fix.full_bandit_fix(s)     
                         ses_df= pd.DataFrame()
                         sesdata  = alf.io.load_object(s+'/alf', 'trials')
                         del sesdata['intervals']
@@ -65,8 +68,8 @@ def mouse_data_loader(rootdir):
     return mouse_df
 
 ROOT = '/Volumes/witten/Alex/Data/Subjects/'
-MICE = ['dop_40','dop_45','dop_46']
-# MICE = ['DChR2_1','DChR2_2','dop_40','dop_45','dop_46','dop_36','dop_31','dop_30']
+#MICE = ['dop_54']
+MICE = ['dop_47', 'dop_50','dop_51','dop_52','dop_53']
 data=pd.DataFrame()
 for mouse in MICE:
     mouse_df = mouse_data_loader(ROOT+mouse)
@@ -76,17 +79,16 @@ data['feedbackType'] = 1*(data['feedbackType']>0)
 data = data.reset_index()
 
 # Palette
-pal=dict(dop_36='gray',dop_31='gray',dop_30='gray',dop_38='gray',dop_40='k',dop_45='k',dop_46='k')
-
 fig,ax = plt.subplots(1,2)
 # Analysis 100_0 step
 plt.sca(ax[0])
-sub_data = data.loc[(data['protocol']=='_bandit_100_0_biasedChoiceWorld_equal_stim') |
-    (data['protocol']=='_bandit_100_0_biasedChoiceWorld_different_stim')]
-sns.lineplot(data=sub_data,x='day',y='feedbackType',hue='mouse', ci=0, palette=pal)
+sub_data = data.loc[(data['protocol']=='_bandit_100_0_biasedChoiceWorld_different_stim')]
+sns.lineplot(data=sub_data,x='day',y='feedbackType',hue='mouse', errorbar=None, palette='Greys')
 plt.xlabel('Training Day')
 plt.ylabel('Fraction Correct')
+plt.xlim(0,8)
 plt.ylim(0,1)
+sns.despine()
 plt.hlines(0.70, 0, sub_data.day.max(),linestyles='--')
 plt.sca(ax[1])
 ## analysis of bandit step
@@ -258,4 +260,17 @@ plt.hlines(0.5,0,13, linestyles='--', color='k')
 plt.ylim(0.25,0.75)
 plt.xticks(np.arange(13),np.arange(13))
 plt.xlabel('50 trial bins')
+
+
+
+# 
+sub_data = data.loc[np.isin(data['mouse'],MICE)]
+sns.pointplot(data=sub_data,x='day',y='feedbackType',hue='mouse', errorbar=None, palette='Reds')
+plt.xlabel('Training Day')
+plt.ylabel('Fraction Correct')
+plt.xlim(0,9)
+plt.ylim(0,1)
+sns.despine()
+plt.hlines(0.695, 0, sub_data.day.max(),linestyles='--', color='r')
+plt.hlines(0.5, 0, sub_data.day.max(),linestyles='--', color= 'k')
 

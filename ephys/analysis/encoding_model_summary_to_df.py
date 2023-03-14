@@ -40,6 +40,7 @@ def load_encoding_model(model_path = ENCODING_MODEL_MAT_FILE):
     encoding_model['dlaser_ipsi_gain'] = model_dict['EncodingSummary']['gains'][0][0]['movement_ipsi'][0][0][:,2]
     encoding_model['doutcome_laser_gain'] = model_dict['EncodingSummary']['gains'][0][0]['outcome_laser'][0][0][:,2]
     encoding_model['firing_rate'] =  model_dict['EncodingSummary']['firing_rate'][0][0][0]
+    encoding_model['region_raw'] = model_dict['EncodingSummary']['region_name'][0][0][0]
     encoding_model['region'] =  model_dict['EncodingSummary']['region_key'][0][0][0][model_dict['EncodingSummary']['region_id'][0][0][0]-1]
     encoding_model['mouse'] = mouse
     encoding_model['date'] = date
@@ -79,13 +80,18 @@ def load_residual(neuron_file, model_bin_size=5, final_bins=100, pre_time = -500
     residual_struct = mat73.loadmat(neuron_file)
     if ~np.isin(residual_struct['data']['cluster']['label'], acceptable_labels):
         return None
-    residual_struct['data']['cluster']['label']
     # Start_dataframe
     neuron = pd.DataFrame()
     n_trials = int(len(residual_struct['data']['Y_pred']))
     # General info
+    try:
+        neuron['lambd'] = [residual_struct['data']['lambda'].tolist()]
+    except:
+        neuron['lambd'] = np.nan
     neuron['trials_included'] = [residual_struct['data']['trials'] - 1]
-    neuron['cluster_id'] =  int(residual_struct['data']['cluster']['clusterid'])
+    neuron['cluster_id_org'] =  int(residual_struct['data']['cluster']['clusterid'])
+    neuron['probe_id'] = int(residual_struct['data']['cluster']['probe'][6])
+    neuron['cluster_id'] =  (neuron['probe_id']*10000)+ neuron['cluster_id_org']
     neuron['animal'] =  residual_struct['data']['cluster']['session'][:6]
     neuron['date'] = residual_struct['data']['cluster']['session'][7:17]
     neuron['session'] = residual_struct['data']['cluster']['session'][18:21]

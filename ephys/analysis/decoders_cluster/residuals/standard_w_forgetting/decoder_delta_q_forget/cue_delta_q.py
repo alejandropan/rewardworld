@@ -5,7 +5,7 @@ import sys
 from ephys_alf_summary import alf
 from pathlib import Path
 import pandas as pd
-import numpy as npm
+import numpy as np
 from encoding_model_summary_to_df import load_all_residuals, common_trials, common_neural_data
 from decoding_debugging import *
 import warnings
@@ -25,6 +25,8 @@ smoothing=0
 bin_size=0.1
 output_folder = '/jukebox/witten/Alex/decoders_residuals_results/decoder_output_deltaq_cue_forget'
 temp_folder = '/jukebox/witten/Alex/decoder_wd'
+n_trials_minimum = 100
+
 
 ##########################
 ####### Load Data ########
@@ -48,7 +50,7 @@ neural_data = load_all_residuals(encoding_res_path)
 neural_data = neural_data.loc[neural_data['location']==area]
 
 # Trials used
-c_neural_data = common_neural_data(neural_data, trials_included)
+c_neural_data = common_neural_data(neural_data, n_trials_minimum = int(0.8*len(alfio.choice)))
 
 # Load variable to be decoded and aligment times
 alfio.fQRreward_cue = np.copy(np.roll(alfio.fQRreward,1))

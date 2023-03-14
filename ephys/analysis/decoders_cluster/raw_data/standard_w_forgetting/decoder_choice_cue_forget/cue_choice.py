@@ -5,7 +5,7 @@ import sys
 from ephys_alf_summary import alf
 from pathlib import Path
 import pandas as pd
-import numpy as npm
+import numpy as np
 from encoding_model_summary_to_df import load_all_residuals, common_trials, common_neural_data
 from decoding_debugging import *
 import warnings
@@ -49,10 +49,10 @@ neural_data = load_all_residuals(encoding_res_path, filetype='real')
 neural_data = neural_data.loc[neural_data['location']==area]
 
 # Trials used
-c_neural_data = common_neural_data(neural_data)
+c_neural_data = common_neural_data(neural_data, n_trials_minimum = int(0.8*len(alfio.choice)))
 
 # Load variable to be decoded and aligment times
-regressed_variable = [1*(np.copy(alfio.choice)>0)[trials_included.astype(int)], 1*(np.copy(alfio.choice)<1) #Contra choice is left, contra choice is right
+regressed_variable = [1*(np.copy(alfio.choice)>0), 1*(np.copy(alfio.choice)<1)] #Contra choice is left, contra choice is right
 
 # Only trials included in analysis
 #weights = get_session_sample_weights(alfio.to_df(), categories = ['choice','probabilityLeft', 'outcome'])

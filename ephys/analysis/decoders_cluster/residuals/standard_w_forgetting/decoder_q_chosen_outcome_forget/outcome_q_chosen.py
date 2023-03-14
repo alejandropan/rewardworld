@@ -5,7 +5,7 @@ import sys
 from ephys_alf_summary import alf
 from pathlib import Path
 import pandas as pd
-import numpy as npm
+import numpy as np
 from encoding_model_summary_to_df import load_all_residuals, common_trials, common_neural_data
 from decoding_debugging import *
 import warnings
@@ -49,7 +49,7 @@ neural_data = load_all_residuals(encoding_res_path)
 neural_data = neural_data.loc[neural_data['location']==area]
 
 # Trials used
-c_neural_data = common_neural_data(neural_data, trials_included)
+c_neural_data = common_neural_data(neural_data, n_trials_minimum = int(0.8*len(alfio.choice)))
 
 # Load variable to be decoded and aligment times
 alfio.fQRreward_cue = np.copy(np.roll(alfio.fQRreward,1))
@@ -58,7 +58,6 @@ alfio.fQRreward_cue[0] = 0
 alfio.fQLreward_cue[0] = 0
 regressed_variable = np.copy(alfio.fQRreward_cue) #For now qchosen
 regressed_variable[np.where(alfio.choice==-1)] = alfio.fQLreward_cue[np.where(alfio.choice==-1)] #For now qchosen
-regressed_variable = regressed_variable[trials_included.astype(int)]
 # Only trials included in analysis
 #weights = get_session_sample_weights(alfio.to_df(), categories = ['choice','probabilityLeft', 'outcome'])
 weights = None
@@ -83,7 +82,6 @@ alfio.fQRreward_cue = np.copy(alfio.fQRreward)
 alfio.fQLreward_cue = np.copy(alfio.fQLreward)
 regressed_variable = np.copy(alfio.fQRreward_cue) #For now qchosen
 regressed_variable[np.where(alfio.choice==-1)] = alfio.fQLreward_cue[np.where(alfio.choice==-1)] #For now qchosen
-regressed_variable = regressed_variable[trials_included.astype(int)]
 
 run_decoder_for_session_residual(c_neural_data, area, alfio, regressed_variable, weights, alignment_time, etype = 'real', output_folder=output_folder)
 #for n, null_ses in enumerate(null_sesssions):

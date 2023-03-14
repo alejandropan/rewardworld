@@ -5,7 +5,7 @@ import sys
 from ephys_alf_summary import alf
 from pathlib import Path
 import pandas as pd
-import numpy as npm
+import numpy as np
 from encoding_model_summary_to_df import load_all_residuals, common_trials, common_neural_data
 from decoding_debugging import *
 import warnings

@@ -5,7 +5,7 @@ import sys
 from ephys_alf_summary import alf
 from pathlib import Path
 import pandas as pd
-import numpy as npm
+import numpy as np
 from encoding_model_summary_to_df import load_all_residuals, common_neural_data
 from decoding_debugging import *
 import warnings
@@ -20,17 +20,12 @@ ROOT_NEURAL = '/jukebox/witten/Chris/data/ibl_da_neuropixels/Data/Subjects'
 id_dict = pd.read_csv('/jukebox/witten/Alex/decoders_residuals_results/decoder_output_choice_cue_forget/id_dict.csv')
 n_neurons_minimum = 10
 alignment_time = 'action_time'
-pre_time = 0.5
-post_time  = 4
-smoothing=0
-bin_size=0.1
 output_folder = '/jukebox/witten/Alex/decoders_residuals_results/decoder_output_choice_cue_forget'
 temp_folder = '/jukebox/witten/Alex/decoder_wd'
 
 ##########################
 ####### Load Data ########
 ##########################
-
 ses = ROOT+id_dict.loc[id_dict['id']==int(sys.argv[1]),'ses'].to_string(index=False)
 area = id_dict.loc[id_dict['id']==int(sys.argv[1]),'area'].to_string(index=False)
 
@@ -49,7 +44,8 @@ neural_data = load_all_residuals(encoding_res_path)
 neural_data = neural_data.loc[neural_data['location']==area]
 
 # Trials used
-c_neural_data = common_neural_data(neural_data, n_trials_minimum=100)
+c_neural_data = common_neural_data(neural_data, n_trials_minimum = int(0.8*len(alfio.choice)))
+
 
 # Load variable to be decoded and aligment times
 regressed_variable = [1*(np.copy(alfio.choice)>0), 1*(np.copy(alfio.choice)<1)] #Contra choice is left, contra choice is right
@@ -73,3 +69,15 @@ for i in np.arange(200):
 run_decoder_for_session_residual(c_neural_data, area, alfio, regressed_variable, weights, alignment_time, etype = 'real', output_folder=output_folder, decoder = 'logistic')
 #for n, null_ses in enumerate(null_sesssions):
 #    run_decoder_for_session_residual(c_neural_data, area, alfio, regressed_variable, weights, alignment_time, etype = 'null', n=n, output_folder=output_folder)
+
+
+
+ses = ROOT+id_dict.loc[id_dict['id']==int(19),'ses'].to_string(index=False)
+area = id_dict.loc[id_dict['id']==int(19),'area'].to_string(index=False)
+
+# Load behavior
+alfio = alf(ses, ephys=True)
+alfio.mouse = Path(ses).parent.parent.name
+alfio.date = Path(ses).parent.name
+alfio.ses = Path(ses).name
+alfio.path = ses

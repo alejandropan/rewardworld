@@ -208,7 +208,7 @@ DUAL_TASK = ['/Volumes/witten/Alex/Data/Subjects/dop_51/2022-09-21/002',
 
 
 def get_binned_spikes(spike_times, spike_clusters, cluster_id, epoch_time,
-    pre_time=0.2,post_time=0.5, bin_size=0.025, smoothing=0.025, return_fr=True):
+    pre_time=0.2,post_time=1.0, bin_size=0.025, smoothing=0.025, return_fr=True):
     binned_firing_rate = calculate_peths(
     spike_times, spike_clusters, cluster_id, epoch_time,
     pre_time=pre_time,post_time=post_time, bin_size=bin_size,
@@ -425,7 +425,10 @@ class alf:
         self.response_times = np.load(path+'/alf/_ibl_trials.response_times.npy')
         self.start_time = np.load(path+'/alf/_ibl_trials.intervals.npy')[:,0]
         self.first_move = np.load(path+'/alf/_ibl_trials.firstMovement_times.npy')
-
+        try:
+            self.firstlaser_times = np.load(path+'/alf/_ibl_trials.first_laser_times.npy')
+        except:
+            self.firstlaser_times = np.array([np.nan])
         if os.path.isfile(path+'/alf/standard_QL.npy'):
             self.QL = np.load(path+'/alf/standard_QL.npy')
             self.QR = np.load(path+'/alf/standard_QR.npy')

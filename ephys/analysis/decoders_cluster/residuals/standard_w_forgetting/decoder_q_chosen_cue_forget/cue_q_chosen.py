@@ -46,7 +46,7 @@ neural_data = load_all_residuals(encoding_res_path)
 neural_data = neural_data.loc[neural_data['location']==area]
 
 # Trials used
-c_neural_data = common_neural_data(neural_data, n_trials_minimum=n_trials_minimum)
+c_neural_data = common_neural_data(neural_data, n_trials_minimum = int(0.8*len(alfio.choice)))
 
 # Load variable to be decoded and aligment times
 alfio.fQRreward_cue = np.copy(np.roll(alfio.fQRreward,1))
@@ -63,9 +63,10 @@ weights = None
 ## Run decoder (linear) ##
 ##########################
 
-#run_decoder_for_session_residual(c_neural_data, area, alfio, regressed_variable, weights, alignment_time, etype = 'real', output_folder=output_folder)
+run_decoder_for_session_residual(c_neural_data, area, alfio, regressed_variable, weights, alignment_time, etype = 'real', output_folder=output_folder)
 
 
+'''
 ##########################
 ## Run nulls (linear) ##
 ##########################
@@ -97,3 +98,4 @@ for i in objective:
 
 for n, null_ses in enumerate(null_sesssions):
     run_decoder_for_session_residual(c_neural_data, area, alfio, null_ses, weights, alignment_time, etype = 'null', n=n, output_folder=output_folder)
+'''

@@ -15,6 +15,7 @@ from sklearn.preprocessing import scale
 import copy
 import logistic_regression as lr
 from scipy.stats import ttest_rel as pttest
+from mpl_chord_diagram import chord_diagram
 
 from itertools import permutations 
 
@@ -203,9 +204,8 @@ DUAL_TASK = ['/Volumes/witten/Alex/Data/Subjects/dop_51/2022-09-21/002',
 '/Volumes/witten/Alex/Data/Subjects/dop_51/2022-09-28/001',
 '/Volumes/witten/Alex/Data/Subjects/dop_52/2022-10-02/001']
 
-
 def get_binned_spikes(spike_times, spike_clusters, cluster_id, epoch_time,
-    pre_time=0.2,post_time=0.5, bin_size=0.025, smoothing=0.025, return_fr=True):
+    pre_time=0.5,post_time=1.0, bin_size=0.025, smoothing=0.025, return_fr=True):
     binned_firing_rate = calculate_peths(
     spike_times, spike_clusters, cluster_id, epoch_time,
     pre_time=pre_time,post_time=post_time, bin_size=bin_size,
@@ -422,7 +422,10 @@ class alf:
         self.response_times = np.load(path+'/alf/_ibl_trials.response_times.npy')
         self.start_time = np.load(path+'/alf/_ibl_trials.intervals.npy')[:,0]
         self.first_move = np.load(path+'/alf/_ibl_trials.firstMovement_times.npy')
-
+        try:
+            self.firstlaser_times = np.load(path+'/alf/_ibl_trials.first_laser_times.npy')
+        except:
+            self.firstlaser_times = np.array([np.nan])
         if os.path.isfile(path+'/alf/standard_QL.npy'):
             self.QL = np.load(path+'/alf/standard_QL.npy')
             self.QR = np.load(path+'/alf/standard_QR.npy')
@@ -852,7 +855,7 @@ def plot_connectivity_map(SESSIONS, criterion=['good'], n_neurons_minimum = 20):
 
     # Plot connectivity map
     chord_data = pooled_region_info.copy()
-    selected_regions = np.array(['OFC', 'NAcc', 'PFC', 'DMS', 'VPS', 'VP', 'SNr','Olfactory', 'DLS', 'GPe'])
+    selected_regions = np.array(['OFC','PFC', 'NAc', 'PFC', 'MO', 'DMS', 'VP', 'DLS', 'SS', 'GPe'])
     summary = np.zeros([len(selected_regions),len(selected_regions)])
     chord_data = chord_data.loc[np.isin(chord_data['index'],selected_regions)]
     for id in chord_data.id.unique():
@@ -868,17 +871,38 @@ def plot_connectivity_map(SESSIONS, criterion=['good'], n_neurons_minimum = 20):
 
 
 def yield_by_region(yields):
-        summary = yields.groupby(['regions']).sum().reset_index().iloc[:,:-1]
+        summary = yields.groupby(['regions']).sum().reset_index()
+        #summary['bias'] = yields.groupby(['regions']).mean().reset_index()['bias']
+        yields['relative_count'] = np.nan
+        for reg  in summary.regions.unique():
+            yields.loc[yields['regions']==reg, 'relative_count'] = yields.loc[yields['regions']==reg, 'count'].to_numpy() / \
+                                                                    summary.loc[summary['regions']==reg,'count'].to_numpy()
         pen_by_reg = np.zeros(len(summary))
         mouse_by_reg = np.zeros(len(summary))
-        good_y = yields.loc[yields['count']>=15]
+        accu_weighted_by_reg = np.zeros(len(summary))
+        bias_weighted_by_reg = np.zeros(len(summary))
+        accu_m_by_reg = np.zeros(len(summary))
+        accu_sem_by_reg = np.zeros(len(summary))
+        good_y = yields.loc[yields['count']>=20]
         good_y = good_y.groupby(['regions','mouse','id']).count().reset_index()
+        model_performance =  yields.loc[yields['count']>=20].groupby(['regions','mouse','id']).mean().reset_index()['model_accuracy']
+        good_y['model_performance'] = model_performance
+        yields['model_performance_weighted'] =  yields['model_accuracy'] * yields['relative_count']
+        yields['bias_weighted'] = yields['bias'] * yields['relative_count']
         for i, reg  in enumerate(summary.regions.unique()):
             pen_by_reg[i] = good_y.loc[good_y['regions']==reg].id.unique().shape[0]
+            accu_m_by_reg[i]= good_y.loc[good_y['regions']==reg].model_performance.mean()
+            accu_sem_by_reg[i]= good_y.loc[good_y['regions']==reg].model_performance.sem()
             mouse_by_reg[i] = good_y.loc[good_y['regions']==reg].mouse.unique().shape[0]
+            accu_weighted_by_reg[i] = yields.loc[yields['regions']==reg].model_performance_weighted.sum()
+            bias_weighted_by_reg[i] = yields.loc[yields['regions']==reg].bias_weighted.sum()
         summary['n_insertions'] = pen_by_reg
+        summary['accuracy'] = accu_m_by_reg
+        summary['accuracy_sem'] = accu_sem_by_reg
         summary['n_mice'] = mouse_by_reg
-        return summary.sort_values('count', ascending=False)
+        summary['accuracy_weighted'] = accu_weighted_by_reg
+        summary['bias_weighted'] = bias_weighted_by_reg    
+        return summary.sort_values('accuracy_weighted', ascending=False)
 
 
 if __name__=="__main__":

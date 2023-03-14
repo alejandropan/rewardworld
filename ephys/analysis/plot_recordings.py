@@ -12,6 +12,9 @@ from scipy.ndimage import gaussian_filter
 from scipy.stats import binned_statistic
 import matplotlib
 
+
+#### Things to check why do i get 436 gpe but matlab has 435: check dictionaries
+
 def compute_volume_from_points_diff(xyz, values=None, aggr='mean', fwhm=500, ba=None):
     ba = ba or AllenAtlas()
     idx = ba._lookup(xyz)
@@ -40,7 +43,10 @@ def convolve_w_filter(volume,fwhm=500):
         volume = gaussian_filter(volume, sigma=sigma)
         #volume[ba.label == 0] = np.nan
         return volume
+
+
 def get_map(SESSIONS, variable = 'value_laser', thresh = 0.01, model=None):
+    # /Volumes/witten/Chris/matlab/cz/ibl_da_neuropixels_2022/utils/AllenRegions_limited.m
     all_clusters = []
     all_selections= []
     all_sig=[]
@@ -51,16 +57,14 @@ def get_map(SESSIONS, variable = 'value_laser', thresh = 0.01, model=None):
         ses_data.date = Path(ses).parent.name
         ses_data.ses = Path(ses).name
         # Make x data always on left hemisphere
-        for i in np.arange(4):
+        for i in np.arange(len(ses_data.probe[:])):
             try:
                 ses_data.probe[i].cluster_xyz[:,0] =  -abs(ses_data.probe[i].cluster_xyz[:,0])
-                try:
-                    selection_base  = model.loc[(model['mouse']==ses_data.mouse) & (model['date']==ses_data.date) 
-                            & (model['ses']==ses_data.ses) & (model['probe']==i), 'cluster_id'].to_numpy()
-                    all_clusters.append(ses_data.probe[i].cluster_xyz[selection_base,:])
-                    all_loc.append(ses_data.probe[i].cluster_group_locations[selection_base].to_numpy())
-                except:
-                    all_clusters.append(ses_data.probe[i].cluster_xyz)
+                selection_base  = model.loc[(model['mouse']==ses_data.mouse) & (model['date']==ses_data.date) 
+                        & (model['ses']==ses_data.ses) & (model['probe']==i), 'cluster_id'].to_numpy()
+                all_clusters.append(ses_data.probe[i].cluster_xyz[selection_base,:])
+                all_loc.append(ses_data.probe[i].cluster_group_locations[selection_base].to_numpy())
+ 
                 if variable!=None:
                     selection  = model.loc[(model['mouse']==ses_data.mouse) & (model['date']==ses_data.date) 
                             & (model['ses']==ses_data.ses) & (model['probe']==i) & (model[variable]<thresh), 'cluster_id'].to_numpy()
@@ -69,6 +73,7 @@ def get_map(SESSIONS, variable = 'value_laser', thresh = 0.01, model=None):
                     all_selections.append(ses_data.probe[i].cluster_xyz[selection,:])
                     all_sig.append(binary_sig)
             except:
+                print(ses)
                 continue
 
     plotting_array=np.concatenate(all_clusters)
@@ -100,7 +105,7 @@ SESSIONS = [
  '/volumes/witten/Alex/Data/Subjects/dop_47/2022-06-05/001',
  '/volumes/witten/Alex/Data/Subjects/dop_47/2022-06-06/001',
  '/volumes/witten/Alex/Data/Subjects/dop_47/2022-06-07/001',
- #'/volumes/witten/Alex/Data/Subjects/dop_47/2022-06-09/003',
+ '/volumes/witten/Alex/Data/Subjects/dop_47/2022-06-09/003',
  '/volumes/witten/Alex/Data/Subjects/dop_47/2022-06-10/002',
  '/volumes/witten/Alex/Data/Subjects/dop_47/2022-06-11/001',
  '/volumes/witten/Alex/Data/Subjects/dop_48/2022-06-20/001',

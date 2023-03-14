@@ -1446,6 +1446,64 @@ def q_learning_model_asymmetric_nostay(standata,saved_params=None, fit=None, csv
                 data = pd.concat([data,ses_data])
     return make_deltas(data)
 
+def q_learning_model_reduced_forgetting(standata,saved_params=None):
+    r =  standata['r']
+    c =  standata['c']
+    sub_idx =  standata['sub_idx']-1
+    sess_idx = standata['sess_idx']-1
+    NSxNSESS = standata['NSxNSESS']
+    NT_all = standata['NT_all']
+    data = pd.DataFrame()
+    for ms_i in np.arange(NSxNSESS):
+        if NT_all[ms_i]>0:
+            beta_mouse = float(saved_params.loc[saved_params['name']=='beta_ses['+str(ms_i+1)+']', 'Mean'])
+            side_mouse = float(saved_params.loc[saved_params['name']=='sides['+str(ms_i+1)+']', 'Mean'])
+            alpha = float(saved_params.loc[saved_params['name']=='alpha_ses['+str(ms_i+1)+']', 'Mean'])
+            forget = float(saved_params.loc[saved_params['name']=='alphaforgetting_ses['+str(ms_i+1)+']', 'Mean'])
+            q = np.zeros(2)
+            predicted_choices=[]
+            QL=[]
+            QR=[]
+            choices=[]
+            QLgeneral=[]
+            QRgeneral=[]
+            for t in np.arange(NT_all[ms_i]):
+                t = int(t)
+                predicted_choice = inv_logit(side_mouse
+                    + beta_mouse  * (q[1] - q[0]))
+                choice = c[sub_idx[ms_i], sess_idx[ms_i], t]
+                unchoice = 1*(choice==0)
+                q[choice] = (1-alpha) * q[choice] + alpha * (r[sub_idx[ms_i], sess_idx[ms_i],t]) # Join r+l for reduced model
+                q[unchoice] =  q[unchoice] - forget* q[unchoice]
+                # Store variables
+                predicted_choices.append(predicted_choice)
+                choices.append(choice)
+                QL.append(q[0])
+                QR.append(q[1])
+                QLgeneral.append((beta_mouse*q[0]))
+                QRgeneral.append((beta_mouse*q[1]))
+            acc = []
+            for i in np.arange(len(choices)):
+                acc.append(1*(choices[i]==(1*(predicted_choices[i]>0.5))))
+            #print(np.mean(acc))
+
+            if NT_all[ms_i]!=0:
+                ses_data = pd.DataFrame()
+                ses_data['predicted_choice'] = predicted_choices
+                ses_data['QL'] = QLgeneral
+                ses_data['QR'] = QRgeneral
+                ses_data['QLreward'] = np.array(QL) * beta_mouse # Note this QL is the reward  - TODO change name
+                ses_data['QRreward'] =  np.array(QR) * beta_mouse
+                ses_data['deltaQ'] = ses_data['QR'] - ses_data['QL']
+                ses_data['choices'] = choices
+                ses_data['mouse'] = sub_idx[ms_i]
+                ses_data['ses'] = sess_idx[ms_i]
+                ses_data['acc'] = np.mean(acc)
+                ses_data['id'] = ses_data['mouse']*100 + ses_data['ses']
+                data = pd.concat([data,ses_data])
+    return data
+
+
 def q_learning_model_reduced_stay_forgetting(standata,saved_params=None):
     r =  standata['r']
     c =  standata['c']
@@ -1581,10 +1639,9 @@ def q_learning_model_reduced_stay(standata,saved_params=None):
                 ses_data['id'] = ses_data['mouse']*100 + ses_data['ses']
                 data = pd.concat([data,ses_data])
     return data
-def q_learning_model_reduced(standata,saved_params=None):
+def q_learning_model_reduced_nostay(standata,saved_params=None):
     r =  standata['r']
     c =  standata['c']
-    l =  standata['l']
     sub_idx =  standata['sub_idx']-1
     sess_idx = standata['sess_idx']-1
     NSxNSESS = standata['NSxNSESS']
@@ -1607,8 +1664,7 @@ def q_learning_model_reduced(standata,saved_params=None):
                 predicted_choice = inv_logit(side_mouse
                     + beta_mouse  * (q[1] - q[0]))
                 choice = c[sub_idx[ms_i], sess_idx[ms_i], t]
-                q[choice] = (1-alpha) * q[choice] + alpha * (r[sub_idx[ms_i], sess_idx[ms_i],t]+
-                                                             l[sub_idx[ms_i], sess_idx[ms_i],t]) # Join r+l for reduced model
+                q[choice] = (1-alpha) * q[choice] + alpha * (r[sub_idx[ms_i], sess_idx[ms_i],t]) # Join r+l for reduced model
                 # Store variables
                 predicted_choices.append(predicted_choice)
                 choices.append(choice)
@@ -1633,8 +1689,10 @@ def q_learning_model_reduced(standata,saved_params=None):
                 ses_data['mouse'] = sub_idx[ms_i]
                 ses_data['ses'] = sess_idx[ms_i]
                 ses_data['acc'] = np.mean(acc)
+                ses_data['id'] = ses_data['mouse']*100 + ses_data['ses']
                 data = pd.concat([data,ses_data])
     return data
+
 def q_learning_lasernostay(standata,saved_params=None, fit=None, csv=True):
     if saved_params is not None:
         r =  standata['r']
@@ -6753,6 +6811,28 @@ def correlation_matrix_reduced(standata, corr_var, model_standard,reinforce_w_st
     corr_matrix = np.corrcoef([standard,rnfrc_stay])
 
     return corr_matrix, model_labels
+
+
+def correlation_matrix_variables(standata,model_forgetting):
+    '''
+    Standata: is data used to fit the models in stan format.
+    corr_var: is the variable to correlate(e.g. deltaQ) (str)
+    the rest are the parameters for every model used
+    '''
+
+    labels = ['DQLaser', 'DQstay']
+
+    dlaser = q_learning_model_reduced_stay_forgetting(standata,saved_params=model_forgetting)['QRreward'].to_numpy() - \
+         q_learning_model_reduced_stay_forgetting(standata,saved_params=model_forgetting)['QLreward'].to_numpy()
+    dstay = q_learning_model_reduced_stay_forgetting(standata,saved_params=model_forgetting)['QRstay'].to_numpy() - \
+         q_learning_model_reduced_stay_forgetting(standata,saved_params=model_forgetting)['QLstay'].to_numpy()
+
+    corr_matrix = np.corrcoef([dlaser,dstay])
+    plot_corr_matrix(corr_matrix, labels)
+
+    return corr_matrix, labels
+
+
 def plot_corr_matrix(corr_matrix, model_labels, vmin=None, vmax=None):
     sns.heatmap(
     corr_matrix,

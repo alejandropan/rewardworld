@@ -6,7 +6,7 @@ import mat73
 import glob
 import numpy as np
 
-ENCODING_MODEL_MAT_FILE = '/Volumes/witten/Chris/matlab/cz/ibl_da_neuropixels_2022/encoding-model/encoding-model-output-2022-11-28-01-06-PM.mat'
+ENCODING_MODEL_MAT_FILE = '/Volumes/witten/Chris/matlab/cz/ibl_da_neuropixels_2022/encoding-model/encoding-model-output-2023-01-04-02-00-PM.mat'
 
 def load_encoding_model(model_path = ENCODING_MODEL_MAT_FILE):
     model_dict = loadmat(model_path)
@@ -21,7 +21,7 @@ def load_encoding_model(model_path = ENCODING_MODEL_MAT_FILE):
     [ses.append(i[0][18:21]) for i in model_dict['EncodingSummary']['recording_name'][0][0][0]]
     [id.append(i[0]) for i in model_dict['EncodingSummary']['recording_name'][0][0][0]]
     [probe.append(int(i[0][6])) for i in model_dict['EncodingSummary']['probe'][0][0][0]]
-    encoding_model['pretest'] = model_dict['EncodingSummary']['pvalues'][0][0]['pretest'][0][0][0]
+    #encoding_model['pretest'] = model_dict['EncodingSummary']['pvalues'][0][0]['pretest'][0][0][0]
     encoding_model['policy'] = model_dict['EncodingSummary']['pvalues'][0][0]['policy'][0][0][0]
     encoding_model['value'] = model_dict['EncodingSummary']['pvalues'][0][0]['value'][0][0][0]
     encoding_model['value_laser'] = model_dict['EncodingSummary']['pvalues'][0][0]['value_laser'][0][0][0]
@@ -40,6 +40,7 @@ def load_encoding_model(model_path = ENCODING_MODEL_MAT_FILE):
     encoding_model['dlaser_ipsi_gain'] = model_dict['EncodingSummary']['gains'][0][0]['movement_ipsi'][0][0][:,2]
     encoding_model['doutcome_laser_gain'] = model_dict['EncodingSummary']['gains'][0][0]['outcome_laser'][0][0][:,2]
     encoding_model['firing_rate'] =  model_dict['EncodingSummary']['firing_rate'][0][0][0]
+    encoding_model['region_raw'] = model_dict['EncodingSummary']['region_name'][0][0][0]
     encoding_model['region'] =  model_dict['EncodingSummary']['region_key'][0][0][0][model_dict['EncodingSummary']['region_id'][0][0][0]-1]
     encoding_model['mouse'] = mouse
     encoding_model['date'] = date
@@ -79,13 +80,15 @@ def load_residual(neuron_file, model_bin_size=5, final_bins=100, pre_time = -500
     residual_struct = mat73.loadmat(neuron_file)
     if ~np.isin(residual_struct['data']['cluster']['label'], acceptable_labels):
         return None
-    residual_struct['data']['cluster']['label']
     # Start_dataframe
     neuron = pd.DataFrame()
     n_trials = int(len(residual_struct['data']['Y_pred']))
     # General info
+    neuron['lambd'] = [residual_struct['data']['lambda'].tolist()]
     neuron['trials_included'] = [residual_struct['data']['trials'] - 1]
-    neuron['cluster_id'] =  int(residual_struct['data']['cluster']['clusterid'])
+    neuron['cluster_id_org'] =  int(residual_struct['data']['cluster']['clusterid'])
+    neuron['probe_id'] = int(residual_struct['data']['cluster']['probe'][6])
+    neuron['cluster_id'] =  (neuron['probe_id']*10000)+ neuron['cluster_id_org']
     neuron['animal'] =  residual_struct['data']['cluster']['session'][:6]
     neuron['date'] = residual_struct['data']['cluster']['session'][7:17]
     neuron['session'] = residual_struct['data']['cluster']['session'][18:21]

@@ -255,9 +255,6 @@ model_r = plot_params_reduced(f_model_forgetting_recovery, standata)
 model_r['mean_type'] = 'recovery'
 model_comp = pd.concat([model_o,model_r])
 
-
-
-
 # Load the example exercise dataset
 # Draw a pointplot to show pulse as a function of three categorical factors
 g = sns.catplot(
@@ -267,8 +264,6 @@ g = sns.catplot(
 
 g.despine(left=True)
 
-
-
 ####
 qlearning_values =  load_qdata_from_list(LASER_ONLY, prefix='forgetting_')
 reinforce_values =  load_REINFORCE_from_list(LASER_ONLY, prefix='REINFORCE_')
@@ -277,3 +272,5 @@ all_values_corr_laser = np.corrcoef([qlearning_values['DQreward'].dropna().to_nu
 
 plot_corr_matrix(all_values_corr_laser, model_labels,vmin=0.5,vmax=1)
 plt.title('DeltaLaser')
+
+correlation_matrix_variables(standata,model_forgetting)

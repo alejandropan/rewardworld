@@ -7,9 +7,9 @@ from session_summary import *
 from ibllib.io.extractors.training_trials import (
     Choice, FeedbackTimes, FeedbackType, GoCueTimes, Intervals, ItiDuration, ProbabilityLeft, ResponseTimes, RewardVolume,
     StimOnTimes_deprecated)
+
+    
 ################################## Functions ##################################
-
-
 
 def logit(p):
     return 1/(1+np.exp(-p))

@@ -410,6 +410,56 @@ def load_sim_data(ROOT_FOLDER = '/Volumes/witten/Alex/Data/ephys_bandit/data_red
                'sub_idx':np.array(sub_idx).astype(int)+1,}
 
     return standata_recovery
+
+def load_qdata_from_list(SESSION_LIST,  prefix='forgetting_'):
+    psy = pd.DataFrame()
+    for s in SESSION_LIST:
+        ses = Path(s)
+        if ses.joinpath('alf', prefix+'QR.npy').is_file():
+            mouse_psy = pd.DataFrame()
+            try:
+                mouse_psy['DQwater'] =  np.load(ses.joinpath('alf', prefix+'QRreward.npy')) - \
+                                        np.load(ses.joinpath('alf', prefix+'QLreward.npy'))
+                mouse_psy['DQlaser'] = np.load(ses.joinpath('alf', prefix+'QRlaser.npy')) - \
+                                        np.load(ses.joinpath('alf', prefix+'QLlaser.npy'))
+            except: 
+                mouse_psy['DQreward'] =  np.load(ses.joinpath('alf', prefix+'QRreward.npy')) - \
+                                    np.load(ses.joinpath('alf', prefix+'QLreward.npy'))
+            mouse_psy['choice_prediction'] = np.load(ses.joinpath('alf', prefix+'choice_prediction.npy'))
+            try:                     
+                mouse_psy['QLstay'] = np.load(ses.joinpath('alf', prefix+'QLstay.npy'))
+                mouse_psy['QRstay'] = np.load(ses.joinpath('alf', prefix+'QRstay.npy'))
+                mouse_psy['DQstay'] =  mouse_psy['QRstay']- mouse_psy['QLstay']
+            except:
+                print('No stay model')
+            mouse_psy['ses'] = str(ses)[-14:]
+            mouse_psy['mouse']= str(ses)[-21:-15]
+            psy = pd.concat([psy, mouse_psy])
+    return psy
+
+def load_REINFORCE_from_list(SESSION_LIST,  prefix='forgetting_'):
+    psy = pd.DataFrame()
+    for s in SESSION_LIST:
+        ses = Path(s)
+        if ses.joinpath('alf', prefix+'reward.npy').is_file():
+            mouse_psy = pd.DataFrame()
+            try:
+                mouse_psy['DQlaser'] = np.load(ses.joinpath('alf', prefix+'laser.npy'))
+                mouse_psy['DQwater'] = np.load(ses.joinpath('alf', prefix+'water.npy'))
+            except: 
+                mouse_psy['DQreward'] =  np.load(ses.joinpath('alf', prefix+'reward.npy'))
+            mouse_psy['choice_prediction'] = np.load(ses.joinpath('alf', prefix+'choice_prediction.npy'))
+            try:                     
+                mouse_psy['QLstay'] = np.load(ses.joinpath('alf', prefix+'QLstay.npy'))
+                mouse_psy['QRstay'] = np.load(ses.joinpath('alf', prefix+'QRstay.npy'))
+                mouse_psy['DQstay'] =  mouse_psy['QRstay']- mouse_psy['QLstay']
+            except:
+                print('No stay model')
+            mouse_psy['ses'] = str(ses)[-14:]
+            mouse_psy['mouse']= str(ses)[-21:-15]
+            psy = pd.concat([psy, mouse_psy])
+    return psy
+
 def load_qdata_from_file(ROOT_FOLDER = '/Volumes/witten/Alex/Data/Subjects', prefix='QLearning_laserdecay_'):
     root_path = Path(ROOT_FOLDER)
     psy = pd.DataFrame()
@@ -616,6 +666,8 @@ def plot_params_reduced(saved_params, standata, save=False, filepath=None, phi_a
     sns.despine()
     if save==True:
         plt.savefig(filepath+'/params.pdf')
+    return params
+
 
 def compare_two_models(saved_params, stan_data, save=False, output_path=None, phi_a=True):
         var_names = {'sides':'Bias', 'alphalaser_ses':'αLaser', 'alpha_ses':'αWater',
@@ -1394,6 +1446,64 @@ def q_learning_model_asymmetric_nostay(standata,saved_params=None, fit=None, csv
                 data = pd.concat([data,ses_data])
     return make_deltas(data)
 
+def q_learning_model_reduced_forgetting(standata,saved_params=None):
+    r =  standata['r']
+    c =  standata['c']
+    sub_idx =  standata['sub_idx']-1
+    sess_idx = standata['sess_idx']-1
+    NSxNSESS = standata['NSxNSESS']
+    NT_all = standata['NT_all']
+    data = pd.DataFrame()
+    for ms_i in np.arange(NSxNSESS):
+        if NT_all[ms_i]>0:
+            beta_mouse = float(saved_params.loc[saved_params['name']=='beta_ses['+str(ms_i+1)+']', 'Mean'])
+            side_mouse = float(saved_params.loc[saved_params['name']=='sides['+str(ms_i+1)+']', 'Mean'])
+            alpha = float(saved_params.loc[saved_params['name']=='alpha_ses['+str(ms_i+1)+']', 'Mean'])
+            forget = float(saved_params.loc[saved_params['name']=='alphaforgetting_ses['+str(ms_i+1)+']', 'Mean'])
+            q = np.zeros(2)
+            predicted_choices=[]
+            QL=[]
+            QR=[]
+            choices=[]
+            QLgeneral=[]
+            QRgeneral=[]
+            for t in np.arange(NT_all[ms_i]):
+                t = int(t)
+                predicted_choice = inv_logit(side_mouse
+                    + beta_mouse  * (q[1] - q[0]))
+                choice = c[sub_idx[ms_i], sess_idx[ms_i], t]
+                unchoice = 1*(choice==0)
+                q[choice] = (1-alpha) * q[choice] + alpha * (r[sub_idx[ms_i], sess_idx[ms_i],t]) # Join r+l for reduced model
+                q[unchoice] =  q[unchoice] - forget* q[unchoice]
+                # Store variables
+                predicted_choices.append(predicted_choice)
+                choices.append(choice)
+                QL.append(q[0])
+                QR.append(q[1])
+                QLgeneral.append((beta_mouse*q[0]))
+                QRgeneral.append((beta_mouse*q[1]))
+            acc = []
+            for i in np.arange(len(choices)):
+                acc.append(1*(choices[i]==(1*(predicted_choices[i]>0.5))))
+            #print(np.mean(acc))
+
+            if NT_all[ms_i]!=0:
+                ses_data = pd.DataFrame()
+                ses_data['predicted_choice'] = predicted_choices
+                ses_data['QL'] = QLgeneral
+                ses_data['QR'] = QRgeneral
+                ses_data['QLreward'] = np.array(QL) * beta_mouse # Note this QL is the reward  - TODO change name
+                ses_data['QRreward'] =  np.array(QR) * beta_mouse
+                ses_data['deltaQ'] = ses_data['QR'] - ses_data['QL']
+                ses_data['choices'] = choices
+                ses_data['mouse'] = sub_idx[ms_i]
+                ses_data['ses'] = sess_idx[ms_i]
+                ses_data['acc'] = np.mean(acc)
+                ses_data['id'] = ses_data['mouse']*100 + ses_data['ses']
+                data = pd.concat([data,ses_data])
+    return data
+
+
 def q_learning_model_reduced_stay_forgetting(standata,saved_params=None):
     r =  standata['r']
     c =  standata['c']
@@ -1529,10 +1639,9 @@ def q_learning_model_reduced_stay(standata,saved_params=None):
                 ses_data['id'] = ses_data['mouse']*100 + ses_data['ses']
                 data = pd.concat([data,ses_data])
     return data
-def q_learning_model_reduced(standata,saved_params=None):
+def q_learning_model_reduced_nostay(standata,saved_params=None):
     r =  standata['r']
     c =  standata['c']
-    l =  standata['l']
     sub_idx =  standata['sub_idx']-1
     sess_idx = standata['sess_idx']-1
     NSxNSESS = standata['NSxNSESS']
@@ -1555,8 +1664,7 @@ def q_learning_model_reduced(standata,saved_params=None):
                 predicted_choice = inv_logit(side_mouse
                     + beta_mouse  * (q[1] - q[0]))
                 choice = c[sub_idx[ms_i], sess_idx[ms_i], t]
-                q[choice] = (1-alpha) * q[choice] + alpha * (r[sub_idx[ms_i], sess_idx[ms_i],t]+
-                                                             l[sub_idx[ms_i], sess_idx[ms_i],t]) # Join r+l for reduced model
+                q[choice] = (1-alpha) * q[choice] + alpha * (r[sub_idx[ms_i], sess_idx[ms_i],t]) # Join r+l for reduced model
                 # Store variables
                 predicted_choices.append(predicted_choice)
                 choices.append(choice)
@@ -1581,8 +1689,10 @@ def q_learning_model_reduced(standata,saved_params=None):
                 ses_data['mouse'] = sub_idx[ms_i]
                 ses_data['ses'] = sess_idx[ms_i]
                 ses_data['acc'] = np.mean(acc)
+                ses_data['id'] = ses_data['mouse']*100 + ses_data['ses']
                 data = pd.concat([data,ses_data])
     return data
+
 def q_learning_lasernostay(standata,saved_params=None, fit=None, csv=True):
     if saved_params is not None:
         r =  standata['r']
@@ -4127,18 +4237,13 @@ def q_learning_model_w_forgetting(standata,saved_params=None, fit=None, csv=True
     return make_deltas(data)
 
 
-
 def simulate_q_learning_w_forgetting(standata_recovery,saved_params=None, fit=None, csv=True):
-    b =  standata_recovery['b']
-    p =  standata_recovery['p']
-    tb =  standata_recovery['tb']
     NS =standata_recovery['NS']
     NSESS=standata_recovery['NSESS']
     NT =standata_recovery['NT']
     NT_all =standata_recovery['NT_all']
-    r_sim = np.zeros([NS,NSESS,NT])
     c_sim = np.zeros([NS,NSESS,NT])
-    l_sim = np.zeros([NS,NSESS,NT])
+    o_sim = np.zeros([NS,NSESS,NT])
     sub_idx =  standata_recovery['sub_idx']-1
     sess_idx = standata_recovery['sess_idx']-1
     NSxNSESS = standata_recovery['NSxNSESS']
@@ -4152,70 +4257,65 @@ def simulate_q_learning_w_forgetting(standata_recovery,saved_params=None, fit=No
                     beta_mouse = float(saved_params.loc[saved_params['name']=='beta_ses['+str(ms_i+1)+']', 'Mean'])
                     stay_mouse = float(saved_params.loc[saved_params['name']=='stay_ses['+str(ms_i+1)+']', 'Mean'])
                     side_mouse = float(saved_params.loc[saved_params['name']=='sides['+str(ms_i+1)+']', 'Mean'])
-                    laser_mouse = float(saved_params.loc[saved_params['name']=='laser_ses['+str(ms_i+1)+']', 'Mean'])
-                    alpha = float(phi_approx(saved_params.loc[saved_params['name']=='alpha_ses['+str(ms_i+1)+']', 'Mean']/np.sqrt(2)))
-                    alphalaser = float(phi_approx(saved_params.loc[saved_params['name']=='alphalaser_ses['+str(ms_i+1)+']', 'Mean']/np.sqrt(2)))
-                    alphastay = float(phi_approx(saved_params.loc[saved_params['name']=='alphastay_ses['+str(ms_i+1)+']', 'Mean']/np.sqrt(2)))
-                    alphaforgetting= float(phi_approx(saved_params.loc[saved_params['name']=='alphaforgetting_ses['+str(ms_i+1)+']', 'Mean']/np.sqrt(2)))
-                    alphalaserforgetting= float(phi_approx(saved_params.loc[saved_params['name']=='alphalaserforgetting_ses['+str(ms_i+1)+']', 'Mean']/np.sqrt(2)))
+                    alpha = float((saved_params.loc[saved_params['name']=='alpha_ses['+str(ms_i+1)+']', 'Mean']/np.sqrt(2)))
+                    alphastay = float((saved_params.loc[saved_params['name']=='alphastay_ses['+str(ms_i+1)+']', 'Mean']/np.sqrt(2)))
+                    alphaforgetting= float((saved_params.loc[saved_params['name']=='alphaforgetting_ses['+str(ms_i+1)+']', 'Mean']/np.sqrt(2)))
                 else:
                     print('Error only CSV version available')
 
+            tph = TrialParamHandler()
             q = np.zeros(2)
             qstay = np.zeros(2)
-            qlaser = np.zeros(2)
             predicted_choices=[]
-            rewards = []
-            lasers = []
             outcome=[]
+            side_blocks=[]
+            trial_within_block=[]
+            right_reward=[]
+            left_reward=[]
 
-            for t in np.arange(NT_all[ms_i]):
+            for t in np.arange(10000):
                 t = int(t)
                 p_choice = inv_logit(side_mouse
                     + beta_mouse  * (q[1] - q[0])
-                    + stay_mouse * (qstay[1] - qstay[0])
-                    + laser_mouse * (qlaser[1] - qlaser[0]))
+                    + stay_mouse * (qstay[1] - qstay[0]))
                 choice =  np.random.choice(2,p= [1-p_choice,p_choice])
-                assert np.isin(p[sub_idx[ms_i], sess_idx[ms_i],t], [0.7,0.1])
-                p_left= p[sub_idx[ms_i], sess_idx[ms_i],t]
-                l = b[sub_idx[ms_i], sess_idx[ms_i],t]
-                if p_left==0.7:
-                    p_right=0.1
-                else:
-                    p_right=0.7
+                tph.response_side_buffer.append(choice)  # Add choice to response buffer
+                p_left= tph.stim_probability_left
                 if choice==1:
-                    f = np.random.choice([0,1], p=[1-p_right,p_right])
+                    f = tph.right_reward
                 if choice==0:
-                    f = np.random.choice([0,1], p=[1-p_left,p_left])
-                q[choice] = (1-alpha) * q[choice] + alpha * (1*(f*(l==0)))
+                    f = tph.left_reward
+                q[choice] = (1-alpha) * q[choice] + alpha * (1*f)
                 q[choice^1] = q[choice^1] - (q[choice^1] * alphaforgetting)
-                qlaser[choice] = (1-alphalaser) * qlaser[choice] + alphalaser * f * l
-                qlaser[choice^1] = qlaser[choice^1] - (alphalaserforgetting * qlaser[choice^1])
                 qstay = qstay * (1 - alphastay)
                 qstay[choice] = qstay[choice] + alphastay
-                rewards.append((1*(f*(l==0))))
-                lasers.append(f*l)
-                outcome.append(f)
+                
                 # Store variables
+                outcome.append(f)
+                side_blocks.append(p_left)
                 predicted_choices.append(choice)
+                trial_within_block.append(tph.block_trial_num)
+                right_reward.append(tph.right_reward)
+                left_reward.append(tph.left_reward)
+                # Init next trial
+                tph =  tph.next_trial()
 
             if NT_all[ms_i]!=0:
-                c_sim[sub_idx[ms_i], sess_idx[ms_i], :int(NT_all[ms_i])]= predicted_choices
-                l_sim[sub_idx[ms_i], sess_idx[ms_i], :int(NT_all[ms_i])] = lasers
-                r_sim[sub_idx[ms_i], sess_idx[ms_i], :int(NT_all[ms_i])] = rewards
+                c_sim[sub_idx[ms_i], sess_idx[ms_i], :]= predicted_choices
+                o_sim[sub_idx[ms_i], sess_idx[ms_i], :] = outcome
                 ses_data = pd.DataFrame()
                 ses_data['choices'] = predicted_choices
-                ses_data['water'] = rewards
-                ses_data['laser'] = lasers
-                ses_data['laser_block'] = b[sub_idx[ms_i], sess_idx[ms_i],:int(NT_all[ms_i])]
-                ses_data['tb'] = tb[sub_idx[ms_i], sess_idx[ms_i],:int(NT_all[ms_i])]
-                ses_data['probabilityLeft'] = p[sub_idx[ms_i], sess_idx[ms_i],:int(NT_all[ms_i])]
+                ses_data['tb'] = trial_within_block
+                ses_data['probabilityLeft'] = side_blocks
                 ses_data['outcome'] = outcome
                 ses_data['mouse'] = sub_idx[ms_i]
                 ses_data['ses'] = sess_idx[ms_i]
+                ses_data['right_reward'] = right_reward
+                ses_data['left_reward'] = left_reward
                 sim_data = pd.concat([sim_data,ses_data])
-    return c_sim, l_sim, r_sim, sim_data
-    
+    return c_sim, o_sim, sim_data
+
+ 
 def reinforce_model_mixed_perseveration(standata,saved_params=None, fit=None, csv=True):
     if saved_params is not None:
         r =  standata['r']
@@ -6711,6 +6811,28 @@ def correlation_matrix_reduced(standata, corr_var, model_standard,reinforce_w_st
     corr_matrix = np.corrcoef([standard,rnfrc_stay])
 
     return corr_matrix, model_labels
+
+
+def correlation_matrix_variables(standata,model_forgetting):
+    '''
+    Standata: is data used to fit the models in stan format.
+    corr_var: is the variable to correlate(e.g. deltaQ) (str)
+    the rest are the parameters for every model used
+    '''
+
+    labels = ['DQLaser', 'DQstay']
+
+    dlaser = q_learning_model_reduced_stay_forgetting(standata,saved_params=model_forgetting)['QRreward'].to_numpy() - \
+         q_learning_model_reduced_stay_forgetting(standata,saved_params=model_forgetting)['QLreward'].to_numpy()
+    dstay = q_learning_model_reduced_stay_forgetting(standata,saved_params=model_forgetting)['QRstay'].to_numpy() - \
+         q_learning_model_reduced_stay_forgetting(standata,saved_params=model_forgetting)['QLstay'].to_numpy()
+
+    corr_matrix = np.corrcoef([dlaser,dstay])
+    plot_corr_matrix(corr_matrix, labels)
+
+    return corr_matrix, labels
+
+
 def plot_corr_matrix(corr_matrix, model_labels, vmin=None, vmax=None):
     sns.heatmap(
     corr_matrix,

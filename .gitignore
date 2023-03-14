@@ -3,4 +3,8 @@
 *.tif
 *.pdf
 *.out
+*.pyc
+*.pyo
+*.png
+*.svg
 __pycache__/

@@ -84,7 +84,10 @@ def load_residual(neuron_file, model_bin_size=5, final_bins=100, pre_time = -500
     neuron = pd.DataFrame()
     n_trials = int(len(residual_struct['data']['Y_pred']))
     # General info
-    neuron['lambd'] = [residual_struct['data']['lambda'].tolist()]
+    try:
+        neuron['lambd'] = [residual_struct['data']['lambda'].tolist()]
+    except:
+        neuron['lambd'] = np.nan    
     neuron['trials_included'] = [residual_struct['data']['trials'] - 1]
     neuron['cluster_id_org'] =  int(residual_struct['data']['cluster']['clusterid'])
     neuron['probe_id'] = int(residual_struct['data']['cluster']['probe'][6])

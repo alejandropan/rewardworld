@@ -1,7 +1,7 @@
 from brainbox.io.one import SpikeSortingLoader
 from ibllib.atlas import AllenAtlas
 import numpy as np
-from ephys_alf_summary import alf
+from ephys_alf_summary import alf, LASER_ONLY
 from ibllib.atlas.plots import  compute_volume_from_points, plot_volume_on_slice
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -100,33 +100,30 @@ def get_gains(SESSIONS, variable = 'value_laser', model=None):
     values = np.concatenate(all_var)
     return values    
 
+str_pal = dict({
+    'DLS':'#c77c2c', 
+    'DMS':'#a61678', 
+    'TS':'#1a2696', 
+    'NAc':'#3ea33e'})
+
+
+pals = dict({
+    'SS':'#f032e6',
+    'MO':'#911eb4',
+    'PFC':'#4363d8',
+    'OFC':'#000075',
+    'DLS':'#c77c2c', 
+    'DMS':'#a61678', 
+    'TS':'#1a2696', 
+    'NAc':'#3ea33e',
+    'GPe':'#800000',
+    'VP':'#e6194B',
+    'Olfactory':'#404040'})
+
 # End of functions
-SESSIONS = [
- '/volumes/witten/Alex/Data/Subjects/dop_47/2022-06-05/001',
- '/volumes/witten/Alex/Data/Subjects/dop_47/2022-06-06/001',
- '/volumes/witten/Alex/Data/Subjects/dop_47/2022-06-07/001',
- '/volumes/witten/Alex/Data/Subjects/dop_47/2022-06-09/003',
- '/volumes/witten/Alex/Data/Subjects/dop_47/2022-06-10/002',
- '/volumes/witten/Alex/Data/Subjects/dop_47/2022-06-11/001',
- '/volumes/witten/Alex/Data/Subjects/dop_48/2022-06-20/001',
- '/volumes/witten/Alex/Data/Subjects/dop_48/2022-06-27/002',
- '/volumes/witten/Alex/Data/Subjects/dop_48/2022-06-28/001',
- '/volumes/witten/Alex/Data/Subjects/dop_49/2022-06-14/001',
- '/volumes/witten/Alex/Data/Subjects/dop_49/2022-06-15/001',
- '/volumes/witten/Alex/Data/Subjects/dop_49/2022-06-16/001',
- '/volumes/witten/Alex/Data/Subjects/dop_49/2022-06-17/001',
- '/volumes/witten/Alex/Data/Subjects/dop_49/2022-06-18/002',
- '/volumes/witten/Alex/Data/Subjects/dop_49/2022-06-19/001',
- '/volumes/witten/Alex/Data/Subjects/dop_49/2022-06-20/001',
- '/volumes/witten/Alex/Data/Subjects/dop_49/2022-06-27/003',
- '/volumes/witten/Alex/Data/Subjects/dop_50/2022-09-12/001',
- '/volumes/witten/Alex/Data/Subjects/dop_50/2022-09-13/001',
- '/volumes/witten/Alex/Data/Subjects/dop_50/2022-09-14/003',
- '/volumes/witten/Alex/Data/Subjects/dop_53/2022-10-02/001',
- '/volumes/witten/Alex/Data/Subjects/dop_53/2022-10-03/001',
- '/volumes/witten/Alex/Data/Subjects/dop_53/2022-10-04/001',
- '/volumes/witten/Alex/Data/Subjects/dop_53/2022-10-05/001',
- '/volumes/witten/Alex/Data/Subjects/dop_53/2022-10-07/001']
+#Palette
+
+SESSIONS = LASER_ONLY
 
 output_path = '/Users/alexpan/Documents/neurons'
 model = load_encoding_model() 
@@ -135,84 +132,168 @@ ba = AllenAtlas()
 # Extract xyz coords from clusters dict
 # Here we will set all ap values to a chosen value for visualisation purposes
 
-#bin plotting array
-plotting_array, plotting_array_selection, sig, locations = get_map(SESSIONS, variable = 'value_laser', thresh = 0.01, model=model)
-fig,ax = plt.subplots(2)
-plt.sca(ax[0])
-sns.histplot(plotting_array[locations=='VPS'][:,1]*1e6)
-plt.xlabel('AP coord VPS neurons')
-sel = np.where((sig==1)&(locations=='VPS'))
-plt.sca(ax[1])
-sns.histplot(plotting_array[sel,1][0]*1e6)
-plt.xlabel('AP coord VPS value neurons')
+# Plot striatal cells
+plotting_array, plotting_array_selection, sig, locations = get_map(SESSIONS, variable = 'policy_laser', thresh = 0.01, model=model)
+bins= np.array([-450,1000])
+fig,ax = plt.subplots(1,len(bins))
+for sub_reg in ['NAc','DMS','DLS','TS']:
+    str_plotting_array = plotting_array[locations==sub_reg]
+    noise_level=100
+    binned_plotting_array = np.copy(str_plotting_array*1e6)
+    slices = bins-250
+    val = np.digitize(binned_plotting_array[:,1],bins)
+    val[val==len(bins)]=len(bins)-1
+    binned_plotting_array[:,1]=bins[val]
+    cmap_bound = matplotlib.cm.get_cmap("bone_r").copy()
+    cmap_bound.set_under([1, 1, 1], 0)
+    for i in  np.arange(len(bins)):
+        plt.sca(ax[i])
+        ba.plot_cslice(slices[i]/1e06, mapping='Allen', cmap=cmap_bound)
+        points = binned_plotting_array[np.where(binned_plotting_array[:,1]==bins[i])[0],:]
+        x_noise = np.random.normal(-noise_level,noise_level,len(points))
+        z_noise = np.random.normal(-noise_level,noise_level,len(points))  
+        plt.scatter(points[:,0] + x_noise,points[:,2] + z_noise, s=0.5, c=str_pal[sub_reg], edgecolors=None)
+        ax[i].set_xlim(-5000,0)
+        ax[i].set_axis_off()
+        sns.despine()
+
+bins= np.array([-450,1000])
+fig,ax = plt.subplots(1,len(bins))
+for sub_reg in pals.keys():
+    str_plotting_array = plotting_array[locations==sub_reg]
+    noise_level=100
+    binned_plotting_array = np.copy(str_plotting_array*1e6)
+    slices = bins-250
+    val = np.digitize(binned_plotting_array[:,1],bins)
+    val[val==len(bins)]=len(bins)-1
+    binned_plotting_array[:,1]=bins[val]
+    cmap_bound = matplotlib.cm.get_cmap("bone_r").copy()
+    cmap_bound.set_under([1, 1, 1], 0)
+    for i in  np.arange(len(bins)):
+        plt.sca(ax[i])
+        ba.plot_cslice(slices[i]/1e06, mapping='Allen', cmap=cmap_bound)
+        points = binned_plotting_array[np.where(binned_plotting_array[:,1]==bins[i])[0],:]
+        x_noise = np.random.normal(-noise_level,noise_level,len(points))
+        z_noise = np.random.normal(-noise_level,noise_level,len(points))  
+        plt.scatter(points[:,0] + x_noise,points[:,2] + z_noise, s=0.5, c=pals[sub_reg], edgecolors=None)
+        ax[i].set_xlim(-5000,0)
+        ax[i].set_axis_off()
+        sns.despine()
+
 
 ### Current work, map where significant are colored by gain
-plotting_array, plotting_array_selection, sig, locations = get_map(SESSIONS, variable = 'value_laser', thresh = 0.01, model=model)
-o_gains = get_gains(SESSIONS, variable = 'outcome_laser_gain',  model=model)
-c_gains = get_gains(SESSIONS, variable = 'laser_contra_gain',  model=model)
-cu_gains = get_gains(SESSIONS, variable = 'laser_cue_gain',  model=model)
+plotting_array, plotting_array_selection, sig, locations = get_map(SESSIONS, variable = 'value', thresh = 0.0101, model=model)
 
-noise_level=100
-bins= np.array([-1250,-250,750,1750,2750])
-binned_plotting_array = np.copy(plotting_array*1e6)
-slices = bins-500
-val = np.digitize(binned_plotting_array[:,1],bins)
-val[val==len(bins)]=len(bins)-1
-binned_plotting_array[:,1]=bins[val]
-cmap_bound = matplotlib.cm.get_cmap("bone_r").copy()
-cmap_bound.set_under([1, 1, 1], 0)
+bins= np.array([-450,1000])
+value=sig
+fig,ax = plt.subplots(1,len(bins))
+for sub_reg in ['NAc','DMS','DLS','TS']:
+    str_plotting_array = plotting_array[locations==sub_reg]
+    value_reg = value[locations==sub_reg]
+    noise_level=100
+    binned_plotting_array = np.copy(str_plotting_array*1e6)
+    slices = bins-250
+    val = np.digitize(binned_plotting_array[:,1],bins)
+    val[val==len(bins)]=len(bins)-1
+    binned_plotting_array[:,1]=bins[val]
+    cmap_bound = matplotlib.cm.get_cmap("bone_r").copy()
+    cmap_bound.set_under([1, 1, 1], 0)
+    for i in  np.arange(len(bins)):
+        plt.sca(ax[i])
+        ba.plot_cslice(slices[i]/1e06, mapping='Allen', cmap=cmap_bound)
+        points = binned_plotting_array[np.where(binned_plotting_array[:,1]==bins[i])[0],:]
+        bin_points =  value_reg[np.where(binned_plotting_array[:,1]==bins[i])]
+        sig_points = np.where(bin_points!=0)[0]
+        sig_point_value = bin_points[sig_points]
+        x_noise = np.random.normal(-noise_level,noise_level,len(points))
+        z_noise = np.random.normal(-noise_level,noise_level,len(points))  
+        plt.scatter(points[:,0] + x_noise,points[:,2] + z_noise, s=0.5, c='grey',edgecolors=None)
+        plt.scatter(points[sig_points,0] + x_noise[sig_points], points[sig_points,2] + z_noise[sig_points], 
+                s=0.5, c='k', edgecolors=None)        #str_pal[sub_reg]
+        ax[i].set_xlim(-5000,0)
+        ax[i].set_axis_off()
+        sns.despine()
 
-fig,ax = plt.subplots(3,len(bins))
-value=cu_gains*sig
-for i in  np.arange(len(bins)):
-    plt.sca(ax[0,i])
-    ba.plot_cslice(slices[i]/1e06, volume='boundary', mapping='Allen', cmap=cmap_bound)
-    points = binned_plotting_array[np.where(binned_plotting_array[:,1]==bins[i])[0],:]
-    bin_points =  value[np.where(binned_plotting_array[:,1]==bins[i])]
-    sig_points = np.where(bin_points!=0)[0]
-    sig_point_value = bin_points[sig_points]
-    x_noise = np.random.normal(-noise_level,noise_level,len(points))
-    z_noise = np.random.normal(-noise_level,noise_level,len(points))    
-    plt.scatter(points[:,0] + x_noise,points[:,2] + z_noise, s=0.5, c='grey',edgecolors=None)
-    plt.scatter(points[sig_points,0] + x_noise[sig_points], points[sig_points,2] + z_noise[sig_points], 
-                s=0.5, c=sig_point_value, cmap='seismic', edgecolors=None, vmin=-1,vmax=1)
-    ax[0,i].set_xlim(-5000,0)
-    ax[0,i].set_axis_off()
-    sns.despine()
+plotting_array, plotting_array_selection, sig, locations = get_map(SESSIONS, variable = 'policy', thresh = 0.0101, model=model)
+bins= np.array([-450,1000])
+value=sig
+fig,ax = plt.subplots(1,len(bins))
+for sub_reg in ['NAc','DMS','DLS','TS']:
+    str_plotting_array = plotting_array[locations==sub_reg]
+    value_reg = value[locations==sub_reg]
+    noise_level=100
+    binned_plotting_array = np.copy(str_plotting_array*1e6)
+    slices = bins-250
+    val = np.digitize(binned_plotting_array[:,1],bins)
+    val[val==len(bins)]=len(bins)-1
+    binned_plotting_array[:,1]=bins[val]
+    cmap_bound = matplotlib.cm.get_cmap("bone_r").copy()
+    cmap_bound.set_under([1, 1, 1], 0)
+    for i in  np.arange(len(bins)):
+        plt.sca(ax[i])
+        ba.plot_cslice(slices[i]/1e06, mapping='Allen', cmap=cmap_bound)
+        points = binned_plotting_array[np.where(binned_plotting_array[:,1]==bins[i])[0],:]
+        bin_points =  value_reg[np.where(binned_plotting_array[:,1]==bins[i])]
+        sig_points = np.where(bin_points!=0)[0]
+        sig_point_value = bin_points[sig_points]
+        x_noise = np.random.normal(-noise_level,noise_level,len(points))
+        z_noise = np.random.normal(-noise_level,noise_level,len(points))  
+        plt.scatter(points[:,0] + x_noise,points[:,2] + z_noise, s=0.5, c='grey',edgecolors=None)
+        plt.scatter(points[sig_points,0] + x_noise[sig_points], points[sig_points,2] + z_noise[sig_points], 
+                s=0.5, c='k', edgecolors=None)        #str_pal[sub_reg]
+        ax[i].set_xlim(-5000,0)
+        ax[i].set_axis_off()
+        sns.despine()
 
-value=c_gains*sig
-for i in  np.arange(len(bins)):
-    plt.sca(ax[1,i])
-    ba.plot_cslice(slices[i]/1e06, volume='boundary', mapping='Allen', cmap=cmap_bound)
-    points = binned_plotting_array[np.where(binned_plotting_array[:,1]==bins[i])[0],:]
-    bin_points =  value[np.where(binned_plotting_array[:,1]==bins[i])]
-    sig_points =  np.where(bin_points!=0)[0]
-    sig_point_value = bin_points[sig_points]
-    x_noise = np.random.normal(-noise_level,noise_level,len(points))
-    z_noise = np.random.normal(-noise_level,noise_level,len(points))    
-    plt.scatter(points[:,0] + x_noise,points[:,2] + z_noise, s=0.5, c='grey',edgecolors=None)
-    plt.scatter(points[sig_points,0] + x_noise[sig_points], points[sig_points,2] + z_noise[sig_points], 
-                s=0.5, c=sig_point_value, cmap='seismic',edgecolors=None, vmin=-1,vmax=1)
-    ax[1,i].set_xlim(-5000,0)
-    ax[1,i].set_axis_off()
-    sns.despine()
 
-value=o_gains*sig
-for i in  np.arange(len(bins)):
-    plt.sca(ax[2,i])
-    ba.plot_cslice(slices[i]/1e06, volume='boundary', mapping='Allen', cmap=cmap_bound)
-    points = binned_plotting_array[np.where(binned_plotting_array[:,1]==bins[i])[0],:]
-    bin_points =  value[np.where(binned_plotting_array[:,1]==bins[i])]
-    sig_points =  np.where(bin_points!=0)[0]
-    sig_point_value = bin_points[sig_points]
-    x_noise = np.random.normal(-noise_level,noise_level,len(points))
-    z_noise = np.random.normal(-noise_level,noise_level,len(points))    
-    plt.scatter(points[:,0] + x_noise,points[:,2] + z_noise, s=0.5, c='grey',edgecolors=None)
-    plt.scatter(points[sig_points,0] + x_noise[sig_points], points[sig_points,2] + z_noise[sig_points], 
-                s=0.5, c=sig_point_value, cmap='seismic', edgecolors=None, vmin=-1,vmax=1)
-    ax[2,i].set_xlim(-5000,0)
-    ax[2,i].set_axis_off()
-    sns.despine()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Density
+
+plotting_array, plotting_array_selection, sig, locations = get_map(SESSIONS, variable = 'policy', thresh = 0.0101, model=model)
+bins= np.array([-450,750,1500])
+value=sig
+fig,ax = plt.subplots(1,len(bins))
+for sub_reg in ['NAc','DMS','DLS','TS']:
+    str_plotting_array = plotting_array[locations==sub_reg]
+    value_reg = value[locations==sub_reg]
+    noise_level=25
+    binned_plotting_array = np.copy(str_plotting_array*1e6)
+    slices = bins-250
+    val = np.digitize(binned_plotting_array[:,1],bins)
+    val[val==len(bins)]=len(bins)-1
+    binned_plotting_array[:,1]=bins[val]
+    cmap_bound = matplotlib.cm.get_cmap("bone_r").copy()
+    cmap_bound.set_under([1, 1, 1], 0)
+    for i in  np.arange(len(bins)):
+        plt.sca(ax[i])
+        ba.plot_cslice(slices[i]/1e06, mapping='Allen', cmap=cmap_bound)
+        points = binned_plotting_array[np.where(binned_plotting_array[:,1]==bins[i])[0],:]
+        bin_points =  value_reg[np.where(binned_plotting_array[:,1]==bins[i])]
+        sig_points = np.where(bin_points!=0)[0]
+        sig_point_value = bin_points[sig_points]
+        x_noise = np.random.normal(-noise_level,noise_level,len(points))
+        z_noise = np.random.normal(-noise_level,noise_level,len(points))  
+        plt.scatter(points[:,0] + x_noise,points[:,2] + z_noise, s=0.5, c='grey',edgecolors=None)
+        plt.scatter(points[sig_points,0] + x_noise[sig_points], points[sig_points,2] + z_noise[sig_points], 
+                s=0.5, c='k', edgecolors=None)        #str_pal[sub_reg]
+        ax[i].set_xlim(-5000,0)
+        ax[i].set_axis_off()
+        sns.despine()
+
+
 
 # Plot cue gains with further resolution
 

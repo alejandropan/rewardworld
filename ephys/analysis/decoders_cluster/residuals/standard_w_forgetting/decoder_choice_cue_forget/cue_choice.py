@@ -69,15 +69,3 @@ for i in np.arange(200):
 run_decoder_for_session_residual(c_neural_data, area, alfio, regressed_variable, weights, alignment_time, etype = 'real', output_folder=output_folder, decoder = 'logistic')
 #for n, null_ses in enumerate(null_sesssions):
 #    run_decoder_for_session_residual(c_neural_data, area, alfio, regressed_variable, weights, alignment_time, etype = 'null', n=n, output_folder=output_folder)
-
-
-
-ses = ROOT+id_dict.loc[id_dict['id']==int(19),'ses'].to_string(index=False)
-area = id_dict.loc[id_dict['id']==int(19),'area'].to_string(index=False)
-
-# Load behavior
-alfio = alf(ses, ephys=True)
-alfio.mouse = Path(ses).parent.parent.name
-alfio.date = Path(ses).parent.name
-alfio.ses = Path(ses).name
-alfio.path = ses

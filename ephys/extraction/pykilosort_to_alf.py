@@ -5,6 +5,7 @@ import shutil
 import os
 import subprocess
 from collections import OrderedDict
+import spikes_alex_version
 import traceback
 import numpy as np
 import pandas as pd
@@ -457,7 +458,6 @@ def extract_behaviour_sync(sync, chmap=None, display=False, bpod_trials=None, tm
         ax.set_yticklabels(['', 'bpod', 'f2ttl', 'audio', 're_0', ''])
         ax.set_yticks([0, 1, 2, 3, 4, 5])
         ax.set_ylim([0, 5])
-
     return trials
 
 
@@ -669,7 +669,7 @@ def sorting_sync_and_alf(session_path, overwrite=False):
                 bin_file=ap_file,
                 ampfactor=_sample2v(ap_file),
             )
-            out, _ = spikes.sync_spike_sorting(ap_file=ap_file, out_path=probe_out_path)
+            out, _ = spikes_alex_version.sync_spike_sorting(ap_file=ap_file, out_path=probe_out_path)
             out_files.extend(out)
             # convert ks2_output into tar file and also register
             # Make this in case spike sorting is in old raw_ephys_data folders, for new

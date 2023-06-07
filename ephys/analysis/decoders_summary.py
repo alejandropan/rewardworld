@@ -31,7 +31,14 @@ pals = dict({
     'Other':'#d9d9d9'})
 
 # Decoders
+
 decoder_paths = [
+'/Volumes/witten/Alex/decoders_residuals_results/decoder_output_qchosen_outcome_forget',
+'/Volumes/witten/Alex/decoders_residuals_results/decoder_output_rpe_outcome_forget',
+'/Volumes/witten/Alex/decoders_raw_results/decoder_output_rpe_outcome_forget',
+'/Volumes/witten/Alex/decoders_raw_results/decoder_output_qchosen_outcome_forget',
+'/Volumes/witten/Alex/decoders_residuals_results/decoder_output_outcome_outcome_forget',
+'/Volumes/witten/Alex/decoders_raw_results/decoder_output_outcome_outcome_forget',
 '/Volumes/witten/Alex/decoders_raw_results/decoder_output_qchosen_cue_forget',
 '/Volumes/witten/Alex/decoders_raw_results/decoder_output_deltaq_cue_forget',
 '/Volumes/witten/Alex/decoders_raw_results/decoder_output_choice_cue_forget',
@@ -44,9 +51,17 @@ decoder_paths = [
 '/Volumes/witten/Alex/decoders_residuals_results/decoder_output_qcontra_cue_forget',
 '/Volumes/witten/Alex/decoders_raw_results/decoder_output_qipsi_cue_forget',
 '/Volumes/witten/Alex/decoders_residuals_results/decoder_output_qipsi_cue_forget'
+'/Volumes/witten/Alex/decoders_raw_results/decoder_output_qchosen_outcome_post_forget',
+'/Volumes/witten/Alex/decoders_residuals_results/decoder_output_qchosen_outcome_post_forget'
 ]
 
 varss = [
+'qchosen_pre',
+'rpe',
+'rpe',
+'qchosen_pre',
+'outcome',
+'outcome',
 'qchosen_pre',
 'deltaq',
 'choice',
@@ -58,10 +73,18 @@ varss = [
 'qcontra',
 'qcontra',
 'qipsi',
-'qipsi'
+'qipsi',
+'qchosen_post',
+'qchosen_post',
 ]
 
 epochs = [
+'outcome',
+'outcome',
+'outcome',
+'outcome',
+'outcome',
+'outcome',
 'cue',
 'cue',
 'cue',
@@ -73,15 +96,25 @@ epochs = [
 'cue',
 'cue',
 'cue',
-'cue'
+'cue',
+'outcome',
+'outcome'
 ]
 
 x_types = [
+'residuals',
+'residuals',
+'raw',
+'raw',
+'residuals',
+'raw',
 'raw',
 'raw',
 'raw',
 'residuals',
 'residuals',
+'residuals',
+'raw',
 'residuals',
 'raw',
 'residuals',
@@ -91,7 +124,9 @@ x_types = [
 'residuals'
 ]
 
-def load_decoders(decoder_path, var = None, epoch = None, x_type = None, null=False):
+
+
+def load_decoders(decoder_path, var = None, epoch = None, x_type = None, null=False, n_neuron_combos_tried = np.array([20])):
     '''
     This load decoders that were run with decoders that each combination of neurons is free to 
     have a different number of trials, depending on when then neurons were active
@@ -133,15 +168,21 @@ def load_decoders(decoder_path, var = None, epoch = None, x_type = None, null=Fa
             acc_combo['n_neurons'] = n_neuron_combos_tried[c]
             acc = pd.concat([acc,acc_combo])
         if null==True:
-            acc['region'] = f_path[len(decoder_path)+9:-34]
+            acc['region'] = f_path.split('null_')[1][:-34]
         else:
             acc['region'] = f_path[len(decoder_path)+6:-34]
         acc['mouse'] = f_path[-33:-27]
         acc['hemisphere'] = f_path[-15:-14]
         acc['date'] = f_path[-26:-16]
-        acc['type'] = 'real'
-        acc['id'] =   acc['region'] + acc['type'] + \
-            acc['date'] +acc['mouse'] + acc['hemisphere'] + acc['type']
+        if null == True:
+            acc['iter'] = f_path.split('/')[-1].split('_null')[0]
+            acc['type'] = 'null'
+            acc['id'] =   acc['iter']+ acc['region'] + acc['type'] + \
+                acc['date'] +acc['mouse'] + acc['hemisphere'] + acc['type']
+        else:
+            acc['type'] = 'real'
+            acc['id'] =   acc['region'] + acc['type'] + \
+                acc['date'] +acc['mouse'] + acc['hemisphere'] + acc['type']
         summary = pd.concat([summary,acc])
     summary  = summary.reset_index()
     summary['variable'] = var
@@ -161,7 +202,7 @@ def load_all_decoders(decoder_paths, varss, epochs, x_types):
 
 def plot_summary(decoders_restricted, plot_variables=None, plot_epochs=None,  n_neurons=20):
     plot_variables= np.unique(plot_variables)
-    fig, ax = plt.subplots(2,len(plot_variables), sharex=True, sharey=True)
+    fig, ax = plt.subplots(2,len(plot_variables), sharex=True, sharey=False)
     for i, var in enumerate(plot_variables):
         plt.sca(ax[0,i])
         decoders_restricted_var_residuals = decoders_restricted.loc[(decoders_restricted['variable']==var) & 
@@ -175,6 +216,10 @@ def plot_summary(decoders_restricted, plot_variables=None, plot_epochs=None,  n_
         plt.axvline(x = 4, ymin = 0, linestyle='--',  color='k', alpha=0.5)
         if i==0:
             plt.ylabel('pearson-r')
+        if np.isin(var,['choice','outcome']):
+            plt.ylim(0.4,1)
+        else:
+            plt.ylim(0,0.7)
         plt.sca(ax[1,i])
         decoders_restricted_var_residuals = decoders_restricted.loc[(decoders_restricted['variable']==var) & 
                                                     (decoders_restricted['x_type']=='raw')& 
@@ -186,6 +231,10 @@ def plot_summary(decoders_restricted, plot_variables=None, plot_epochs=None,  n_
         plt.xlabel('Time from ' + plot_epochs[i])
         plt.axvline(x = 4, ymin = 0, linestyle='--', color='k', alpha=0.5)
         plt.xticks(np.arange((post_time-pre_time)/bin_size)[::5], np.round(np.arange(pre_time,post_time,bin_size)[1::5],2), rotation=90)
+        if np.isin(var,['choice','outcome']):
+            plt.ylim(0.5,1)
+        else:
+            plt.ylim(0,0.7)
         if i==0:
             plt.ylabel('pearson-r')
         if i!=len(plot_variables)-1:
@@ -266,17 +315,17 @@ def plot_mean_by_session_n_neurons(decoders_restricted, var='qchosen_pre', epoch
         plt.title(ses)
 
 def plot_null_analysis(decoders_restricted , nsummary_restricted, varss = None, epoch = None):
-    decoders_restricted['ses_id'] = decoders_restricted['mouse']+decoders_restricted['date']+decoders_restricted['hemisphere']
+    decoders_restricted['ses_id'] = decoders_restricted['mouse']+decoders_restricted['date']+'_'+str(decoders_restricted['hemisphere'])
     ids = decoders_restricted['ses_id'].unique().tolist()
     colors = [list(np.random.choice(range(256), size=3)/256) for i in range(len(ids))]
     pale = dict(zip(ids,colors))
-    fig,ax  = plt.subplots(5,2, sharey=True, sharex=True)
+    fig,ax  = plt.subplots(6,2, sharey=True, sharex=True)
     for i, reg in enumerate(selected_regions):
-        plt.sca(ax[i%5,int(i/5)])
+        plt.sca(ax[i%6,int(i/6)])
         region_data = decoders_restricted.loc[decoders_restricted['region']==reg]
         region_null = nsummary_restricted.loc[nsummary_restricted['region']==reg]
-        sns.lineplot(data=region_data, x='time_bin', y='r', errorbar=None, hue='ses_id', palette='Reds')
-        sns.lineplot(data=region_null, x='time_bin', y='r', errorbar=('pi', 95), color='k', alpha=0.5)
+        sns.lineplot(data=region_data, x='time_bin', y='r', errorbar=None, hue='ses_id', palette=pale)
+        sns.lineplot(data=region_null, x='time_bin', y='r', errorbar=('pi', 99), color='k', alpha=0.5)
         plt.axvline(x = 4, ymin = 0, linestyle='--', color='k', alpha=0.5)
         plt.xticks(np.arange((post_time-pre_time)/bin_size)[::5], np.round(np.arange(pre_time,post_time,bin_size)[1::5],2), rotation=90)
         plt.xlabel('Time from ' + epoch)
@@ -301,10 +350,42 @@ if __name__=='__main__':
         decoders_summary = load_all_decoders(decoder_paths, varss, epochs, x_types)
         decoders_summary.to_csv('/Volumes/witten/Alex/decoders_raw_results/decoders_summary.csv')
 
+    # Delete excluded sessions: dop_53\2022-10-03
+    decoders_summary = decoders_summary.loc[~(decoders_summary['id'].str.contains('2022-10-03dop_53'))].reset_index()
+    # Make 'r' accuracy for categorical variables, choice and outcome
+    decoders_summary.loc[(decoders_summary['variable']=='choice')| (decoders_summary['variable']=='outcome'),'r'] = \
+        decoders_summary.loc[(decoders_summary['variable']=='choice')| (decoders_summary['variable']=='outcome'),'mse']
     # Figure 1
     selected_regions = np.array(['SS', 'MO', 'PFC', 'OFC', 'DLS', 'DMS', 'TS', 'NAc', 'GPe', 'VP', 'Olfactory'])
     decoders_restricted =  decoders_summary.loc[np.isin(decoders_summary['region'], selected_regions)]
-    plot_summary(decoders_restricted, plot_variables=varss, plot_epochs=epochs,  n_neurons=20)    
+    plotting_varss = [
+    'choice',
+    'totalq',
+    'deltaq',
+    'qchosen_pre']
+
+    plotting_epochs = [
+    'cue',
+    'cue',
+    'cue',
+    'cue']
+    
+    plot_summary(decoders_restricted, plot_variables=plotting_varss, plot_epochs=plotting_epochs,  n_neurons=20)    
+
+    plotting_varss = [
+    'outcome',
+    'rpe',
+    'qchosen_pre',
+    'qchosen_post']
+
+    plotting_epochs = [
+    'outcome',
+    'outcome',
+    'outcome',
+    'outcome']
+    
+    plot_summary(decoders_restricted, plot_variables=plotting_varss, plot_epochs=plotting_epochs,  n_neurons=20)    
+    
     plot_n_neurons_r(decoders_restricted, plot_variables=varss, plot_epochs=epochs)
     #plot_n_neurons_r(decoders_restricted)
 
@@ -324,12 +405,12 @@ if __name__=='__main__':
 
 # By region vs null for q chosen
     # 1st load the nulls
-    null_path = '/Volumes/witten/Alex/decoders_residuals_results/decoder_output_qchosen_cue_forget'
+    null_path = '/jukebox/witten/Alex/decoders_raw_results/decoder_output_qchosen_cue_forget'
     try:
-        nsummary = pd.read_csv('/Volumes/witten/Alex/decoders_raw_results/nsummary.csv')
+        nsummary = pd.read_csv('/Volumes/witten/Alex/decoders_residuals_results/nsummary_qchosen_pre_cue.csv')
     except:
         nsummary = load_decoders(null_path, var = 'qchosen_pre', epoch = 'cue', x_type = 'residuals', null=True)
-        nsummary.to_csv('/Volumes/witten/Alex/decoders_raw_results/nsummary.csv')
+        nsummary.to_csv('/juekbox/witten/Alex/decoders_raw_results/nsummary_qchosen.csv')
 
     selected_regions = np.array(['SS', 'MO', 'PFC', 'OFC', 'DLS', 'DMS', 'TS', 'NAc', 'GPe', 'VP', 'Olfactory'])
     decoders_restricted =  decoders_summary.loc[np.isin(decoders_summary['region'], selected_regions)]
@@ -345,11 +426,11 @@ if __name__=='__main__':
 ######
 
     # Lambdas summary
-    decoder_path = '/Volumes/witten/Alex/decoders_residuals_results/decoder_output_qchosen_cue_forget'
+    decoder_path = '/Volumes/witten/Alex/decoders_residuals_results/decoder_output_choice_cue_forget'
     f=[]
     f= glob.glob(decoder_path+'/*real*p_summary.npy')    
     os.chdir(decoder_path)
-    lams = [0.001,0.01,0.1,1,10]
+    lams = np.array([0.00001,0.0001,0.001,0.01,0.1,1,10,100])
     lambdas = pd.DataFrame()
     for f_path in tqdm(f):
         p_summary = np.load(f_path)
@@ -365,16 +446,16 @@ if __name__=='__main__':
             temp_lambdas['fold'] = np.arange(np.shape(p_summary)[0])
             temp_lambdas['n_neurons'] = n_neuron_combos_tried[c]
             lambdas = pd.concat([lambdas,temp_lambdas])
-    sns.hisplot(lambdas)
+    sns.histplot(lambdas['l'])
 
     # Run Q_chosen with new decoders (combinations have different number of trials)
-    def plot_pilot_analysis(decoders_restricted, selected_regions):
+    def plot_pilot_analysis(decoders_restricted, selected_regions, pale=None):
         decoders_restricted['ses_id'] = decoders_restricted['mouse']+decoders_restricted['date']+decoders_restricted['hemisphere'].astype(str)
         fig,ax  = plt.subplots(6,2, sharey=True, sharex=True)
         for i, reg in enumerate(selected_regions):
             plt.sca(ax[i%6,int(i/6)])
             region_data = decoders_restricted.loc[decoders_restricted['region']==reg]
-            sns.lineplot(data=region_data, x='time_bin', y='r', errorbar='se', palette='Reds')
+            sns.lineplot(data=region_data, x='time_bin', y='mse', errorbar='se', palette=pale)
             plt.axvline(x = 4, ymin = 0, linestyle='--', color='k', alpha=0.5)
             plt.xticks(np.arange((post_time-pre_time)/bin_size)[::5], np.round(np.arange(pre_time,post_time,bin_size)[1::5],2), rotation=90)
             plt.xlabel('Time from cue')
@@ -391,8 +472,36 @@ if __name__=='__main__':
 
 
 
-    decoder_path = '/Volumes/witten/Alex/decoders_residuals_results/decoder_output_qchosen_cue_forget'
-    d_data = load_decoders_new(decoder_path, var = 'qchosen', epoch = 'cue', x_type = 'residuals', null=False)
-    selected_regions = np.array(['SS', 'OFC', 'NAc', 'PFC', 'DMS', 'DLS', 'TS', 'VP', 'SNr','Olfactory', 'PFC', 'GPe'])
+    decoder_path = '//Volumes/witten/Alex/decoders_raw_results/decoder_output_deltaq_cue_forget'
+    d_data = load_decoders(decoder_path, var = 'decision_time', epoch = 'cue', x_type = 'residual', null=False)    
+    selected_regions = np.array(['SS', 'OFC', 'NAc', 'PFC', 'DMS', 'DLS', 'TS', 'VP','Olfactory', 'PFC', 'GPe'])
     decoders_restricted =  d_data.loc[np.isin(d_data['region'], selected_regions)]
-    decoders_restricted = decoders_restricted.loc[(decoders_restricted['n_neurons']==20)]
+    region_data = decoders_restricted.loc[(decoders_restricted['n_neurons']==20)]
+    plot_pilot_analysis(decoders_restricted, selected_regions, pale=pals)
+
+    ### Plot striatal regions only
+    # For Policy first
+    str_pal = dict({
+        'DLS':'#c77c2c', 
+        'DMS':'#a61678', 
+        'TS':'#1a2696', 
+        'NAc':'#3ea33e'})
+    decoder_path = '//Volumes/witten/Alex/decoders_raw_results/decoder_output_deltaq_cue_forget'
+    d_data = load_decoders(decoder_path, var = 'deltaq', epoch = 'cue', x_type = 'raw', null=False)    
+    selected_regions = np.array(['NAc','DMS', 'DLS', 'TS'])
+    decoders_restricted =  d_data.loc[np.isin(d_data['region'], selected_regions)]
+    sns.lineplot(data=decoders_restricted, x='time_bin', y='r', hue='region', palette=str_pal, errorbar='se')
+    plt.xticks(np.arange((post_time-pre_time)/bin_size)[::5], np.round(np.arange(pre_time,post_time,bin_size)[1::5],2), rotation=90)
+    plt.xlabel('Time from cue')
+    plt.ylabel('r')
+    sns.despine()
+
+    decoder_path = '//Volumes/witten/Alex/decoders_raw_results/decoder_output_qchosen_cue_forget'
+    d_data = load_decoders(decoder_path, var = 'deltaq', epoch = 'cue', x_type = 'raw', null=False)    
+    selected_regions = np.array(['NAc','DMS', 'DLS', 'TS'])
+    decoders_restricted =  d_data.loc[np.isin(d_data['region'], selected_regions)]
+    sns.lineplot(data=decoders_restricted, x='time_bin', y='r', hue='region', palette=str_pal, errorbar='se')
+    plt.xticks(np.array([0,4,9]),np.array([-0.4,0,0.5]), rotation=90)
+    plt.axvline(x = 4, ymin = 0, linestyle='--', color='k', alpha=0.5)
+    plt.xlabel('Time from cue')
+    plt.ylabel('Pearson - r')

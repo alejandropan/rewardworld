@@ -6,7 +6,7 @@ import mat73
 import glob
 import numpy as np
 
-ENCODING_MODEL_MAT_FILE = '/Volumes/witten/Chris/matlab/cz/ibl_da_neuropixels_2022/encoding-model/encoding-model-output-2023-01-04-02-00-PM.mat'
+ENCODING_MODEL_MAT_FILE = '/Volumes/witten/Chris/matlab/cz/ibl_da_neuropixels_2022/encoding-model/encoding-model-output-2023-03-25-10-38-AM.mat'
 
 def load_encoding_model(model_path = ENCODING_MODEL_MAT_FILE):
     model_dict = loadmat(model_path)
@@ -70,7 +70,7 @@ def resample (psth_array,final_bins, model_bin_size):
                                         axis = 1)
     return new_psth_array
 
-def load_residual(neuron_file, model_bin_size=5, final_bins=100, pre_time = -500, post_time = 1000, filetype='residual', criterion='good'): # bin sizes in ms
+def load_residual(neuron_file, model_bin_size=5, final_bins=100, pre_time = -500, post_time = 500, filetype='residual', criterion='good'): # bin sizes in ms
     if criterion == 'good':
         acceptable_labels = 1
     elif criterion == 'mua':
@@ -102,7 +102,7 @@ def load_residual(neuron_file, model_bin_size=5, final_bins=100, pre_time = -500
     post_window = int(abs(post_time/model_bin_size))
     residuals_goCue = np.zeros([n_trials, pre_window+post_window])
     residuals_choice =  np.zeros([n_trials, pre_window+post_window])
-    residuals_outcome = np.zeros([n_trials, pre_window+post_window])
+    residuals_outcome = np.zeros([n_trials, pre_window+post_window+1500])
     for i in range(n_trials):
         go = int(residual_struct['data']['times'][i][0] - 1) # -1 to account for matlab indexing
         choice =  int(residual_struct['data']['times'][i][1] - 1) # -1 to account for matlab indexing

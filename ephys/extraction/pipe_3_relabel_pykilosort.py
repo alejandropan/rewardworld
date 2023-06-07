@@ -379,9 +379,14 @@ CHANNEL_MAP= [0,
  383]
 
 def relabel(cluster_info, order=False):
-    cluster_info = cluster_info.rename(columns={'Group': 'old_group','ch': 'old_ch'})
-    cluster_info['ks2_label'] = cluster_info['group'].copy()
-    cluster_info['ch'] = cluster_info['old_ch'].copy()
+    if  np.isin('old_ch',cluster_info.columns):
+        cluster_info = cluster_info.rename(columns={'Group': 'old_group'})
+        cluster_info['ks2_label'] = cluster_info['group'].copy()
+        cluster_info['old_ch'] = cluster_info['ch'].copy()
+    else:
+        cluster_info = cluster_info.rename(columns={'Group': 'old_group','ch': 'old_ch'})
+        cluster_info['ks2_label'] = cluster_info['group'].copy()
+        cluster_info['ch'] = cluster_info['old_ch'].copy()
     if order==True: # Re index into 375 (channels above 375)
         cluster_info['ch'] = np.searchsorted(CHANNEL_MAP, cluster_info['ch'])
     return cluster_info

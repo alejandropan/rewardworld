@@ -2,6 +2,31 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.decomposition import PCA
 from sklearn.linear_model import LinearRegression
+from scipy.io import loadmat
+import scipy.ndimage
+
+def halfgaussian_kernel1d(sigma, radius):
+    """
+    Computes a 1-D Half-Gaussian convolution kernel.
+    """
+    sigma2 = sigma * sigma
+    x = np.arange(0, radius+1)
+    phi_x = np.exp(-0.5 / sigma2 * x ** 2)
+    phi_x = phi_x / phi_x.sum()
+
+    return phi_x
+
+def halfgaussian_filter1d(input, sigma, axis=-1, output=None,
+                      mode="constant", cval=0.0, truncate=4.0):
+    """
+    Convolves a 1-D Half-Gaussian convolution kernel.
+    """
+    sd = float(sigma)
+    # make the radius of the filter equal to truncate standard deviations
+    lw = int(truncate * sd + 0.5)
+    weights = halfgaussian_kernel1d(sigma, lw)
+    origin = -lw // 2
+    return scipy.ndimage.convolve1d(input, weights, axis, output, mode, cval, origin)
 
 m = 5
 Ncrossval = 10
@@ -57,6 +82,12 @@ for idx in [1, 2]:
 
     me = np.mean(error, axis=0)
     ee = np.std(error, axis=0) / np.sqrt(10)
+
+
+
+ 1 - np.var(Yestimate - Ytest) / np.var(Ytest)
+
+
 
     plt.figure(idx)
     plt.bar(1, me[1])  # All

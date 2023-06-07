@@ -20,8 +20,15 @@ def ammend_cluster_files(probe_path):
     prev = pd.read_csv(probe_path+'/clusters.metrics.csv')
     clusters = np.load(probe_path+'/clusters.channels.npy')
     np.save(probe_path+'/clusters.channels_old.npy', clusters)
-    np.save(probe_path+'/clusters.depths.npy', prev['depth'].to_numpy())
-    np.save(probe_path+'/clusters.channels.npy', prev['ch'].to_numpy())
+    new_depths = np.zeros(prev['cluster_id'].max()+1)
+    new_ch = np.zeros(prev['cluster_id'].max()+1)
+    new_depths[:] = np.nan
+    new_ch[:] = np.nan
+    for idx in prev['cluster_id'].unique():
+        new_depths[idx] = prev.loc[prev['cluster_id']==idx,'depth'].to_numpy()
+        new_ch[idx] = prev.loc[prev['cluster_id']==idx,'ch'].to_numpy()
+    np.save(probe_path+'/clusters.depths.npy', new_depths)
+    np.save(probe_path+'/clusters.channels.npy', new_ch)
 
 if __name__=="__main__":
     ammend_cluster_files(*sys.argv[1:])

@@ -290,6 +290,84 @@ def plot_qchosen_summary(encoding_df_cluster, sessions, translator):
     plt.title('Incorrect Laser at outcome')
     plt.xlabel('Time from outcome(s)')
 
+
+def plot_qchosen_summary_detailed(encoding_df_cluster, sessions, translator):
+    fig, ax = plt.subplots()
+    fig.suptitle('alpha=qcontra-ipsi' +' '+ 
+                'recording='+str(encoding_df_cluster['id'])+ ' ' + 
+                'cluster='+str(encoding_df_cluster['cluster_id'])+' ' + 
+                'region='+str(encoding_df_cluster['region'])+
+                '\nAll_p '+str(encoding_df_cluster['policy'])+
+                '\nwater_p '+str(encoding_df_cluster['policy_water'])+
+                ' laser_p  '+str(encoding_df_cluster['policy_laser'])+
+                ' stay_p '+str(encoding_df_cluster['policy_stay'])
+                )
+    # Based on cluster of interest get and divide qdeltas and plot cue for water trials
+    ses_of_interest_ephys, ses_of_interest_behavior  =  \
+        get_ses_from_encoding_cluster (encoding_df_cluster, sessions, translator)
+    cluster_id = int(encoding_df_cluster['cluster_id'])
+    ses_of_interest_behavior = calculate_qchosen(ses_of_interest_behavior)
+    ses_of_interest_behavior.qchosen = ses_of_interest_behavior.qchosen
+    ses_of_interest_behavior.goCue_trigger_times = ses_of_interest_behavior.goCue_trigger_times
+
+    a_value = np.where(ses_of_interest_behavior.qchosen<(np.quantile(ses_of_interest_behavior.qchosen,0.2)))
+    b_value = np.where((ses_of_interest_behavior.qchosen>=np.quantile(ses_of_interest_behavior.qchosen,0.2))&
+        (ses_of_interest_behavior.qchosen<=(np.quantile(ses_of_interest_behavior.qchosen,0.4))))
+    c_value = np.where((ses_of_interest_behavior.qchosen>=np.quantile(ses_of_interest_behavior.qchosen,0.4))&
+        (ses_of_interest_behavior.qchosen<=(np.quantile(ses_of_interest_behavior.qchosen,0.6))))
+    d_value = np.where((ses_of_interest_behavior.qchosen>=np.quantile(ses_of_interest_behavior.qchosen,0.6))&
+        (ses_of_interest_behavior.qchosen<=(np.quantile(ses_of_interest_behavior.qchosen,0.8))))
+    e_value = np.where(ses_of_interest_behavior.qchosen>(np.quantile(ses_of_interest_behavior.qchosen,0.8)))
+
+    for i, trial_set in enumerate([a_value, b_value, c_value, d_value, e_value]):
+        try:
+            psth,bs = calculate_peths(ses_of_interest_ephys.spike_times, ses_of_interest_ephys.spike_clusters, 
+                            np.array([cluster_id]), ses_of_interest_behavior.goCue_trigger_times[trial_set[0][:-1]+1], 
+                            pre_time=0.2, post_time=0.5, bin_size=0.025, smoothing=0.025, return_fr=True)
+            plot_psth(psth, color='orange', alpha=(1+i)*0.2, n_sample_size=len(bs))
+        except:
+            print('No high value laser trials')
+
+
+
+def plot_qdelta_summary_detailed(encoding_df_cluster, sessions, translator):
+    fig, ax = plt.subplots()
+    fig.suptitle('alpha=qcontra-ipsi' +' '+ 
+                'recording='+str(encoding_df_cluster['id'])+ ' ' + 
+                'cluster='+str(encoding_df_cluster['cluster_id'])+' ' + 
+                'region='+str(encoding_df_cluster['region'])+
+                '\nAll_p '+str(encoding_df_cluster['policy'])+
+                '\nwater_p '+str(encoding_df_cluster['policy_water'])+
+                ' laser_p  '+str(encoding_df_cluster['policy_laser'])+
+                ' stay_p '+str(encoding_df_cluster['policy_stay'])
+                )
+    # Based on cluster of interest get and divide qdeltas and plot cue for water trials
+    ses_of_interest_ephys, ses_of_interest_behavior  =  \
+        get_ses_from_encoding_cluster (encoding_df_cluster, sessions, translator)
+    cluster_id = int(encoding_df_cluster['cluster_id'])
+    ses_of_interest_behavior = calculate_dq(ses_of_interest_behavior, ses_of_interest_ephys,encoding_df_cluster)
+    ses_of_interest_behavior.Qdelta = ses_of_interest_behavior.Qdelta
+    ses_of_interest_behavior.goCue_trigger_times = ses_of_interest_behavior.goCue_trigger_times
+
+    a_value = np.where(ses_of_interest_behavior.Qdelta<(np.quantile(ses_of_interest_behavior.Qdelta,0.2)))
+    b_value = np.where((ses_of_interest_behavior.Qdelta>=np.quantile(ses_of_interest_behavior.Qdelta,0.2))&
+        (ses_of_interest_behavior.Qdelta<=(np.quantile(ses_of_interest_behavior.Qdelta,0.4))))
+    c_value = np.where((ses_of_interest_behavior.Qdelta>=np.quantile(ses_of_interest_behavior.Qdelta,0.4))&
+        (ses_of_interest_behavior.Qdelta<=(np.quantile(ses_of_interest_behavior.Qdelta,0.6))))
+    d_value = np.where((ses_of_interest_behavior.Qdelta>=np.quantile(ses_of_interest_behavior.Qdelta,0.6))&
+        (ses_of_interest_behavior.Qdelta<=(np.quantile(ses_of_interest_behavior.Qdelta,0.8))))
+    e_value = np.where(ses_of_interest_behavior.Qdelta>(np.quantile(ses_of_interest_behavior.Qdelta,0.8)))
+
+    for i, trial_set in enumerate([a_value, b_value, c_value, d_value, e_value]):
+        try:
+            psth,bs = calculate_peths(ses_of_interest_ephys.spike_times, ses_of_interest_ephys.spike_clusters, 
+                            np.array([cluster_id]), ses_of_interest_behavior.goCue_trigger_times[trial_set[0][:-1]+1], 
+                            pre_time=0.2, post_time=0.5, bin_size=0.025, smoothing=0.025, return_fr=True)
+            plot_psth(psth, color='orange', alpha=(1+i)*0.2, n_sample_size=len(bs))
+        except:
+            print('No high value laser trials')
+
+
 def plot_qdelta_summary(encoding_df_cluster, sessions, translator):
     fig, ax = plt.subplots(1,3)
     fig.suptitle('alpha=qcontra-ipsi' +' '+ 
@@ -536,22 +614,6 @@ for i, ses in enumerate(LASER_ONLY):
             ses_data.mouse = Path(ses).parent.parent.name
             ses_data.date = Path(ses).parent.name
             ses_data.ses = Path(ses).name
-            ses_data.trial_within_block = \
-                        trial_within_block(ses_data.to_df())['trial_within_block']
-            ses_data.trial_within_block_real = \
-                        trial_within_block(ses_data.to_df())['trial_within_block_real']
-            ses_data.block_number = \
-                        trial_within_block(ses_data.to_df())['block_number']
-            ses_data.block_number_real = \
-                        trial_within_block(ses_data.to_df())['block_number_real']
-            ses_data.probabilityLeft_next = \
-                        trial_within_block(ses_data.to_df())['probabilityLeft_next']
-            ses_data.probabilityLeft_past = \
-                        trial_within_block(ses_data.to_df())['probabilityLeft_past']
-            ses_data.transition_type = \
-                        add_transition_info(ses_data.to_df())['transition_type']
-            ses_data.transition_analysis = \
-                        add_transition_info(ses_data.to_df())['transition_analysis']
             sessions[i] = ses_data
 
 # Get translation table
@@ -565,6 +627,7 @@ encoding_df['id'] = encoding_df['mouse'] + encoding_df['date'] +  encoding_df['s
 
 # For loop and asave by region
 SAVE_PATH ='/Users/alexpan/Documents/neuron_summaries/qchosen'
+
 
 for reg in encoding_df.region.unique():
     reg_encoding = encoding_df.loc[encoding_df['region']==reg].copy()

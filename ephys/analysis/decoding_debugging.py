@@ -110,8 +110,8 @@ def run_decoder(hem_neural_data , alignment_time, regressed_variable, weights, n
     if lambdas is  None:
         lambdas = np.array([0.0001,0.001,0.01,0.1,1])
         if decoder == LLR:
-            lambdas = np.array([0.0001,0.001,0.01,0.1,1])
-            lambdas = 1/(2*lambdas) #To match alphs of linear regressions
+            lambdas = np.array([0.00001,0.0001,0.001,0.01,0.1,1,10,100,1000, 10000])
+            lambdas = 1/lambdas #To match alphs of linear regressions
     n_neurons_availanle = len(hem_neural_data) 
     if n_neurons_availanle < n_neurons_minimum:
         return print('Not enough neurons')

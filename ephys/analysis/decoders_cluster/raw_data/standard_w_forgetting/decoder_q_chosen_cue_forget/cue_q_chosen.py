@@ -52,8 +52,8 @@ neural_data = neural_data.loc[neural_data['location']==area]
 c_neural_data = common_neural_data(neural_data, n_trials_minimum = int(0.8*len(alfio.choice)))
 
 # Load variable to be decoded and aligment times
-alfio.fQRreward_cue = np.copy(np.roll(alfio.fQRreward,1))
-alfio.fQLreward_cue = np.copy(np.roll(alfio.fQLreward,1))
+alfio.fQRreward_cue = np.copy(np.roll(alfio.fQR,1))
+alfio.fQLreward_cue = np.copy(np.roll(alfio.fQL,1))
 alfio.fQRreward_cue[0] = 0
 alfio.fQLreward_cue[0] = 0
 regressed_variable = np.copy(alfio.fQRreward_cue) #For now qchosen
@@ -68,8 +68,13 @@ null_sesssions = []
 for i in np.arange(200):
     n_temp =  pd.read_csv('/jukebox/witten/Alex/null_sessions/laser_only/'+str(i)+'.csv')
     n_temp = n_temp.iloc[:, np.where(n_temp.columns=='choice')[0][0]:]
-    qchosen = n_temp['QRreward'].to_numpy()
-    qchosen[np.where(n_temp.choice==-1)] = n_temp.QLreward.to_numpy()[np.where(n_temp.choice==-1)]
+    qchosen_R = np.roll(np.copy(n_temp['fQR'].to_numpy()),1)
+    qchosen_L = np.roll(np.copy(n_temp['fQL'].to_numpy()),1)
+    qchosen_R[0] = 0
+    qchosen_L[0] = 0   
+    qchosen = np.copy(qchosen_R)
+    qchosen[np.where(n_temp.choice==-1)] = qchosen_L[np.where(n_temp.choice==-1)] #For now qchosen
+    qchosen = qchosen[:len(regressed_variable)]
     null_sesssions.append(qchosen)
 
 ##########################
@@ -77,5 +82,6 @@ for i in np.arange(200):
 ##########################
 
 run_decoder_for_session_residual(c_neural_data, area, alfio, regressed_variable, weights, alignment_time, etype = 'real', output_folder=output_folder)
-#for n, null_ses in enumerate(null_sesssions):
-    #run_decoder_for_session_residual(c_neural_data, area, alfio, regressed_variable, weights, alignment_time, etype = 'null', n=n, output_folder=output_folder)
+#for n, null_ses in enumerate(null_sesssions[:100]):
+#    run_decoder_for_session_residual(c_neural_data, area, alfio, null_ses, weights, alignment_time, etype = 'null', n=n+100, output_folder=output_folder)
+

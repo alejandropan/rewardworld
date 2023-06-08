@@ -66,38 +66,20 @@ weights = None
 ## Run decoder (linear) ##
 ##########################
 
-run_decoder_for_session_residual(c_neural_data, area, alfio, regressed_variable, weights, alignment_time, etype = 'real', output_folder=output_folder)
-
-'''
-##########################
-## Run nulls (linear) ##
-##########################
-# Run nulls (first look for missing nulls)
-path_search_0 = output_folder+'/*null_' + area + '_' + alfio.mouse + '_' + alfio.date+'*0_p_summary.npy'
-files_0 = glob.glob(path_search_0)
-files_max_0 = len(files_0)
-path_search_1 = output_folder+'/*null_' + area + '_' + alfio.mouse + '_' + alfio.date+'*1_p_summary.npy'
-files_1 = glob.glob(path_search_1)
-files_max_1 = len(files_1)-1
-files_max = np.min(files_max_0,files_max_1)
-objective = np.arange(files_max,200)
-
-ses_len = len(regressed_variable)
 null_sesssions = []
-
-for i in objective:
+for i in np.arange(200):
     n_temp =  pd.read_csv('/jukebox/witten/Alex/null_sessions/laser_only/'+str(i)+'.csv')
     n_temp = n_temp.iloc[:, np.where(n_temp.columns=='choice')[0][0]:]
-    qr = np.roll(np.copy(n_temp['fQRreward'].to_numpy()),1)
-    ql = np.roll(np.copy(n_temp['fQLreward'].to_numpy()),1)
-    p = np.roll(np.copy(n_temp['fchoice_prediction'].to_numpy()),1)
-    qr[0] = 0
-    ql[0] = 0   
-    qtotal = (qr * p) + (ql * (1-p))
-    qtotal = qtotal[:ses_len]
-    null_sesssions.append(qtotal)
+    fQRreward_cue = np.copy(n_temp['fQRreward'].to_numpy())
+    fQLreward_cue = np.copy(n_temp['fQLreward'].to_numpy())
+    fchoice_prediction = np.copy(n_temp['fchoice_prediction'].to_numpy())
+    fQRreward_cue[0] = 0
+    fQLreward_cue[0] = 0
+    fchoice_prediction[0] = 0
+    totalq = (fQRreward_cue * fchoice_prediction) + (fQLreward_cue * (1-fchoice_prediction))
+    totalq = totalq[:len(regressed_variable)]
+    null_sesssions.append(totalq)
 
-
+run_decoder_for_session_residual(c_neural_data, area, alfio, regressed_variable, weights, alignment_time, etype = 'real', output_folder=output_folder)
 for n, null_ses in enumerate(null_sesssions):
     run_decoder_for_session_residual(c_neural_data, area, alfio, null_ses, weights, alignment_time, etype = 'null', n=n, output_folder=output_folder)
-'''

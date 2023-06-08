@@ -1,0 +1,2 @@
+sbatch --array=0-14 extract_video.cmd
+

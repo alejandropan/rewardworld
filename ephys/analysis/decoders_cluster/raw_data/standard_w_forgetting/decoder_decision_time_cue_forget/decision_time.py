@@ -1,4 +1,5 @@
 import sys
+import numpy as np
 sys.path.append('/jukebox/witten/Alex/PYTHON/rewardworld/ephys/analysis')
 #import multiprocess as mp
 import sys
@@ -9,6 +10,7 @@ import numpy as npm
 from encoding_model_summary_to_df import load_all_residuals, common_trials, common_neural_data
 from decoding_debugging import *
 import warnings
+import glob
 warnings.filterwarnings('ignore')
 
 ##########################
@@ -17,15 +19,11 @@ warnings.filterwarnings('ignore')
 
 ROOT='/jukebox/witten/Alex/Data/Subjects/'
 ROOT_NEURAL = '/jukebox/witten/Chris/data/ibl_da_neuropixels/Data/Subjects'
-id_dict = pd.read_csv('/jukebox/witten/Alex/decoders_residuals_results/decoder_output_outcome_outcome_forget/id_dict.csv')
-n_neurons_minimum = 10
-alignment_time = 'response_time'
-pre_time = 0.5
-post_time  = 4
-smoothing=0
-bin_size=0.1
-output_folder = '/jukebox/witten/Alex/decoders_residuals_results/decoder_output_outcome_outcome_forget'
+id_dict = pd.read_csv('/jukebox/witten/Alex/decoders_raw_results/decoder_output_decision_time_cue_forget/id_dict.csv')
+alignment_time = 'goCue_time'
+output_folder = '/jukebox/witten/Alex/decoders_raw_results/decoder_output_decision_time_cue_forget'
 temp_folder = '/jukebox/witten/Alex/decoder_wd'
+n_trials_minimum = 100
 
 ##########################
 ####### Load Data ########
@@ -45,32 +43,34 @@ alfio.path = ses
 encoding_res_path = ROOT_NEURAL+'/'+ \
                     id_dict.loc[id_dict['id']==int(sys.argv[1]),'ses'].to_string(index=False)+\
                     '/alf/encodingmodels/inputs/neurons/' 
-neural_data = load_all_residuals(encoding_res_path)
+neural_data = load_all_residuals(encoding_res_path, filetype='real')
 neural_data = neural_data.loc[neural_data['location']==area]
 
 # Trials used
 c_neural_data = common_neural_data(neural_data, n_trials_minimum = int(0.8*len(alfio.choice)))
 
 # Load variable to be decoded and aligment times
-regressed_variable = np.copy(alfio.outcome)
+regressed_variable = np.copy(alfio.response_times) - np.copy(alfio.goCue_trigger_times)
 
+#For now qchosen
+# Only trials included in analysis
 #weights = get_session_sample_weights(alfio.to_df(), categories = ['choice','probabilityLeft', 'outcome'])
 weights = None
 
-# Load and run null distributions
+##########################
+## Run nulls (linear) ##
+##########################
+'''
 null_sesssions = []
 for i in np.arange(200):
     n_temp =  pd.read_csv('/jukebox/witten/Alex/null_sessions/laser_only/'+str(i)+'.csv')
     n_temp = n_temp.iloc[:, np.where(n_temp.columns=='choice')[0][0]:]
-    outcome = n_temp['outcome'][:len(regressed_variable)].to_numpy()
-    null_sesssions.append(outcome)
-
-##########################
-## Run decoder (linear) ##
-##########################
-#run_decoder_for_session_residual(c_neural_data, area, alfio, regressed_variable, weights, alignment_time, etype = 'real', output_folder=output_folder, decoder = 'logistic')
-
-for n, null_ses in enumerate(null_sesssions):
-    run_decoder_for_session_residual(c_neural_data, area, alfio, null_ses, weights, alignment_time, etype = 'null', n=n, output_folder=output_folder, decoder = 'logistic')
+    latency = np.copy(n_temp.response_times) - np.copy(n_temp.goCue_trigger_times)
+    latency = latency[:len(regressed_variable)]
+    null_sesssions.append(latency)
+'''
+run_decoder_for_session_residual(c_neural_data, area, alfio, regressed_variable, weights, alignment_time, etype = 'real', output_folder=output_folder)
+#for n, null_ses in enumerate(null_sesssions):
+    #run_decoder_for_session_residual(c_neural_data, area, alfio, null_ses, weights, alignment_time, etype = 'null', n=n, output_folder=output_folder)
 
 

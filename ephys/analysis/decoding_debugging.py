@@ -95,7 +95,7 @@ def makeXvalpartitions(trials,number_folds):
     return partition_train, partition_test
 
 def run_decoder(hem_neural_data , alignment_time, regressed_variable, weights, number_folds=5, decoder = LR,  
-                n_neurons_minimum = 10, n_neurons_max = 50, lambdas = None, max_n_combinations=100, xval_type='shuffled'):
+                n_neurons_minimum = 20, n_neurons_max = 20, lambdas = None, max_n_combinations=100, xval_type='shuffled'):
     '''
     Params:
     xs : This is the binned firing rates for the population of interest
@@ -108,14 +108,15 @@ def run_decoder(hem_neural_data , alignment_time, regressed_variable, weights, n
     if decoder == LR:
         regressed_variable = zscore(regressed_variable)
     if lambdas is  None:
-        lambdas = np.array([0.0001,0.001,0.01,0.1,1])
+        lambdas = np.array([0.00001,0.0001,0.001,0.01,0.1,1,10,100])
         if decoder == LLR:
-            lambdas = np.array([0.00001,0.0001,0.001,0.01,0.1,1,10,100,1000, 10000])
-            lambdas = 1/lambdas #To match alphs of linear regressions
+            lambdas = np.array([0.00001,0.0001,0.001,0.01,0.1,1,10,100])
+            #lambdas = np.array([0.01])
+            lambdas = 1/(lambdas) #To match alphs of linear regressions
     n_neurons_availanle = len(hem_neural_data) 
     if n_neurons_availanle < n_neurons_minimum:
         return print('Not enough neurons')
-    neuron_samples_n = np.array([n_neurons_minimum, n_neurons_minimum*2, n_neurons_minimum*3, n_neurons_max])
+    neuron_samples_n = np.array([n_neurons_minimum])
     neuron_samples_n = neuron_samples_n[np.where(neuron_samples_n<=n_neurons_availanle)] # Ignore samples with higher n that possible neurons
     neuron_combinations = []
     for samples in neuron_samples_n:
@@ -123,7 +124,12 @@ def run_decoder(hem_neural_data , alignment_time, regressed_variable, weights, n
         for i in np.arange(max_n_combinations):
             neuron_selections.append(np.random.choice(np.arange(n_neurons_availanle), samples, replace=False))
         neuron_combinations.append(neuron_selections) # neuron_combinations[neuron_samples_n][n_combinations_until_using_every_neurons]
-    n_bins = hem_neural_data['residuals_outcome'].iloc[0].shape[1]
+    if alignment_time=='response_time':
+        n_bins = hem_neural_data['residuals_outcome'].iloc[0].shape[1]
+    if alignment_time=='goCue_time':
+        n_bins = hem_neural_data['residuals_goCue'].iloc[0].shape[1]
+    if alignment_time=='action_time':
+        n_bins = hem_neural_data['residuals_choice'].iloc[0].shape[1]    
     pearson_summary = np.zeros([number_folds,len(lambdas), n_bins, len(neuron_combinations), max_n_combinations])
     mse_summary = np.zeros([number_folds,len(lambdas), n_bins, len(neuron_combinations), max_n_combinations]) 
     # pearson_summary  = [n_folds x n_lambdas x n_timebins x n_neurons_samples x n_combinations]
@@ -206,7 +212,7 @@ def weighted_decoder(b, regressed_variable=None, xs=None,
     return np.array([p, mse])
 
 def run_decoder_for_session_residual(c_neural_data, area, alfio, regressed_variable, weights, alignment_time, etype = 'real', 
-                            output_folder='/jukebox/witten/Alex/decoder_output', n_neurons_minimum = 10, n=None, decoder = 'lasso', lambdas=None):
+                            output_folder='/jukebox/witten/Alex/decoder_output', n_neurons_minimum = 20, n=None, decoder = 'lasso', lambdas=None):
     if decoder == 'lasso':
         decoder_type = LR
     if decoder == 'logistic':

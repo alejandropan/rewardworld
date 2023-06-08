@@ -184,7 +184,6 @@ LASER_ONLY = [
 '/Volumes/witten/Alex/Data/Subjects/dop_47/2022-06-10/002', 
 '/Volumes/witten/Alex/Data/Subjects/dop_47/2022-06-09/003',
 '/Volumes/witten/Alex/Data/Subjects/dop_47/2022-06-05/001',
-'/Volumes/witten/Alex/Data/Subjects/dop_47/2022-06-06/001',
 '/Volumes/witten/Alex/Data/Subjects/dop_50/2022-09-12/001',
 '/Volumes/witten/Alex/Data/Subjects/dop_50/2022-09-13/001',
 '/Volumes/witten/Alex/Data/Subjects/dop_50/2022-09-14/003',

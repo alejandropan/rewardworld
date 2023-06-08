@@ -59,13 +59,13 @@ null_sesssions = []
 for i in np.arange(200):
     n_temp =  pd.read_csv('/jukebox/witten/Alex/null_sessions/laser_only/'+str(i)+'.csv')
     n_temp = n_temp.iloc[:, np.where(n_temp.columns=='choice')[0][0]:]
-    qchosen = n_temp['QRreward'].to_numpy()
-    qchosen[np.where(n_temp.choice==-1)] = n_temp.QLreward.to_numpy()[np.where(n_temp.choice==-1)]
-    null_sesssions.append(qchosen)
+    choice = n_temp['choice'][:len(regressed_variable[0])]
+    choice = [1*(np.copy(choice)>0), 1*(np.copy(choice)<1)]
+    null_sesssions.append(choice)
 
 ##########################
 ## Run decoder (linear) ##
 ##########################
 run_decoder_for_session_residual(c_neural_data, area, alfio, regressed_variable, weights, alignment_time, etype = 'real', output_folder=output_folder, decoder = 'logistic')
 #for n, null_ses in enumerate(null_sesssions):
-#    run_decoder_for_session_residual(c_neural_data, area, alfio, regressed_variable, weights, alignment_time, etype = 'null', n=n, output_folder=output_folder)
+#    run_decoder_for_session_residual(c_neural_data, area, alfio, null_ses, weights, alignment_time, etype = 'null', n=n, output_folder=output_folder, decoder = 'logistic')

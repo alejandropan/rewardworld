@@ -59,7 +59,7 @@ def get_norm_neurons(spike_times,spike_clusters,selection, bin_size=0.025):
         norm[i,1] = sigma
     return norm
 
-def psths_per_regions(sessions, roi='DLS'):
+def psths_per_regions(sessions, roi='DLS', group_dict=None):
     region_summary = pd.DataFrame()
     counter = 0
     counter_real = 0
@@ -1406,365 +1406,365 @@ def barplot_ED(region_df_grouped, rois, trial_type_binned_spikes_1 = 'binned_spi
     plt.ylabel('Normalized Eucledian Distance')
     plt.xlabel('Region')
 
+if __name__=="__main__":
 
 
+    sessions = ephys_ephys_dataset(len(LASER_ONLY))
+    for i, ses in enumerate(LASER_ONLY):
+            print(ses)
+            ses_data = alf(ses, ephys=True)
+            ses_data.mouse = Path(ses).parent.parent.name
+            ses_data.date = Path(ses).parent.name
+            ses_data.ses = Path(ses).name
+            sessions[i] = ses_data
 
-sessions = ephys_ephys_dataset(len(LASER_ONLY))
-for i, ses in enumerate(LASER_ONLY):
-        print(ses)
-        ses_data = alf(ses, ephys=True)
-        ses_data.mouse = Path(ses).parent.parent.name
-        ses_data.date = Path(ses).parent.name
-        ses_data.ses = Path(ses).name
-        sessions[i] = ses_data
+    # Load at unique regions dictionary
+    loc = [] 
+    for i in np.arange(len(LASER_ONLY)):
+        ses = sessions[i]
+        for j in np.arange(4):
+            try:
+                loc.append(np.unique(ses.probe[j].cluster_locations.astype(str)))
+            except:
+                continue
+    unique_regions = np.unique(np.concatenate(loc))
+    unique_regions = unique_regions[np.where(unique_regions!='nan')]
+    # Look for any unreferenced regions
+    groups = pd.read_csv('/Volumes/witten/Alex/PYTHON/rewardworld/ephys/histology_files/simplified_regions.csv')
+    groups = groups.iloc[:,1:3]
+    groups = groups.set_index('original')
+    group_dict = groups.to_dict()['group']
+    current_regions = groups.reset_index().original.unique()
+    [group_dict[r] for r in current_regions] # This will error if dictionary is not complete
 
-# Load at unique regions dictionary
-loc = [] 
-for i in np.arange(len(LASER_ONLY)):
-    ses = sessions[i]
-    for j in np.arange(4):
+    # Plot PSTHs for every regions  
+    rois = np.array(['SS', 'OFC', 'NAc', 'PFC', 'DMS', 'DLS', 'TS', 'VP', 'Olfactory', 'GPe', 'MO'])
+
+    # Bin all data
+    region_df_grouped = pd.DataFrame()
+    for i, roi in enumerate(rois):
+        region_df = psths_per_regions(sessions, roi=roi)
+        region_df_grouped = pd.concat([region_df_grouped,region_df])
+
+    # Plot without differentiating choice*dA interaction
+    locations = np.array([[0,3], [0,1], [1,0], [0,2], [1,2],  [1,3], [1,4], [2,0], [0,0], [2,2], [0,4]])
+
+    fig, ax = plt.subplots(3,5, sharex=True)
+    for i, roi in enumerate(rois):
         try:
-            loc.append(np.unique(ses.probe[j].cluster_locations.astype(str)))
+            region_df = region_df_grouped.loc[region_df_grouped['region'] == roi]
+            plt.sca(ax[locations[i][0], locations[i][1]])
+            plot_region_psth(region_df)
         except:
             continue
-unique_regions = np.unique(np.concatenate(loc))
-unique_regions = unique_regions[np.where(unique_regions!='nan')]
-# Look for any unreferenced regions
-groups = pd.read_csv('/Volumes/witten/Alex/PYTHON/rewardworld/ephys/histology_files/simplified_regions.csv')
-groups = groups.iloc[:,1:3]
-groups = groups.set_index('original')
-group_dict = groups.to_dict()['group']
-current_regions = groups.reset_index().original.unique()
-[group_dict[r] for r in current_regions] # This will error if dictionary is not complete
 
-# Plot PSTHs for every regions  
-rois = np.array(['SS', 'OFC', 'NAc', 'PFC', 'DMS', 'DLS', 'TS', 'VP', 'Olfactory', 'GPe', 'MO'])
-
-# Bin all data
-region_df_grouped = pd.DataFrame()
-for i, roi in enumerate(rois):
-    region_df = psths_per_regions(sessions, roi=roi)
-    region_df_grouped = pd.concat([region_df_grouped,region_df])
-
-# Plot without differentiating choice*dA interaction
-locations = np.array([[0,3], [0,1], [1,0], [0,2], [1,2],  [1,3], [1,4], [2,0], [0,0], [2,2], [0,4]])
-
-fig, ax = plt.subplots(3,5, sharex=True)
-for i, roi in enumerate(rois):
-    try:
+    # Plot  differentiating choice*dA interaction
+    fig, ax = plt.subplots(3,5, sharex=True)
+    for i, roi in enumerate(rois):
         region_df = region_df_grouped.loc[region_df_grouped['region'] == roi]
         plt.sca(ax[locations[i][0], locations[i][1]])
-        plot_region_psth(region_df)
-    except:
-        continue
+        plot_region_psth_dachoice_interaction(region_df)
 
-# Plot  differentiating choice*dA interaction
-fig, ax = plt.subplots(3,5, sharex=True)
-for i, roi in enumerate(rois):
-    region_df = region_df_grouped.loc[region_df_grouped['region'] == roi]
-    plt.sca(ax[locations[i][0], locations[i][1]])
-    plot_region_psth_dachoice_interaction(region_df)
+    # Plot  differentiating choice*dA interaction with diff
+    fig, ax = plt.subplots(3,5, sharex=True)
+    for i, roi in enumerate(rois):
+        region_df = region_df_grouped.loc[region_df_grouped['region'] == roi]
+        plt.sca(ax[locations[i][0], locations[i][1]])
+        plot_region_psth_dachoice_interaction_diff(region_df)
 
-# Plot  differentiating choice*dA interaction with diff
-fig, ax = plt.subplots(3,5, sharex=True)
-for i, roi in enumerate(rois):
-    region_df = region_df_grouped.loc[region_df_grouped['region'] == roi]
-    plt.sca(ax[locations[i][0], locations[i][1]])
-    plot_region_psth_dachoice_interaction_diff(region_df)
+    # Plot  differentiating choice*dA interaction and qchosen
+    fig, ax = plt.subplots(3,5, sharex=True)
+    for i, roi in enumerate(rois):
+        region_df = region_df_grouped.loc[region_df_grouped['region'] == roi]
+        plt.sca(ax[locations[i][0], locations[i][1]])
+        plot_region_psth_dachoice_interaction_trial_qchosen(region_df)
 
-# Plot  differentiating choice*dA interaction and qchosen
-fig, ax = plt.subplots(3,5, sharex=True)
-for i, roi in enumerate(rois):
-    region_df = region_df_grouped.loc[region_df_grouped['region'] == roi]
-    plt.sca(ax[locations[i][0], locations[i][1]])
-    plot_region_psth_dachoice_interaction_trial_qchosen(region_df)
+    # Plot  differentiating choice*dA interaction and deltaq(contra-ipsi)
+    fig, ax = plt.subplots(3,5, sharex=True)
+    for i, roi in enumerate(rois):
+        region_df = region_df_grouped.loc[region_df_grouped['region'] == roi]
+        plt.sca(ax[locations[i][0], locations[i][1]])
+        plot_region_psth_dachoice_interaction_trial_delta(region_df)
 
-# Plot  differentiating choice*dA interaction and deltaq(contra-ipsi)
-fig, ax = plt.subplots(3,5, sharex=True)
-for i, roi in enumerate(rois):
-    region_df = region_df_grouped.loc[region_df_grouped['region'] == roi]
-    plt.sca(ax[locations[i][0], locations[i][1]])
-    plot_region_psth_dachoice_interaction_trial_delta(region_df)
+    # Plot  differentiating qchosen
+    fig, ax = plt.subplots(3,5, sharex=True)
+    for i, roi in enumerate(rois):
+        region_df = region_df_grouped.loc[region_df_grouped['region'] == roi]
+        plt.sca(ax[locations[i][0], locations[i][1]])
+        plot_region_psth_qchosen(region_df)
 
-# Plot  differentiating qchosen
-fig, ax = plt.subplots(3,5, sharex=True)
-for i, roi in enumerate(rois):
-    region_df = region_df_grouped.loc[region_df_grouped['region'] == roi]
-    plt.sca(ax[locations[i][0], locations[i][1]])
-    plot_region_psth_qchosen(region_df)
+    # Plot  differentiating deltaq(contra-ipsi)
+    fig, ax = plt.subplots(3,5, sharex=True)
+    for i, roi in enumerate(rois):
+        region_df = region_df_grouped.loc[region_df_grouped['region'] == roi]
+        plt.sca(ax[locations[i][0], locations[i][1]])
+        plot_region_psth_delta(region_df)
 
-# Plot  differentiating deltaq(contra-ipsi)
-fig, ax = plt.subplots(3,5, sharex=True)
-for i, roi in enumerate(rois):
-    region_df = region_df_grouped.loc[region_df_grouped['region'] == roi]
-    plt.sca(ax[locations[i][0], locations[i][1]])
-    plot_region_psth_delta(region_df)
+    # Plot differentiating latency
+    fig, ax = plt.subplots(3,5, sharex=True)
+    for i, roi in enumerate(rois):
+        region_df = region_df_grouped.loc[region_df_grouped['region'] == roi]
+        plt.sca(ax[locations[i][0], locations[i][1]])
+        plot_region_psth_latency(region_df)
 
-# Plot differentiating latency
-fig, ax = plt.subplots(3,5, sharex=True)
-for i, roi in enumerate(rois):
-    region_df = region_df_grouped.loc[region_df_grouped['region'] == roi]
-    plt.sca(ax[locations[i][0], locations[i][1]])
-    plot_region_psth_latency(region_df)
+    # PCA analysis at laser
+    fig, ax = plt.subplots(2,5, sharex=True)
+    for i, roi in enumerate(rois):
+        region_df = region_df_grouped.loc[region_df_grouped['region'] == roi]
+        plt.sca(ax[locations[i][0], locations[i][1]])
+        plot_PCA_trajectory(region_df,trial_type_binned_spikes_1 = 'binned_spikes_laser_qchosen_upper', 
+                            trial_type_binned_spikes_2 =  'binned_spikes_laser_qchosen_lower')
 
-# PCA analysis at laser
-fig, ax = plt.subplots(2,5, sharex=True)
-for i, roi in enumerate(rois):
-    region_df = region_df_grouped.loc[region_df_grouped['region'] == roi]
-    plt.sca(ax[locations[i][0], locations[i][1]])
-    plot_PCA_trajectory(region_df,trial_type_binned_spikes_1 = 'binned_spikes_laser_qchosen_upper', 
-                        trial_type_binned_spikes_2 =  'binned_spikes_laser_qchosen_lower')
+    # PCA analysis at laser
+    fig, ax = plt.subplots(3,5, sharex=True)
+    for i, roi in enumerate(rois):
+        region_df = region_df_grouped.loc[region_df_grouped['region'] == roi]
+        plt.sca(ax[locations[i][0], locations[i][1]])
+        plot_PCA_trajectory(region_df,trial_type_binned_spikes_1 = 'binned_spikes_laser_contra_qchosen_upper', 
+                            trial_type_binned_spikes_2 =  'binned_spikes_laser_contra_qchosen_lower')
 
-# PCA analysis at laser
-fig, ax = plt.subplots(3,5, sharex=True)
-for i, roi in enumerate(rois):
-    region_df = region_df_grouped.loc[region_df_grouped['region'] == roi]
-    plt.sca(ax[locations[i][0], locations[i][1]])
-    plot_PCA_trajectory(region_df,trial_type_binned_spikes_1 = 'binned_spikes_laser_contra_qchosen_upper', 
-                        trial_type_binned_spikes_2 =  'binned_spikes_laser_contra_qchosen_lower')
+    # PCA analysis at laser
+    fig, ax = plt.subplots(3,5, sharex=True)
+    for i, roi in enumerate(rois):
+        region_df = region_df_grouped.loc[region_df_grouped['region'] == roi]
+        plt.sca(ax[locations[i][0], locations[i][1]])
+        plot_PCA_trajectory(region_df,trial_type_binned_spikes_1 = 'binned_spikes_laser_ipsi_qchosen_upper', 
+                            trial_type_binned_spikes_2 =  'binned_spikes_laser_ipsi_qchosen_lower')
 
-# PCA analysis at laser
-fig, ax = plt.subplots(3,5, sharex=True)
-for i, roi in enumerate(rois):
-    region_df = region_df_grouped.loc[region_df_grouped['region'] == roi]
-    plt.sca(ax[locations[i][0], locations[i][1]])
-    plot_PCA_trajectory(region_df,trial_type_binned_spikes_1 = 'binned_spikes_laser_ipsi_qchosen_upper', 
-                        trial_type_binned_spikes_2 =  'binned_spikes_laser_ipsi_qchosen_lower')
+    # PCA analysis at laser contra vs ipsi
+    fig, ax = plt.subplots(3,5, sharex=True)
+    for i, roi in enumerate(rois):
+        region_df = region_df_grouped.loc[region_df_grouped['region'] == roi]
+        plt.sca(ax[locations[i][0], locations[i][1]])
+        plot_PCA_trajectory(region_df,trial_type_binned_spikes_1 = 'binned_spikes_laser_contra', 
+                            trial_type_binned_spikes_2 =  'binned_spikes_laser_ipsi')
 
-# PCA analysis at laser contra vs ipsi
-fig, ax = plt.subplots(3,5, sharex=True)
-for i, roi in enumerate(rois):
-    region_df = region_df_grouped.loc[region_df_grouped['region'] == roi]
-    plt.sca(ax[locations[i][0], locations[i][1]])
-    plot_PCA_trajectory(region_df,trial_type_binned_spikes_1 = 'binned_spikes_laser_contra', 
-                        trial_type_binned_spikes_2 =  'binned_spikes_laser_ipsi')
-
-# PCA analysis at error contra vs ipsi
-fig, ax = plt.subplots(3,5, sharex=True)
-for i, roi in enumerate(rois):
-    region_df = region_df_grouped.loc[region_df_grouped['region'] == roi]
-    plt.sca(ax[locations[i][0], locations[i][1]])
-    plot_PCA_trajectory(region_df,trial_type_binned_spikes_1 = 'binned_spikes_error_contra', 
-                        trial_type_binned_spikes_2 =  'binned_spikes_error_ipsi')
+    # PCA analysis at error contra vs ipsi
+    fig, ax = plt.subplots(3,5, sharex=True)
+    for i, roi in enumerate(rois):
+        region_df = region_df_grouped.loc[region_df_grouped['region'] == roi]
+        plt.sca(ax[locations[i][0], locations[i][1]])
+        plot_PCA_trajectory(region_df,trial_type_binned_spikes_1 = 'binned_spikes_error_contra', 
+                            trial_type_binned_spikes_2 =  'binned_spikes_error_ipsi')
 
 
-# PCA analysis at choice * contra
-fig, ax = plt.subplots(3,5, sharex=True)
-for i, roi in enumerate(rois):
-    region_df = region_df_grouped.loc[region_df_grouped['region'] == roi]
-    plt.sca(ax[locations[i][0], locations[i][1]])
-    plot_PCA_trajectory(region_df,trial_type_binned_spikes_1 = 'binned_spikes_choice_contra_qchosen_upper', 
-                        trial_type_binned_spikes_2 =  'binned_spikes_choice_contra_qchosen_lower')
+    # PCA analysis at choice * contra
+    fig, ax = plt.subplots(3,5, sharex=True)
+    for i, roi in enumerate(rois):
+        region_df = region_df_grouped.loc[region_df_grouped['region'] == roi]
+        plt.sca(ax[locations[i][0], locations[i][1]])
+        plot_PCA_trajectory(region_df,trial_type_binned_spikes_1 = 'binned_spikes_choice_contra_qchosen_upper', 
+                            trial_type_binned_spikes_2 =  'binned_spikes_choice_contra_qchosen_lower')
 
-# PCA analysis at choice * ipsi
-fig, ax = plt.subplots(3,5, sharex=True)
-for i, roi in enumerate(rois):
-    region_df = region_df_grouped.loc[region_df_grouped['region'] == roi]
-    plt.sca(ax[locations[i][0], locations[i][1]])
-    plot_PCA_trajectory(region_df,trial_type_binned_spikes_1 = 'binned_spikes_choice_ipsi_qchosen_upper', 
-                        trial_type_binned_spikes_2 =  'binned_spikes_choice_ipsi_qchosen_lower')
-
-
-# PCA analysis at gocue
-fig, ax = plt.subplots(3,5, sharex=True)
-for i, roi in enumerate(rois):
-    region_df = region_df_grouped.loc[region_df_grouped['region'] == roi]
-    plt.sca(ax[locations[i][0], locations[i][1]])
-    plot_PCA_trajectory(region_df,trial_type_binned_spikes_1 = 'binned_spikes_gocue_qchosen_upper', 
-                        trial_type_binned_spikes_2 =  'binned_spikes_gocue_qchosen_lower')
+    # PCA analysis at choice * ipsi
+    fig, ax = plt.subplots(3,5, sharex=True)
+    for i, roi in enumerate(rois):
+        region_df = region_df_grouped.loc[region_df_grouped['region'] == roi]
+        plt.sca(ax[locations[i][0], locations[i][1]])
+        plot_PCA_trajectory(region_df,trial_type_binned_spikes_1 = 'binned_spikes_choice_ipsi_qchosen_upper', 
+                            trial_type_binned_spikes_2 =  'binned_spikes_choice_ipsi_qchosen_lower')
 
 
-# PCA analysis at gocue
-fig, ax = plt.subplots(3,5, sharex=True)
-for i, roi in enumerate(rois):
-    region_df = region_df_grouped.loc[region_df_grouped['region'] == roi]
-    plt.sca(ax[locations[i][0], locations[i][1]])
-    plot_PCA_trajectory(region_df,trial_type_binned_spikes_1 = 'binned_spikes_gocue_delta_upper', 
-                        trial_type_binned_spikes_2 =  'binned_spikes_gocue_delta_lower')
-
-# PCA analysis at choice
-fig, ax = plt.subplots(3,5, sharex=True)
-for i, roi in enumerate(rois):
-    region_df = region_df_grouped.loc[region_df_grouped['region'] == roi]
-    plt.sca(ax[locations[i][0], locations[i][1]])
-    plot_PCA_trajectory(region_df,trial_type_binned_spikes_1 = 'binned_spikes_choice_contra', 
-                        trial_type_binned_spikes_2 =  'binned_spikes_choice_ipsi')
-
-# PCA analysis at choice
-fig, ax = plt.subplots(3,5, sharex=True)
-for i, roi in enumerate(rois):
-    region_df = region_df_grouped.loc[region_df_grouped['region'] == roi]
-    plt.sca(ax[locations[i][0], locations[i][1]])
-    plot_PCA_trajectory(region_df,trial_type_binned_spikes_1 = 'binned_spikes_outcome_reward', 
-                        trial_type_binned_spikes_2 =  'binned_spikes_outcome_error')
-
-# ED in full dimensional space
-fig, ax = plt.subplots(3,5, sharex=True,  sharey=True)
-for i, roi in enumerate(rois):
-    region_df = region_df_grouped.loc[region_df_grouped['region'] == roi]
-    plt.sca(ax[locations[i][0], locations[i][1]])
-    plot_time_varying_ED(region_df,trial_type_binned_spikes_1 = 'binned_spikes_laser_contra', 
-                        trial_type_binned_spikes_2 =  'binned_spikes_laser_ipsi')
-
-# ED in low dimensional space
-fig, ax = plt.subplots(3,5, sharex=True,  sharey=True)
-for i, roi in enumerate(rois):
-    region_df = region_df_grouped.loc[region_df_grouped['region'] == roi]
-    plt.sca(ax[locations[i][0], locations[i][1]])
-    plot_time_varying_ED_nd(region_df,trial_type_binned_spikes_1 = 'binned_spikes_laser_contra', 
-                        trial_type_binned_spikes_2 =  'binned_spikes_laser_ipsi', nd='max')
+    # PCA analysis at gocue
+    fig, ax = plt.subplots(3,5, sharex=True)
+    for i, roi in enumerate(rois):
+        region_df = region_df_grouped.loc[region_df_grouped['region'] == roi]
+        plt.sca(ax[locations[i][0], locations[i][1]])
+        plot_PCA_trajectory(region_df,trial_type_binned_spikes_1 = 'binned_spikes_gocue_qchosen_upper', 
+                            trial_type_binned_spikes_2 =  'binned_spikes_gocue_qchosen_lower')
 
 
-fig, ax = plt.subplots(3,5, sharex=True,  sharey=True)
-for i, roi in enumerate(rois):
-    region_df = region_df_grouped.loc[region_df_grouped['region'] == roi]
-    plt.sca(ax[locations[i][0], locations[i][1]])
-    plot_time_varying_ED_nd(region_df,trial_type_binned_spikes_1 = 'binned_spikes_choice_contra_qchosen_upper', 
-                        trial_type_binned_spikes_2 =  'binned_spikes_choice_contra_qchosen_lower', nd='max')
+    # PCA analysis at gocue
+    fig, ax = plt.subplots(3,5, sharex=True)
+    for i, roi in enumerate(rois):
+        region_df = region_df_grouped.loc[region_df_grouped['region'] == roi]
+        plt.sca(ax[locations[i][0], locations[i][1]])
+        plot_PCA_trajectory(region_df,trial_type_binned_spikes_1 = 'binned_spikes_gocue_delta_upper', 
+                            trial_type_binned_spikes_2 =  'binned_spikes_gocue_delta_lower')
 
-# Global ED plots
+    # PCA analysis at choice
+    fig, ax = plt.subplots(3,5, sharex=True)
+    for i, roi in enumerate(rois):
+        region_df = region_df_grouped.loc[region_df_grouped['region'] == roi]
+        plt.sca(ax[locations[i][0], locations[i][1]])
+        plot_PCA_trajectory(region_df,trial_type_binned_spikes_1 = 'binned_spikes_choice_contra', 
+                            trial_type_binned_spikes_2 =  'binned_spikes_choice_ipsi')
 
-# contra vs ipsi
+    # PCA analysis at choice
+    fig, ax = plt.subplots(3,5, sharex=True)
+    for i, roi in enumerate(rois):
+        region_df = region_df_grouped.loc[region_df_grouped['region'] == roi]
+        plt.sca(ax[locations[i][0], locations[i][1]])
+        plot_PCA_trajectory(region_df,trial_type_binned_spikes_1 = 'binned_spikes_outcome_reward', 
+                            trial_type_binned_spikes_2 =  'binned_spikes_outcome_error')
 
-variables_1 = ['binned_spikes_choice_contra',
-                'binned_spikes_error_contra', 'binned_spikes_reward_contra','binned_spikes_laser_contra']
+    # ED in full dimensional space
+    fig, ax = plt.subplots(3,5, sharex=True,  sharey=True)
+    for i, roi in enumerate(rois):
+        region_df = region_df_grouped.loc[region_df_grouped['region'] == roi]
+        plt.sca(ax[locations[i][0], locations[i][1]])
+        plot_time_varying_ED(region_df,trial_type_binned_spikes_1 = 'binned_spikes_laser_contra', 
+                            trial_type_binned_spikes_2 =  'binned_spikes_laser_ipsi')
 
-variables_2 = ['binned_spikes_choice_ipsi',
-                'binned_spikes_error_ipsi', 'binned_spikes_reward_ipsi','binned_spikes_laser_ipsi']
-xlabels = 'Time from outcome/first laser'
-
-palette = ['b', 'k', 'g', 'r']
-custom_lines = [Line2D([0], [0], color=palette[0], lw=4),
-                Line2D([0], [0], color=palette[1], lw=4),
-                Line2D([0], [0], color=palette[2], lw=4),
-                Line2D([0], [0], color=palette[3], lw=4)]
-
-fig, ax = plt.subplots(3,5, sharex=True,  sharey=True)
-for i, roi in enumerate(rois):
-    region_df = region_df_grouped.loc[region_df_grouped['region'] == roi]
-    plt.sca(ax[locations[i][0], locations[i][1]])
-    plot_time_varying_ED_global(region_df, variables_1, variables_2, palette, pre_time=0.5,
-                        nd='max', zscoring=False, baseline_subtraction=False, use_pre_time=True, 
-                        xlabels = xlabels)
-    plt.legend(custom_lines, ['Choice Contra-Ipsi', 'CS- Contra-Ipsi', 'CS+ Contra-Ipsi',
-                'Laser Contra-Ipsi'])
-
-variables_1 = ['binned_spikes_outcome_error',
-                'binned_spikes_error_contra' , 'binned_spikes_error_ipsi', 
-                'binned_spikes_error_contra', 'binned_spikes_error_ipsi']
-variables_2 = ['binned_spikes_outcome_reward',
-                'binned_spikes_reward_contra','binned_spikes_reward_ipsi' ,
-                'binned_spikes_laser_contra', 'binned_spikes_laser_ipsi']
-xlabels = 'Time from outcome/first laser'
-
-palette = ['b', 'k', 'g', 'r', 'orange']
-custom_lines = [Line2D([0], [0], color=palette[0], lw=4),
-                Line2D([0], [0], color=palette[1], lw=4),
-                Line2D([0], [0], color=palette[2], lw=4),
-                Line2D([0], [0], color=palette[3], lw=4),
-                Line2D([0], [0], color=palette[4], lw=4)]
-
-fig, ax = plt.subplots(3,5, sharex=True,  sharey=True)
-for i, roi in enumerate(rois):
-    region_df = region_df_grouped.loc[region_df_grouped['region'] == roi]
-    plt.sca(ax[locations[i][0], locations[i][1]])
-    plot_time_varying_ED_global(region_df, variables_1, variables_2, palette, pre_time=0.5,
-                        nd='max', zscoring=False, baseline_subtraction=False, use_pre_time=True,
-                        xlabels = xlabels)
-    plt.legend(custom_lines, ['CS- vs CS+', 'CS- contra vs  CS+ contra', 'CS- ipsi vs  CS+ ipsi',
-                'CS- ipsi vs  Laser contra', 'CS- ipsi vs  Laser ipsi'])
-
-# Normalized to 95 variance 
-
-# ED in low dimensional space
-fig, ax = plt.subplots(3,5, sharex=True,  sharey=True)
-for i, roi in enumerate(rois):
-    region_df = region_df_grouped.loc[region_df_grouped['region'] == roi]
-    plt.sca(ax[locations[i][0], locations[i][1]])
-    plot_time_varying_ED_nd(region_df,trial_type_binned_spikes_1 = 'binned_spikes_laser_contra', 
-                        trial_type_binned_spikes_2 =  'binned_spikes_laser_ipsi', nd='n_max')
-
-# State value plots
-
-fig, ax = plt.subplots(3,5, sharex=True)
-for i, roi in enumerate(rois):
-    region_df = region_df_grouped.loc[region_df_grouped['region'] == roi]
-    plt.sca(ax[locations[i][0], locations[i][1]])
-    plot_region_psth_value(region_df)
-
-fig, ax = plt.subplots(3,5, sharex=True,  sharey=True)
-for i, roi in enumerate(rois):
-    region_df = region_df_grouped.loc[region_df_grouped['region'] == roi]
-    plt.sca(ax[locations[i][0], locations[i][1]])
-    plot_time_varying_ED_nd(region_df,trial_type_binned_spikes_1 = 'binned_spikes_gocue_value_upper', 
-                        trial_type_binned_spikes_2 =  'binned_spikes_gocue_value_lower', nd = 'max')
+    # ED in low dimensional space
+    fig, ax = plt.subplots(3,5, sharex=True,  sharey=True)
+    for i, roi in enumerate(rois):
+        region_df = region_df_grouped.loc[region_df_grouped['region'] == roi]
+        plt.sca(ax[locations[i][0], locations[i][1]])
+        plot_time_varying_ED_nd(region_df,trial_type_binned_spikes_1 = 'binned_spikes_laser_contra', 
+                            trial_type_binned_spikes_2 =  'binned_spikes_laser_ipsi', nd='max')
 
 
-fig, ax = plt.subplots(3,5, sharex=True,  sharey=True)
-for i, roi in enumerate(rois):
-    region_df = region_df_grouped.loc[region_df_grouped['region'] == roi]
-    plt.sca(ax[locations[i][0], locations[i][1]])
-    plot_time_varying_ED_nd(region_df,trial_type_binned_spikes_1 = 'binned_spikes_outcome_reward_value_upper', 
-    trial_type_binned_spikes_2 =  'binned_spikes_outcome_reward_value_lower', nd = 'max')
+    fig, ax = plt.subplots(3,5, sharex=True,  sharey=True)
+    for i, roi in enumerate(rois):
+        region_df = region_df_grouped.loc[region_df_grouped['region'] == roi]
+        plt.sca(ax[locations[i][0], locations[i][1]])
+        plot_time_varying_ED_nd(region_df,trial_type_binned_spikes_1 = 'binned_spikes_choice_contra_qchosen_upper', 
+                            trial_type_binned_spikes_2 =  'binned_spikes_choice_contra_qchosen_lower', nd='max')
+
+    # Global ED plots
+
+    # contra vs ipsi
+
+    variables_1 = ['binned_spikes_choice_contra',
+                    'binned_spikes_error_contra', 'binned_spikes_reward_contra','binned_spikes_laser_contra']
+
+    variables_2 = ['binned_spikes_choice_ipsi',
+                    'binned_spikes_error_ipsi', 'binned_spikes_reward_ipsi','binned_spikes_laser_ipsi']
+    xlabels = 'Time from outcome/first laser'
+
+    palette = ['b', 'k', 'g', 'r']
+    custom_lines = [Line2D([0], [0], color=palette[0], lw=4),
+                    Line2D([0], [0], color=palette[1], lw=4),
+                    Line2D([0], [0], color=palette[2], lw=4),
+                    Line2D([0], [0], color=palette[3], lw=4)]
+
+    fig, ax = plt.subplots(3,5, sharex=True,  sharey=True)
+    for i, roi in enumerate(rois):
+        region_df = region_df_grouped.loc[region_df_grouped['region'] == roi]
+        plt.sca(ax[locations[i][0], locations[i][1]])
+        plot_time_varying_ED_global(region_df, variables_1, variables_2, palette, pre_time=0.5,
+                            nd='max', zscoring=False, baseline_subtraction=False, use_pre_time=True, 
+                            xlabels = xlabels)
+        plt.legend(custom_lines, ['Choice Contra-Ipsi', 'CS- Contra-Ipsi', 'CS+ Contra-Ipsi',
+                    'Laser Contra-Ipsi'])
+
+    variables_1 = ['binned_spikes_outcome_error',
+                    'binned_spikes_error_contra' , 'binned_spikes_error_ipsi', 
+                    'binned_spikes_error_contra', 'binned_spikes_error_ipsi']
+    variables_2 = ['binned_spikes_outcome_reward',
+                    'binned_spikes_reward_contra','binned_spikes_reward_ipsi' ,
+                    'binned_spikes_laser_contra', 'binned_spikes_laser_ipsi']
+    xlabels = 'Time from outcome/first laser'
+
+    palette = ['b', 'k', 'g', 'r', 'orange']
+    custom_lines = [Line2D([0], [0], color=palette[0], lw=4),
+                    Line2D([0], [0], color=palette[1], lw=4),
+                    Line2D([0], [0], color=palette[2], lw=4),
+                    Line2D([0], [0], color=palette[3], lw=4),
+                    Line2D([0], [0], color=palette[4], lw=4)]
+
+    fig, ax = plt.subplots(3,5, sharex=True,  sharey=True)
+    for i, roi in enumerate(rois):
+        region_df = region_df_grouped.loc[region_df_grouped['region'] == roi]
+        plt.sca(ax[locations[i][0], locations[i][1]])
+        plot_time_varying_ED_global(region_df, variables_1, variables_2, palette, pre_time=0.5,
+                            nd='max', zscoring=False, baseline_subtraction=False, use_pre_time=True,
+                            xlabels = xlabels)
+        plt.legend(custom_lines, ['CS- vs CS+', 'CS- contra vs  CS+ contra', 'CS- ipsi vs  CS+ ipsi',
+                    'CS- ipsi vs  Laser contra', 'CS- ipsi vs  Laser ipsi'])
+
+    # Normalized to 95 variance 
+
+    # ED in low dimensional space
+    fig, ax = plt.subplots(3,5, sharex=True,  sharey=True)
+    for i, roi in enumerate(rois):
+        region_df = region_df_grouped.loc[region_df_grouped['region'] == roi]
+        plt.sca(ax[locations[i][0], locations[i][1]])
+        plot_time_varying_ED_nd(region_df,trial_type_binned_spikes_1 = 'binned_spikes_laser_contra', 
+                            trial_type_binned_spikes_2 =  'binned_spikes_laser_ipsi', nd='n_max')
+
+    # State value plots
+
+    fig, ax = plt.subplots(3,5, sharex=True)
+    for i, roi in enumerate(rois):
+        region_df = region_df_grouped.loc[region_df_grouped['region'] == roi]
+        plt.sca(ax[locations[i][0], locations[i][1]])
+        plot_region_psth_value(region_df)
+
+    fig, ax = plt.subplots(3,5, sharex=True,  sharey=True)
+    for i, roi in enumerate(rois):
+        region_df = region_df_grouped.loc[region_df_grouped['region'] == roi]
+        plt.sca(ax[locations[i][0], locations[i][1]])
+        plot_time_varying_ED_nd(region_df,trial_type_binned_spikes_1 = 'binned_spikes_gocue_value_upper', 
+                            trial_type_binned_spikes_2 =  'binned_spikes_gocue_value_lower', nd = 'max')
 
 
-fig, ax = plt.subplots(3,5, sharex=True,  sharey=True)
-for i, roi in enumerate(rois):
-    region_df = region_df_grouped.loc[region_df_grouped['region'] == roi]
-    plt.sca(ax[locations[i][0], locations[i][1]])
-    plot_time_varying_ED_nd(region_df,trial_type_binned_spikes_1 = 'binned_spikes_outcome_error_value_upper', 
-                        trial_type_binned_spikes_2 =  'binned_spikes_outcome_error_value_lower', nd = 'max')
+    fig, ax = plt.subplots(3,5, sharex=True,  sharey=True)
+    for i, roi in enumerate(rois):
+        region_df = region_df_grouped.loc[region_df_grouped['region'] == roi]
+        plt.sca(ax[locations[i][0], locations[i][1]])
+        plot_time_varying_ED_nd(region_df,trial_type_binned_spikes_1 = 'binned_spikes_outcome_reward_value_upper', 
+        trial_type_binned_spikes_2 =  'binned_spikes_outcome_reward_value_lower', nd = 'max')
 
 
-fig, ax = plt.subplots(3,5, sharex=True)
-for i, roi in enumerate(rois):
-    region_df = region_df_grouped.loc[region_df_grouped['region'] == roi]
-    plt.sca(ax[locations[i][0], locations[i][1]])
-    plot_PCA_trajectory(region_df,trial_type_binned_spikes_1 = 'binned_spikes_gocue_value_upper', 
-                        trial_type_binned_spikes_2 =  'binned_spikes_gocue_value_lower')
+    fig, ax = plt.subplots(3,5, sharex=True,  sharey=True)
+    for i, roi in enumerate(rois):
+        region_df = region_df_grouped.loc[region_df_grouped['region'] == roi]
+        plt.sca(ax[locations[i][0], locations[i][1]])
+        plot_time_varying_ED_nd(region_df,trial_type_binned_spikes_1 = 'binned_spikes_outcome_error_value_upper', 
+                            trial_type_binned_spikes_2 =  'binned_spikes_outcome_error_value_lower', nd = 'max')
+
+
+    fig, ax = plt.subplots(3,5, sharex=True)
+    for i, roi in enumerate(rois):
+        region_df = region_df_grouped.loc[region_df_grouped['region'] == roi]
+        plt.sca(ax[locations[i][0], locations[i][1]])
+        plot_PCA_trajectory(region_df,trial_type_binned_spikes_1 = 'binned_spikes_gocue_value_upper', 
+                            trial_type_binned_spikes_2 =  'binned_spikes_gocue_value_lower')
 
 
 
 
-fig, ax = plt.subplots(3,5, sharex=True,  sharey=True)
-for i, roi in enumerate(rois):
-    region_df = region_df_grouped.loc[region_df_grouped['region'] == roi]
-    plt.sca(ax[locations[i][0], locations[i][1]])
-    plot_time_varying_ED_nd(region_df,trial_type_binned_spikes_1 = 'binned_spikes_choice_contra', 
-                        trial_type_binned_spikes_2 =  'binned_spikes_choice_ipsi', nd='max')
+    fig, ax = plt.subplots(3,5, sharex=True,  sharey=True)
+    for i, roi in enumerate(rois):
+        region_df = region_df_grouped.loc[region_df_grouped['region'] == roi]
+        plt.sca(ax[locations[i][0], locations[i][1]])
+        plot_time_varying_ED_nd(region_df,trial_type_binned_spikes_1 = 'binned_spikes_choice_contra', 
+                            trial_type_binned_spikes_2 =  'binned_spikes_choice_ipsi', nd='max')
 
 
 
-#
-ev =  pd.DataFrame()
-for i, roi in enumerate(['NAc', 'DLS']):
-    region_df = region_df_grouped.loc[region_df_grouped['region'] == roi]
-    ev_roi  = pd.DataFrame()
-    ev_roi['var_explained'] = plot_PCA_trajectory(region_df,trial_type_binned_spikes_1 = 'binned_spikes_choice_contra', 
-                        trial_type_binned_spikes_2 =  'binned_spikes_choice_ipsi')
-    ev_roi['roi'] = roi
-    ev_roi['n_d'] = np.arange(len(ev_roi['var_explained']))
-    ev = pd.concat([ev, ev_roi])
+    #
+    ev =  pd.DataFrame()
+    for i, roi in enumerate(['NAc', 'DLS']):
+        region_df = region_df_grouped.loc[region_df_grouped['region'] == roi]
+        ev_roi  = pd.DataFrame()
+        ev_roi['var_explained'] = plot_PCA_trajectory(region_df,trial_type_binned_spikes_1 = 'binned_spikes_choice_contra', 
+                            trial_type_binned_spikes_2 =  'binned_spikes_choice_ipsi')
+        ev_roi['roi'] = roi
+        ev_roi['n_d'] = np.arange(len(ev_roi['var_explained']))
+        ev = pd.concat([ev, ev_roi])
 
-sns.pointplot(data=ev, x='n_d', y='var_explained', hue = 'roi')
+    sns.pointplot(data=ev, x='n_d', y='var_explained', hue = 'roi')
 
-# decision latency
-fig, ax = plt.subplots(3,5, sharex=True,  sharey=True)
-for i, roi in enumerate(rois):
-    region_df = region_df_grouped.loc[region_df_grouped['region'] == roi]
-    plt.sca(ax[locations[i][0], locations[i][1]])
-    plot_time_varying_ED_nd(region_df,trial_type_binned_spikes_1 = 'binned_spikes_gocue_decision_times_upper', 
-                        trial_type_binned_spikes_2 =  'binned_spikes_gocue_decision_times_lower', nd='max')
+    # decision latency
+    fig, ax = plt.subplots(3,5, sharex=True,  sharey=True)
+    for i, roi in enumerate(rois):
+        region_df = region_df_grouped.loc[region_df_grouped['region'] == roi]
+        plt.sca(ax[locations[i][0], locations[i][1]])
+        plot_time_varying_ED_nd(region_df,trial_type_binned_spikes_1 = 'binned_spikes_gocue_decision_times_upper', 
+                            trial_type_binned_spikes_2 =  'binned_spikes_gocue_decision_times_lower', nd='max')
 
 
-for i, roi in enumerate(rois):
-    region_df = region_df_grouped.loc[region_df_grouped['region'] == roi]
-    plot_time_varying_ED_nd(region_df,trial_type_binned_spikes_1 = 'binned_spikes_gocue_decision_times_upper', 
-                        trial_type_binned_spikes_2 =  'binned_spikes_gocue_decision_times_lower', nd='max')
+    for i, roi in enumerate(rois):
+        region_df = region_df_grouped.loc[region_df_grouped['region'] == roi]
+        plot_time_varying_ED_nd(region_df,trial_type_binned_spikes_1 = 'binned_spikes_gocue_decision_times_upper', 
+                            trial_type_binned_spikes_2 =  'binned_spikes_gocue_decision_times_lower', nd='max')
 
-# summary ED
-barplot_ED(region_df_grouped,rois,trial_type_binned_spikes_1 = 'binned_spikes_gocue_qchosen_upper', 
-                        trial_type_binned_spikes_2 =  'binned_spikes_gocue_qchosen_lower')
+    # summary ED
+    barplot_ED(region_df_grouped,rois,trial_type_binned_spikes_1 = 'binned_spikes_gocue_qchosen_upper', 
+                            trial_type_binned_spikes_2 =  'binned_spikes_gocue_qchosen_lower')
 
-barplot_ED(region_df_grouped,rois,trial_type_binned_spikes_1 = 'binned_spikes_gocue_delta_upper', 
-                        trial_type_binned_spikes_2 =  'binned_spikes_gocue_delta_lower')
+    barplot_ED(region_df_grouped,rois,trial_type_binned_spikes_1 = 'binned_spikes_gocue_delta_upper', 
+                            trial_type_binned_spikes_2 =  'binned_spikes_gocue_delta_lower')

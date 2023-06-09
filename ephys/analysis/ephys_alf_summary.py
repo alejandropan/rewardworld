@@ -364,16 +364,17 @@ class probe:
         self.cluster_channels = np.load(path+'/clusters.channels.npy')
         self.channel_locations = np.load(path+'/channels.locations.npy', allow_pickle = True)
         self.channel_xyz = pd.read_json(path + '/channel_locations.json', orient='index').iloc[:-1,:3].to_numpy()/1000000
-        self.cluster_xyz = self.channel_xyz[self.cluster_channels,:]
+        self.cluster_xyz = self.channel_xyz[self.cluster_channels[~np.isnan(self.cluster_channels)].astype(int),:]
         self.channel_xyz  = np.load(path+'/channels.localCoordinates.npy')
         self.channel_hem = np.load(path+'/channels.hemisphere.npy')
-        self.cluster_hem = self.channel_hem[self.cluster_channels]
-        self.cluster_locations = self.channel_locations[self.cluster_channels]
+        self.cluster_hem = self.channel_hem[self.cluster_channels[~np.isnan(self.cluster_channels)].astype(int)]
+        self.cluster_locations = self.channel_locations[self.cluster_channels[~np.isnan(self.cluster_channels)].astype(int)]
         metrics = pd.read_csv(path+'/clusters.metrics.csv')
         self.cluster_metrics = [None] * (metrics['cluster_id'].max()+1)
         for i in metrics.cluster_id.to_numpy():
             self.cluster_metrics[i] = metrics.loc[metrics['cluster_id']==i, 'group'].to_list()[0]
         self.cluster_selection = np.load(path+'/clusters_selection.npy')
+        self.cluster_goodmuaselection = np.load(path+'/clusters_goodmua_selection.npy')
         try:
             self.cluster_id = pd.read_csv(path+'/clusters.metrics.csv')['cluster_id']
         except:

@@ -12,6 +12,12 @@ from scipy.io import loadmat
 import scipy.stats as sps
 import scipy.ndimage
 from sklearn.metrics import r2_score
+from psths_per_region import *
+
+# Parameters
+ROIS = np.array(['MO', 'DLS'])
+MIN_N = 15
+BIN_SIZE = 0.1 # in seconds
 
 def flatten_variable(variable, n_neural_data_bins = 101600):
     trial_window = int(n_neural_data_bins/len(variable))
@@ -52,7 +58,6 @@ def halfgaussian_filter1d(input, sigma, axis=-1, output=None,
     origin = -lw // 2
     return scipy.ndimage.convolve1d(input, weights, axis, output, mode, cval, origin)
 
-
 def filterneurons(X, zscoring=False, zscoring_params=None, bins =0.1, bin_size=0.025):
     if zscoring==True:
         X = (X - zscoring_params[:,0][:,None])/(zscoring_params[:,1][:,None])
@@ -64,11 +69,61 @@ def filterneurons(X, zscoring=False, zscoring_params=None, bins =0.1, bin_size=0
                                         axis = 2)
     return new_psth_array 
 
-
 def zscore_set_params(array, params): # array myst be neuron X time_bins
     norm_array = (array - params[:,0][:,None])/(params[:,1][:,None])
     return norm_array
 
+def get_connectivity_summaries(sessions, ROIS, allow_callosal=False):
+    if allow_callosal==True:
+        connected_summary  = pd.DataFrame()
+        for i in np.arange(len(sessions[:])):
+            ses = sessions[i]
+            connected_ses_hem = pd.DataFrame()
+            source = []
+            destination = []
+            for j in np.arange(len(ses.probe[:])):
+                select = ses.probe[j].cluster_goodmuaselection
+                locations = pd.Series(ses.probe[j].cluster_locations).map(group_dict)
+                source.append(np.intersect1d(np.where(locations==ROIS[0]), select))
+                destination.append(np.intersect1d(np.where(locations==ROIS[1]), select))
+            source = np.concatenate(source)
+            destination = np.concatenate(destination)
+            if (len(source)>=1) & (len(destination)>=1):
+                connected_ses_hem['mouse'] = [ses.mouse]
+                connected_ses_hem['date'] = [ses.date]
+                connected_ses_hem['ses'] = [ses.ses]
+                connected_ses_hem['i'] = [i]
+                connected_ses_hem['hem'] = [np.nan]
+                connected_ses_hem['n_source'] = [len(source)]
+                connected_ses_hem['n_destination'] = [len(destination)]
+                connected_summary = pd.concat([connected_summary,connected_ses_hem])
+        connected_summary = connected_summary.reset_index()
+    else:
+        connected_summary  = pd.DataFrame()
+        for i in np.arange(len(sessions[:])):
+            ses = sessions[i]
+            for hem in np.arange(2):
+                connected_ses_hem = pd.DataFrame()
+                source = []
+                destination = []
+                for j in np.arange(len(ses.probe[:])):
+                    select = ses.probe[j].cluster_goodmuaselection
+                    locations = pd.Series(ses.probe[j].cluster_locations[ses.probe[j].cluster_hem==hem]).map(group_dict)
+                    source.append(np.intersect1d(np.where(locations==ROIS[0]), select))
+                    destination.append(np.intersect1d(np.where(locations==ROIS[1]), select))
+                source = np.concatenate(source)
+                destination = np.concatenate(destination)
+                if (len(source)>=1) & (len(destination)>=1):
+                    connected_ses_hem['mouse'] = [ses.mouse]
+                    connected_ses_hem['date'] = [ses.date]
+                    connected_ses_hem['ses'] = [ses.ses]
+                    connected_ses_hem['i'] = [i]
+                    connected_ses_hem['hem'] = [hem]
+                    connected_ses_hem['n_source'] = [len(source)]
+                    connected_ses_hem['n_destination'] = [len(destination)]
+                    connected_summary = pd.concat([connected_summary,connected_ses_hem])
+        connected_summary = connected_summary.reset_index()
+    return connected_summary
 
 sessions = ephys_ephys_dataset(len(LASER_ONLY))
 for i, ses in enumerate(LASER_ONLY):
@@ -79,18 +134,6 @@ for i, ses in enumerate(LASER_ONLY):
         ses_data.ses = Path(ses).name
         sessions[i] = ses_data
 
-
-# Load at unique regions dictionary
-loc = [] 
-for i in np.arange(len(LASER_ONLY)):
-    ses = sessions[i]
-    for j in np.arange(4):
-        try:
-            loc.append(np.unique(ses.probe[j].cluster_locations.astype(str)))
-        except:
-            continue
-unique_regions = np.unique(np.concatenate(loc))
-unique_regions = unique_regions[np.where(unique_regions!='nan')]
 # Look for any unreferenced regions
 groups = pd.read_csv('/Volumes/witten/Alex/PYTHON/rewardworld/ephys/histology_files/simplified_regions.csv')
 groups = groups.iloc[:,1:3]
@@ -98,17 +141,46 @@ groups = groups.set_index('original')
 group_dict = groups.to_dict()['group']
 current_regions = groups.reset_index().original.unique()
 [group_dict[r] for r in current_regions] # This will error if dictionary is not complete
-rois = np.array(['DLS', 'OFC', 'NAc', 'MO'])
-# Bin all data
-region_df_grouped = pd.DataFrame()
-for i, roi in enumerate(rois):
-    region_df = psths_per_regions(sessions, roi=roi)
-    region_df_grouped = pd.concat([region_df_grouped,region_df])
+
+# Check relevant sessions, currently focusing on same hemisphere communication (min n=20 in each area)
+connected_summary = get_connectivity_summaries(sessions, ROIS, allow_callosal=False) # Allow_callosal determines whether across hemisphere communication is allowed for analysis
+usable = connected_summary.loc[(connected_summary['n_source']>=MIN_N)&(connected_summary['n_destination']>=MIN_N)].reset_index()
+
+# Example session to work with is i=22, hem=1
+# Eventually make this into a for loop to go thorugh every session for now , example session
+# bin[i-1]<spike time<bin[i]
+ses_of_interest = sessions[22]
+hems = np.array([1])
+connected_ses_hem = pd.DataFrame()
+source_matrix = []
+destination_matrix = []
+bins = np.arange(ses_of_interest.start_time[10],ses_of_interest.start_time[-1], BIN_SIZE)
+for j in np.arange(len(ses.probe[:])):
+    select = ses_of_interest.probe[j].cluster_goodmuaselection
+    locations = pd.Series(ses_of_interest.probe[j].cluster_locations[np.isin(ses_of_interest.probe[j].cluster_hem,hems)]).map(group_dict)
+    source_clusters = np.intersect1d(np.where(locations==ROIS[0]), select)
+    destination_clusters = np.intersect1d(np.where(locations==ROIS[1]), select)
+    for s_c in source_clusters:
+        spt = ses_of_interest.probe[j].spike_times[ses_of_interest.probe[j].spike_clusters==s_c]
+        # trial 10 to trial -1
+        spt = spt[np.where(spt>=ses_of_interest.start_time[10])]
+        spt = spt[np.where(spt<=ses_of_interest.start_time[-1])]
+        binned = np.bincount(np.digitize(spt,bins),minlength=len(bins)+1)/BIN_SIZE #divide by bin_size for firing rate
+        source_matrix.append(binned)
+    for d_c in destination_clusters:
+        spt = ses_of_interest.probe[j].spike_times[ses_of_interest.probe[j].spike_clusters==d_c]
+        # trial 10 to trial -1
+        spt = spt[np.where(spt>=ses_of_interest.start_time[10])]
+        spt = spt[np.where(spt<=ses_of_interest.start_time[-1])]
+        binned = np.bincount(np.digitize(spt,bins),minlength=len(bins)+1)/BIN_SIZE #divide by bin_size for firing rate
+        destination_matrix.append(binned)
+source_matrix = np.stack(source_matrix)
+destination_matrix = np.stack(destination_matrix)
 
 
 # Look at information encoded
-source_region = 'MO'
-dest_region = 'DLS'
+source_region = ROIS[0]
+dest_region =  ROIS[1]
 min_number_of_neurons = 10
 Ncrossval = 5
 lam = 0

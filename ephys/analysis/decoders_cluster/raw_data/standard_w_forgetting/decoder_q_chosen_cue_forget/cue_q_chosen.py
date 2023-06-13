@@ -56,9 +56,11 @@ alfio.fQRreward_cue = np.copy(np.roll(alfio.fQR,1))
 alfio.fQLreward_cue = np.copy(np.roll(alfio.fQL,1))
 alfio.fQRreward_cue[0] = 0
 alfio.fQLreward_cue[0] = 0
-regressed_variable = np.copy(alfio.fQRreward_cue) #For now qchosen
-regressed_variable[np.where(alfio.choice==-1)] = alfio.fQLreward_cue[np.where(alfio.choice==-1)] #For now qchosen
-regressed_variable = regressed_variable
+regressed_variable = np.copy(alfio.fQRreward_cue) 
+regressed_variable[np.where(alfio.choice==-1)] = alfio.fQLreward_cue[np.where(alfio.choice==-1)]
+if only_rewarded = True:
+    regressed_variable = regressed_variable[alfio.outcome==1]
+
 # Only trials included in analysis
 #weights = get_session_sample_weights(alfio.to_df(), categories = ['choice','probabilityLeft', 'outcome'])
 weights = None

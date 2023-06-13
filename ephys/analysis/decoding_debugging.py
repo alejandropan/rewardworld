@@ -95,7 +95,7 @@ def makeXvalpartitions(trials,number_folds):
     return partition_train, partition_test
 
 def run_decoder(hem_neural_data , alignment_time, regressed_variable, weights, number_folds=5, decoder = LR,  
-                n_neurons_minimum = 20, n_neurons_max = 20, lambdas = None, max_n_combinations=100, xval_type='shuffled'):
+                n_neurons_minimum = 20, n_neurons_max = 20, lambdas = None, max_n_combinations=100, xval_type='shuffled', trial_filter=None):
     '''
     Params:
     xs : This is the binned firing rates for the population of interest
@@ -146,6 +146,11 @@ def run_decoder(hem_neural_data , alignment_time, regressed_variable, weights, n
                 binned_spikes = reduced_residuals['residuals_choice']
             xs_s = reshape_psth_array(binned_spikes) # turn into array
             regressed_variable_s = regressed_variable[trials_included.astype(int)]
+
+            if trial_filter is not None: # In case we want to subdivide by trial tipe
+                trials_included_filtered = np.intersect1d(trials_included, trial_filter).astype(int)
+                regressed_variable_s = regressed_variable[trials_included_filtered]
+                xs_s = xs_s[np.searchsorted(trials_included,trials_included_filtered)]
             folds  = suffled_Xval(len(regressed_variable_s),number_folds)
             for f in np.arange(number_folds):
                 outer_training = folds[0][0][f] 
@@ -212,7 +217,11 @@ def weighted_decoder(b, regressed_variable=None, xs=None,
     return np.array([p, mse])
 
 def run_decoder_for_session_residual(c_neural_data, area, alfio, regressed_variable, weights, alignment_time, etype = 'real', 
-                            output_folder='/jukebox/witten/Alex/decoder_output', n_neurons_minimum = 20, n=None, decoder = 'lasso', lambdas=None):
+                            output_folder='/jukebox/witten/Alex/decoder_output', n_neurons_minimum = 20, n=None, decoder = 'lasso', lambdas=None, trial_filter=None):
+    # Trial filter is an array of trials containing a particular variable, it does not need to be the same length as the trials in c_neural_data 
+    # (in other words in can just be any set of trials in standard trial indexing). The run_decoder function 
+    # will find the common trials between the set in "trial_filter", e.g. rewarded trials, and the the set for which we have binned data available 
+    # after all criterion (presence etc)
     if decoder == 'lasso':
         decoder_type = LR
     if decoder == 'logistic':
@@ -224,11 +233,13 @@ def run_decoder_for_session_residual(c_neural_data, area, alfio, regressed_varia
         if len(regressed_variable)==2: #then we are decoding deltaq, need to choose R-L or L-R so that it matches contra-ipsi 
             regressed_variable = regressed_variable[int(h)]
         if etype=='real':
-            p_summary, mse_summary = run_decoder(hem_neural_data, alignment_time, regressed_variable, weights, n_neurons_minimum=n_neurons_minimum, decoder = decoder_type, lambdas=lambdas)
+            p_summary, mse_summary = run_decoder(hem_neural_data, alignment_time, regressed_variable, weights, n_neurons_minimum=n_neurons_minimum, decoder = decoder_type, lambdas=lambdas, 
+                                                 trial_filter=trial_filter)
             np.save(output_folder+'/'+str(etype)+'_'+str(area)+'_'+str(alfio.mouse)+'_'+str(alfio.date)+'_'+str(int(h))+'_p_summary.npy', p_summary)
             np.save(output_folder+'/'+str(etype)+'_'+str(area)+'_'+str(alfio.mouse)+'_'+str(alfio.date)+'_'+str(int(h))+'_mse_summary.npy', mse_summary)
         else:
-            p_summary, mse_summary = run_decoder(hem_neural_data, alignment_time, regressed_variable, weights, n_neurons_minimum=n_neurons_minimum, decoder = decoder_type,  lambdas=lambdas)
+            p_summary, mse_summary = run_decoder(hem_neural_data, alignment_time, regressed_variable, weights, n_neurons_minimum=n_neurons_minimum, decoder = decoder_type,  lambdas=lambdas
+                                                 trial_filter=trial_filter)
             np.save(output_folder+'/'+str(n)+'_'+str(etype)+'_'+str(area)+'_'+str(alfio.mouse)+'_'+str(alfio.date)+'_'+str(int(h))+'_p_summary.npy', p_summary)
             np.save(output_folder+'/'+str(n)+'_'+str(etype)+'_'+str(area)+'_'+str(alfio.mouse)+'_'+str(alfio.date)+'_'+str(int(h))+'_mse_summary.npy', mse_summary)
         

@@ -51,7 +51,7 @@ for ses in SESSIONS:
     areas  = np.unique(np.concatenate(areas))
     AREAS.append(areas)
 
-np.save('/jukebox/witten/Alex/decoders_raw_results/decoder_output_deltaq_cue_forget/areas_summary.npy', AREAS)
+np.save('/jukebox/witten/Alex/decoders_contra_results/decoder_output_deltaq_cue_forget/areas_summary.npy', AREAS)
 id_dict = pd.DataFrame()
 counter = 0
 for ses_n,ses in enumerate(SESSIONS):
@@ -62,6 +62,6 @@ for ses_n,ses in enumerate(SESSIONS):
         ids['id'] = [counter]
         id_dict=pd.concat([id_dict,ids])
         counter+=1
-id_dict.to_csv('/jukebox/witten/Alex/decoders_raw_results/decoder_output_deltaq_cue_forget/id_dict.csv') # Translate slurm ids to regions
+id_dict.to_csv('/jukebox/witten/Alex/decoders_contra_results/decoder_output_deltaq_cue_forget/id_dict.csv') # Translate slurm ids to regions
 # counter-1 since last counter is not used in dict
-print(subprocess.run(['sbatch --array=0-'+str(counter-1)+' /jukebox/witten/Alex/PYTHON/rewardworld/ephys/analysis/decoders_cluster/raw_data/standard_w_forgetting/decoder_delta_q_forget/decoder_job_delta_q_cue_forget.cmd'], shell=True))
+print(subprocess.run(['sbatch --array=0-'+str(counter-1)+' /jukebox/witten/Alex/PYTHON/rewardworld/ephys/analysis/decoders_cluster/only_contra_trials/standard_w_forgetting/decoder_delta_q_forget/decoder_job_delta_q_cue_forget.cmd'], shell=True))

@@ -16,10 +16,10 @@ from scipy.stats import pearsonr
 from psths_per_region import *
 
 # Parameters
-ROIS = np.array(['NAc', 'DLS'])
-MIN_N = 15
+ROIS = np.array(['MO', 'DLS'])
+MIN_N = 20
 BIN_SIZE = 0.1 # in seconds
-
+N_COMBINATIONS = 1
 def flatten_variable(variable, n_neural_data_bins = 101600):
     trial_window = int(n_neural_data_bins/len(variable))
     new_variable = []
@@ -190,7 +190,7 @@ for ses_id in usable.i.unique():
     Y_total = zscore(Y_total)
 
     total_fold_results = pd.DataFrame()
-    for selection_fold in np.arange(50):
+    for selection_fold in np.arange(N_COMBINATIONS):
         s_fold_results = pd.DataFrame()
         s_fold_results['s_fold'] = [selection_fold]
         s_fold_results['mouse'] = usable.loc[usable['i']==ses_id,'mouse'].to_numpy()
@@ -203,8 +203,12 @@ for ses_id in usable.i.unique():
         # make selection of N neurons
         Xselection =  np.random.choice(np.arange(X_total.shape[1]), MIN_N, replace=False)
         Yselection = np.random.choice(np.arange(Y_total.shape[1]), MIN_N, replace=False)
-        X = X_total[:,Xselection]
-        Y = Y_total[:,Yselection]
+        if N_COMBINATIONS == 1:
+            X = X_total
+            Y = Y_total
+        else:
+            X = X_total[:,Xselection]
+            Y = Y_total[:,Yselection]
         # Divide in folds
         kf = KFold(n_splits=Ncrossval)
         error = np.zeros([len(np.arange(2,10)), Ncrossval])

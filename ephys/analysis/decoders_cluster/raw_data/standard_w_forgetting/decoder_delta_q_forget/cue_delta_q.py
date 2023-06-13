@@ -59,7 +59,7 @@ regressed_variable_rl = alfio.fQRreward_cue - alfio.fQLreward_cue
 regressed_variable_lr = alfio.fQLreward_cue - alfio.fQRreward_cue
 regressed_variable_rl = regressed_variable_rl
 regressed_variable_lr = regressed_variable_lr
-regressed_variable = [regressed_variable_lr, regressed_variable_rl]
+regressed_variable = [regressed_variable_rl, regressed_variable_lr]
 
 # Only trials included in analysis
 #weights = get_session_sample_weights(alfio.to_df(), categories = ['choice','probabilityLeft', 'outcome'])

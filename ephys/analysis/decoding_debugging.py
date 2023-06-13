@@ -232,6 +232,8 @@ def run_decoder_for_session_residual(c_neural_data, area, alfio, regressed_varia
         hem_neural_data = c_neural_data.loc[c_neural_data['hem']==h].copy()
         if len(regressed_variable)==2: #then we are decoding deltaq, need to choose R-L or L-R so that it matches contra-ipsi 
             regressed_variable = regressed_variable[int(h)]
+            if trial_filter is not None:
+                trial_filter = trial_filter[int(h)]
         if etype=='real':
             p_summary, mse_summary = run_decoder(hem_neural_data, alignment_time, regressed_variable, weights, n_neurons_minimum=n_neurons_minimum, decoder = decoder_type, lambdas=lambdas, 
                                                  trial_filter=trial_filter)
